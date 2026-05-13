@@ -131,6 +131,20 @@ All endpoints return the same shape:
 
 Errors follow the same shape with `success: false`.
 
+## Running Tests
+
+```bash
+# Unit tests
+pnpm run test
+
+# Test coverage
+pnpm run test:cov
+```
+
+Unit tests cover `AboutService` with mocked repository (13 tests, 100% service coverage).
+
+---
+
 ## Database Tables
 
 | Table | Description |
