@@ -1,12 +1,28 @@
 import { Module } from '@nestjs/common';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
-import { ContactModule } from './contact/contact.module';
-import { JobsModule } from './jobs/jobs.module';
+import { ConfigModule } from '@nestjs/config';
+import { ThrottlerModule } from '@nestjs/throttler';
+
+import { PrismaModule } from './infrastructure/prisma/prisma.module';
+import { CloudinaryModule } from './infrastructure/cloudinary/cloudinary.module';
+import { JobsModule } from './modules/jobs/jobs.module';
+import { HeroModule } from './modules/hero/hero.module';
 
 @Module({
-  imports: [ContactModule, JobsModule],
-  controllers: [AppController],
-  providers: [AppService],
+  imports: [
+    ConfigModule.forRoot({
+      isGlobal: true,
+      envFilePath: ['.env.local', '.env'],
+    }),
+    ThrottlerModule.forRoot([{
+      ttl: 60000,
+      limit: 10,
+    }]),
+    PrismaModule,
+    CloudinaryModule,
+    JobsModule,
+    HeroModule,
+  ],
+  controllers: [],
+  providers: [],
 })
 export class AppModule {}
