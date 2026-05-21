@@ -1,74 +1,156 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="200" alt="Nest Logo" /></a>
-</p>
+# HR API
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+Backend REST API for the HR recruitment platform, built with NestJS, TypeORM, and PostgreSQL.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://coveralls.io/github/nestjs/nest?branch=master" target="_blank"><img src="https://coveralls.io/repos/github/nestjs/nest/badge.svg?branch=master#9" alt="Coverage" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+## Tech Stack
 
-## Description
+- **Framework:** NestJS (Node.js + TypeScript)
+- **Database:** PostgreSQL (via Docker)
+- **ORM:** TypeORM
+- **File Storage:** Local (`/uploads` folder, CDN-ready via StorageProvider interface)
+- **Package Manager:** pnpm
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+## Prerequisites
 
-## Installation
+- Node.js v18+
+- pnpm
+- Docker (for PostgreSQL)
 
+## Setup
+
+**1. Install dependencies**
 ```bash
-$ pnpm install
+pnpm install
 ```
 
-## Running the app
-
+**2. Create your .env file**
 ```bash
-# development
-$ pnpm run start
-
-# watch mode
-$ pnpm run start:dev
-
-# production mode
-$ pnpm run start:prod
+cp .env.example .env
 ```
 
-## Test
-
+**3. Start the PostgreSQL Docker container**
 ```bash
-# unit tests
-$ pnpm run test
-
-# e2e tests
-$ pnpm run test:e2e
-
-# test coverage
-$ pnpm run test:cov
+docker start hr-api-db
 ```
 
-## Support
+**4. Start the server**
+```bash
+pnpm run start:dev
+```
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+Server runs on `http://localhost:3000`
 
-## Stay in touch
+Uploaded files are served at `http://localhost:3000/files/<filename>`
 
-- Author - [Kamil Myśliwiec](https://kamilmysliwiec.com)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+---
 
-## License
+## Project Structure
 
-Nest is [MIT licensed](LICENSE).
-# hr-api
+```
+src/
+├── common/
+│   ├── errors/
+│   │   ├── app-error.ts                  # Custom error class
+│   │   └── global-exception.filter.ts    # Uniform error responses
+│   ├── guards/
+│   │   └── admin.guard.ts                # Bearer token auth stub
+│   └── response/
+│       └── api-response.ts               # Uniform success responses
+│
+├── modules/
+│   ├── about/                            # About page feature
+│   │   ├── dto/                          # Request validation
+│   │   ├── entities/                     # Database table definitions
+│   │   ├── repositories/
+│   │   │   └── about.repository.ts       # All DB calls
+│   │   ├── about.controller.ts           # HTTP layer
+│   │   ├── about.service.ts              # Business logic
+│   │   └── about.module.ts
+│   │
+│   └── media/                            # Shared image upload module
+│       ├── entities/media.entity.ts
+│       ├── media.controller.ts
+│       ├── media.service.ts
+│       ├── media.storage.ts              # StorageProvider interface
+│       └── media.module.ts
+│
+├── app.module.ts
+└── main.ts
+```
+
+## API Endpoints
+
+### About — Public
+
+| Method | URL | Description |
+|--------|-----|-------------|
+| GET | /api/about/hero | Hero banner (title, subtitle, background image) |
+| GET | /api/about/ceo | CEO section (name, title, photo, message) |
+| GET | /api/about/team | All team members ordered by `order` field |
+| POST | /api/about/contact | Submit contact form |
+
+### About — Admin (requires `Authorization: Bearer <token>`)
+
+| Method | URL | Description |
+|--------|-----|-------------|
+| PUT | /api/about/hero | Update hero content + image URL |
+| PUT | /api/about/ceo | Update CEO content + image URL |
+| POST | /api/about/team | Add a team member |
+| PUT | /api/about/team/:id | Update a team member |
+| DELETE | /api/about/team/:id | Delete a team member |
+
+### Media — Admin (requires `Authorization: Bearer <token>`)
+
+| Method | URL | Description |
+|--------|-----|-------------|
+| POST | /api/media/upload | Upload image file → returns URL |
+| DELETE | /api/media/:id | Delete image from storage + DB |
+
+## Image Upload Flow
+
+Images are a two-step process:
+
+```
+1. POST /api/media/upload   →  { url: "http://localhost:3000/files/image.jpg" }
+2. PUT  /api/about/hero     →  { imageUrl: "<url from step 1>", title: "...", subtitle: "..." }
+```
+
+The about module never handles file buffers — it only stores and serves URL strings.
+
+## Uniform Response Format
+
+All endpoints return the same shape:
+
+```json
+{
+  "success": true,
+  "message": "Success",
+  "data": {}
+}
+```
+
+Errors follow the same shape with `success: false`.
+
+## Running Tests
+
+```bash
+# Unit tests
+pnpm run test
+
+# Test coverage
+pnpm run test:cov
+```
+
+Unit tests cover `AboutService` with mocked repository (13 tests, 100% service coverage).
+
+---
+
+## Database Tables
+
+| Table | Description |
+|-------|-------------|
+| `hero_section` | One row — banner image, title, subtitle |
+| `ceo_section` | One row — CEO name, title, photo, message |
+| `team_members` | One row per member — name, role, photo, order |
+| `contact_submissions` | One row per form submission |
+| `media` | One row per uploaded file |
