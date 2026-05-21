@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # HR API
 
 Backend REST API for the HR recruitment platform, built with NestJS, TypeORM, and PostgreSQL.
@@ -10,7 +9,6 @@ Backend REST API for the HR recruitment platform, built with NestJS, TypeORM, an
 - **ORM:** TypeORM
 - **File Storage:** Local (`/uploads` folder, CDN-ready via StorageProvider interface)
 - **Package Manager:** pnpm
-=======
 <div align="center">
   <img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" />
   <h1>Infinity Tech Innovation API</h1>
@@ -69,7 +67,6 @@ src/
 ```
 
 ---
->>>>>>> a7948a2e2f81b2b8bfd274b5e9660dbde1d4ad91
 
 ## Prerequisites
 
