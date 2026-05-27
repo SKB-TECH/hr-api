@@ -5,7 +5,7 @@ import { ThrottlerModule } from '@nestjs/throttler';
 
 // Charles's Modules
 import { ContactModule } from './contact/contact.module';
-import { JobsModule as HomepageJobsModule } from './jobs/jobs.module'; // Aliased to prevent naming collision
+import { JobsModule as HomepageJobsModule } from './jobs/jobs.module'; 
 
 // Gilbert's Modules (Prisma & Advanced Features)
 import { PrismaModule } from './infrastructure/prisma/prisma.module';
@@ -57,13 +57,13 @@ import { Media } from './modules/media/entities/media.entity';
     
     // Feature Modules
     ContactModule,
-    HomepageJobsModule, // Charles's initial mock endpoints
-    JobsModule,         // Gilbert's full CRUD implementation
+    HomepageJobsModule, 
+    JobsModule,         // The Prisma-powered Jobs module
     HeroModule,
     AboutModule,
     MediaModule,
   ],
-  controllers: [], // <-- Emptied this array!
-  providers: [],   // <-- Emptied this array!
+  controllers: [], 
+  providers: [],   
 })
 export class AppModule {}

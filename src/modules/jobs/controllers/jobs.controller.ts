@@ -1,69 +1,46 @@
-import {
-  Controller,
-  Get,
-  Post,
-  Body,
-  Patch,
-  Param,
-  Delete,
-  Query,
-  UseInterceptors,
-  UploadedFile,
-} from '@nestjs/common';
-import { JobsService } from '../services/jobs.service';
+import { Controller, Get, Post, Body, Patch, Param, Delete, HttpCode, HttpStatus } from '@nestjs/common';
+import { JobsService } from '../jobs.service';
 import { CreateJobDto } from '../dto/create-job.dto';
-import { UpdateJobDto } from '../dto/update-job.dto';
-import { QueryJobDto } from '../dto/query-job.dto';
-import { FileInterceptor } from '@nestjs/platform-express';
-import { ApiTags, ApiOperation, ApiConsumes, ApiResponse } from '@nestjs/swagger';
+import { CreateApplicationDto } from '../dto/create-application.dto';
 
-@ApiTags('Jobs')
-@Controller('jobs')
+@Controller('api/v1/jobs')
 export class JobsController {
   constructor(private readonly jobsService: JobsService) {}
 
-  @Post()
-  @ApiOperation({ summary: 'Create a new job' })
-  @ApiConsumes('multipart/form-data')
-  @UseInterceptors(FileInterceptor('file'))
-  @ApiResponse({ status: 201, description: 'The job has been successfully created.' })
-  create(@Body() createJobDto: CreateJobDto, @UploadedFile() file: Express.Multer.File) {
-    return this.jobsService.create(createJobDto, file);
-  }
-
   @Get()
-  @ApiOperation({ summary: 'Get all jobs with pagination and filters' })
-  findAll(@Query() query: QueryJobDto) {
-    return this.jobsService.findAll(query);
+  async findAll() {
+    const [data, total] = await this.jobsService.findAll();
+    return { statusCode: 200, message: 'Jobs fetched successfully', data, meta: { total } };
   }
 
   @Get(':id')
-  @ApiOperation({ summary: 'Get a job by ID' })
-  findOne(@Param('id') id: string) {
-    return this.jobsService.findOne(id);
+  async findOne(@Param('id') id: string) {
+    const data = await this.jobsService.findOne(id);
+    return { statusCode: 200, message: 'Job details fetched successfully', data };
   }
 
-  @Get('slug/:slug')
-  @ApiOperation({ summary: 'Get a job by slug' })
-  findBySlug(@Param('slug') slug: string) {
-    return this.jobsService.findBySlug(slug);
+  @Post()
+  async create(@Body() createJobDto: CreateJobDto) {
+    const data = await this.jobsService.create(createJobDto);
+    return { statusCode: 201, message: 'Job created successfully', data };
   }
 
   @Patch(':id')
-  @ApiOperation({ summary: 'Update a job' })
-  @ApiConsumes('multipart/form-data')
-  @UseInterceptors(FileInterceptor('file'))
-  update(
-    @Param('id') id: string,
-    @Body() updateJobDto: UpdateJobDto,
-    @UploadedFile() file: Express.Multer.File,
-  ) {
-    return this.jobsService.update(id, updateJobDto, file);
+  async update(@Param('id') id: string, @Body() updateJobDto: Partial<CreateJobDto>) {
+    const data = await this.jobsService.update(id, updateJobDto);
+    return { statusCode: 200, message: 'Job updated successfully', data };
   }
 
   @Delete(':id')
-  @ApiOperation({ summary: 'Delete a job' })
-  remove(@Param('id') id: string) {
-    return this.jobsService.remove(id);
+  async remove(@Param('id') id: string) {
+    await this.jobsService.remove(id);
+    return { statusCode: 200, message: 'Job deleted successfully' };
+  }
+
+  @Post(':id/apply')
+  @HttpCode(HttpStatus.CREATED)
+  async apply(@Param('id') id: string, @Body() dto: CreateApplicationDto) {
+    const data = await this.jobsService.apply(id, dto);
+    return { statusCode: 201, message: 'Application submitted successfully', data };
   }
 }
