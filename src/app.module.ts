@@ -3,9 +3,6 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ThrottlerModule } from '@nestjs/throttler';
 
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
-
 // Charles's Modules
 import { ContactModule } from './contact/contact.module';
 import { JobsModule as HomepageJobsModule } from './jobs/jobs.module'; // Aliased to prevent naming collision
@@ -66,7 +63,7 @@ import { Media } from './modules/media/entities/media.entity';
     AboutModule,
     MediaModule,
   ],
-  controllers: [AppController],
-  providers: [AppService],
+  controllers: [], // <-- Emptied this array!
+  providers: [],   // <-- Emptied this array!
 })
 export class AppModule {}

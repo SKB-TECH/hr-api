@@ -1,52 +1,34 @@
-import { NestFactory } from '@nestjs/core';
+import { NestFactory, HttpAdapterHost } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { NestExpressApplication } from '@nestjs/platform-express';
-import { join } from 'path';
-import { AppModule } from './app.module';
-import { GlobalExceptionFilter } from './common/errors/global-exception.filter';
-
-async function bootstrap() {
-  const app = await NestFactory.create<NestExpressApplication>(AppModule);
-
-  app.enableCors();
-
-  app.useStaticAssets(join(process.cwd(), 'uploads'), { prefix: '/files' });
-
-  app.useGlobalFilters(new GlobalExceptionFilter());
-
-  app.useGlobalPipes(
-    new ValidationPipe({
-      whitelist: true,
-      forbidNonWhitelisted: true,
-      transform: true,
-    }),
-  );
-
-  const port = process.env.PORT ?? 3000;
-  await app.listen(port);
-  console.log(`Application running on http://localhost:${port}`);
-import { NestFactory, HttpAdapterHost } from '@nestjs/core';
-import { AppModule } from './app.module';
-import { ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { join } from 'path';
 import helmet from 'helmet';
 import * as compression from 'compression';
+
+import { AppModule } from './app.module';
+
+// Global configurations from Gilbert & Esther
 import { GlobalExceptionFilter } from './common/exceptions/global-exception.filter';
 import { PrismaClientExceptionFilter } from './common/exceptions/prisma-client-exception.filter';
 import { TransformInterceptor } from './common/interceptors/transform.interceptor';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  // 1. Tell NestJS we are using Express (required for Esther's image uploads)
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
-  // Global Prefix
+  // 2. Global Prefix (Gilbert's addition)
   app.setGlobalPrefix('api/v1');
 
-  // Security
+  // 3. Security & Optimization (Gilbert's additions)
   app.use(helmet());
   app.enableCors();
   app.use(compression());
 
-  // Global Pipes
+  // 4. Static Assets for Image Uploads (Esther's addition)
+  app.useStaticAssets(join(process.cwd(), 'uploads'), { prefix: '/files' });
+
+  // 5. Global Pipes for Validation
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
@@ -55,20 +37,20 @@ async function bootstrap() {
     }),
   );
 
-  // Global Interceptors
+  // 6. Global Interceptors
   app.useGlobalInterceptors(new TransformInterceptor());
 
-  // Global Filters
+  // 7. Global Exception Filters
   const { httpAdapter } = app.get(HttpAdapterHost);
   app.useGlobalFilters(
-    new GlobalExceptionFilter(),
+    new GlobalExceptionFilter(), 
     new PrismaClientExceptionFilter(httpAdapter),
   );
 
-  // Swagger Documentation
+  // 8. Swagger API Documentation Setup
   const config = new DocumentBuilder()
-    .setTitle('Infinity  Innovation - Job Listing API')
-    .setDescription(' Job Listing Backend API')
+    .setTitle('Infinity Innovation - HR API')
+    .setDescription('Recruitment & Job Listing Backend API')
     .setVersion('1.0')
     .addBearerAuth()
     .build();
@@ -76,6 +58,7 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api/docs', app, document);
 
+  // 9. Start the server
   const port = process.env.PORT || 3000;
   await app.listen(port);
   console.log(`Application is running on: http://localhost:${port}/api/v1`);
