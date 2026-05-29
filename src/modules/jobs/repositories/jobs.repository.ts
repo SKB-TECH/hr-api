@@ -6,8 +6,6 @@ import { Prisma, Job, JobApplication } from '@prisma/client';
 export class JobsRepository {
   constructor(private prisma: PrismaService) {}
 
-  // ── JOBS ──────────────────────────────────────────────────────────────────
-
   async create(data: Prisma.JobCreateInput): Promise<Job> {
     return this.prisma.job.create({ data });
   }
@@ -39,8 +37,6 @@ export class JobsRepository {
   async remove(where: Prisma.JobWhereUniqueInput): Promise<Job> {
     return this.prisma.job.delete({ where });
   }
-
-  // ── APPLICATIONS (Translated from the new feature branch) ─────────────────
 
   async saveApplication(data: Prisma.JobApplicationUncheckedCreateInput): Promise<JobApplication> {
     return this.prisma.jobApplication.create({ data });

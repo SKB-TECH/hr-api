@@ -10,7 +10,6 @@ export class JobsService {
 
   async findAll(): Promise<[Job[], number]> {
     return this.jobsRepository.findAll({
-      // Use isPublished instead of isActive based on our Prisma schema
       where: { isPublished: true },
       orderBy: { createdAt: 'desc' },
     });
@@ -29,7 +28,7 @@ export class JobsService {
   }
 
   async update(id: string, dto: Partial<CreateJobDto>): Promise<Job> {
-    await this.findOne(id); // Ensure it exists
+    await this.findOne(id);
     return this.jobsRepository.update({
       where: { id },
       data: dto as Prisma.JobUpdateInput,
@@ -37,22 +36,20 @@ export class JobsService {
   }
 
   async remove(id: string): Promise<Job> {
-    await this.findOne(id); // Ensure it exists
+    await this.findOne(id);
     return this.jobsRepository.update({
       where: { id },
-      data: { isPublished: false }, // Soft delete
+      data: { isPublished: false },
     });
   }
 
   async apply(jobId: string, dto: CreateApplicationDto): Promise<JobApplication> {
-    await this.findOne(jobId); // Verify job exists before allowing application
-    
+    await this.findOne(jobId);
     return this.jobsRepository.saveApplication({
       jobId,
       fullName: dto.fullName,
       email: dto.email,
-      // Map contactNumber from the DTO to the phone field in Prisma
-      phone: dto.contactNumber, 
+      phone: dto.contactNumber,
       coverLetter: dto.coverLetter,
     });
   }
