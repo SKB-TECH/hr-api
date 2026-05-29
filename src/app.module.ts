@@ -3,17 +3,13 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ThrottlerModule } from '@nestjs/throttler';
 
-// Charles's Modules
 import { ContactModule } from './contact/contact.module';
-import { JobsModule as HomepageJobsModule } from './jobs/jobs.module'; 
-
-// Gilbert's Modules (Prisma & Advanced Features)
+import { JobsModule as HomepageJobsModule } from './jobs/jobs.module';
+import { AuthModule } from './modules/auth/auth.module';
 import { PrismaModule } from './infrastructure/prisma/prisma.module';
 import { CloudinaryModule } from './infrastructure/cloudinary/cloudinary.module';
 import { JobsModule } from './modules/jobs/jobs.module';
 import { HeroModule } from './modules/hero/hero.module';
-
-// Esther's Modules and Entities (TypeORM)
 import { AboutModule } from './modules/about/about.module';
 import { MediaModule } from './modules/media/media.module';
 import { HeroSection } from './modules/about/entities/hero-section.entity';
@@ -24,17 +20,11 @@ import { Media } from './modules/media/entities/media.entity';
 
 @Module({
   imports: [
-    // Global Configurations
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: ['.env.local', '.env'],
     }),
-    ThrottlerModule.forRoot([{
-      ttl: 60000,
-      limit: 10,
-    }]),
-
-    // Databases (TypeORM & Prisma running side-by-side)
+    ThrottlerModule.forRoot([{ ttl: 60000, limit: 10 }]),
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
@@ -51,19 +41,16 @@ import { Media } from './modules/media/entities/media.entity';
       }),
     }),
     PrismaModule,
-
-    // Infrastructure
     CloudinaryModule,
-    
-    // Feature Modules
     ContactModule,
-    HomepageJobsModule, 
-    JobsModule,         // The Prisma-powered Jobs module
+    HomepageJobsModule,
+    JobsModule,
     HeroModule,
     AboutModule,
     MediaModule,
+    AuthModule,
   ],
-  controllers: [], 
-  providers: [],   
+  controllers: [],
+  providers: [],
 })
 export class AppModule {}

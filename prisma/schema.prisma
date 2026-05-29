@@ -7,6 +7,27 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum UserRole {
+  CANDIDATE
+  COMPANY_OWNER
+  HR_MANAGER
+  RECRUITER
+  ADMIN
+  SUPER_ADMIN
+}
+
+enum UserStatus {
+  active
+  suspended
+  pending
+  deleted
+}
+
+enum AuthProvider {
+  local
+  google
+}
+
 enum EmploymentType {
   FULL_TIME
   PART_TIME
@@ -20,6 +41,38 @@ enum ExperienceLevel {
   MID
   SENIOR
   LEAD
+}
+
+model User {
+  id            String         @id @default(uuid())
+  email         String         @unique
+  password      String?
+  firstName     String         @map("first_name")
+  lastName      String         @map("last_name")
+  role          UserRole       @default(CANDIDATE)
+  status        UserStatus     @default(pending)
+  provider      AuthProvider   @default(local)
+  avatar        String?
+  emailVerified Boolean        @default(false) @map("email_verified")
+  createdAt     DateTime       @default(now()) @map("created_at")
+  updatedAt     DateTime       @updatedAt @map("updated_at")
+
+  refreshTokens RefreshToken[]
+
+  @@map("users")
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  token     String   @unique
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("refresh_tokens")
 }
 
 model Job {
@@ -41,8 +94,7 @@ model Job {
   createdAt           DateTime        @default(now()) @map("created_at")
   updatedAt           DateTime        @updatedAt @map("updated_at")
 
-  // The new relationship to the JobApplication model
-  applications        JobApplication[]
+  applications JobApplication[]
 
   @@index([slug])
   @@index([isPublished])
@@ -60,7 +112,6 @@ model HeroImage {
   @@map("hero_images")
 }
 
-// The newly added JobApplication model
 model JobApplication {
   id          String   @id @default(uuid())
   jobId       String   @map("job_id")
@@ -71,8 +122,7 @@ model JobApplication {
   resumeUrl   String?  @map("resume_url")
   createdAt   DateTime @default(now()) @map("created_at")
 
-  // Relationship back to the Job model
-  job         Job      @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  job Job @relation(fields: [jobId], references: [id], onDelete: Cascade)
 
   @@index([jobId])
   @@map("job_applications")
