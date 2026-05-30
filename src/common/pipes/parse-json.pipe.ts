@@ -14,7 +14,6 @@ export class ParseProfileJsonPipe implements PipeTransform {
       const parsedObj = typeof value === 'string' ? JSON.parse(value) : value;
       const objectInstance = plainToInstance(UpdateUserCandidateProfileDto, parsedObj);
       
-      // ✅ FIXED: Replaced 'forgetValue' with standard 'validationError' formatting options
       const errors = await validate(objectInstance, {
         whitelist: true, 
         validationError: { target: false }, // Hides the raw values from error payloads for safety

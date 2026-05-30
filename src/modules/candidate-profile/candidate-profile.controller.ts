@@ -10,6 +10,7 @@ import { ParseProfileJsonPipe } from '../../common/pipes/parse-json.pipe'; // �
 import { RolesGuard } from './guards/roles.guard';
 import { Roles } from './decorators/roles.decorator';
 import { UserRole } from '@prisma/client';
+import { UpdateAccountDto } from './dto/update_candidate_email_password';
 
 @ApiTags('CandidateProfiles')
 @ApiBearerAuth()
@@ -40,9 +41,7 @@ export class CandidateProfilesController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   async updateCandidateProfile(
     @Req() req: any, 
-    // ✅ 1. Tells Swagger to render ONLY the avatar file picker and the text area
     @Body() formPayload: CandidateProfileUploadDto, 
-    // ✅ 2. Extracts and deserializes the JSON block string directly into your core DTO
     @Body('data', ParseProfileJsonPipe) validatedDto: UpdateUserCandidateProfileDto, 
     @UploadedFile() file?: Express.Multer.File,
   ): Promise<UserCandidateEntity> {
@@ -51,5 +50,23 @@ export class CandidateProfilesController {
     // Send the cleanly parsed JSON data straight to your service
     const updatedProfile = await this.profilesService.updateCandidateProfile(userId, validatedDto, file);
     return new UserCandidateEntity(updatedProfile);
+  }
+  @Patch('account')
+  @Roles(UserRole.CANDIDATE)
+  @ApiResponse({ status: 200, description: 'Account updated successfully' })
+  @ApiResponse({ status: 404, description: 'User not found' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiOperation({
+    
+    summary: 'Update account email or password',
+  })
+  async updateAccount(
+    @Req() req: any,
+    @Body() dto: UpdateAccountDto,
+  ) {
+    return this.profilesService.updateAccount(
+      req.user.id,
+      dto,
+    );
   }
 }

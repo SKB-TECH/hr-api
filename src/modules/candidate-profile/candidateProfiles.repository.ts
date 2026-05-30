@@ -37,4 +37,18 @@ export class CandidateProfilesRepository {
       },
     });
   }
+  async findUserByEmail(email: string) {
+  return this.prisma.user.findUnique({
+    where: { email },
+  });
+}
+async updateUserAccount(
+    userId: string,
+    data: any,
+  ) {
+    return this.prisma.user.update({
+      where: { id: userId },
+      data,
+    });
+  }
 }

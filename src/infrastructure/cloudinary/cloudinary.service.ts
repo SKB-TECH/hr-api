@@ -14,7 +14,6 @@ export class CloudinaryService {
       throw new BadRequestException('No file provided');
     }
 
-    //  Guard: Support images AND pdf documents
     const isImage = file.mimetype.match(/\/(jpg|jpeg|png|gif|webp)$/);
     const isPdf = file.mimetype === 'application/pdf';
 
