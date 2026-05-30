@@ -44,20 +44,22 @@ enum ExperienceLevel {
 }
 
 model User {
-  id            String         @id @default(uuid())
-  email         String         @unique
+  id            String       @id @default(uuid())
+  email         String       @unique
   password      String?
-  firstName     String         @map("first_name")
-  lastName      String         @map("last_name")
-  role          UserRole       @default(CANDIDATE)
-  status        UserStatus     @default(pending)
-  provider      AuthProvider   @default(local)
+  firstName     String       @map("first_name")
+  lastName      String       @map("last_name")
+  role          UserRole     @default(CANDIDATE)
+  status        UserStatus   @default(pending)
+  provider      AuthProvider @default(local)
   avatar        String?
-  emailVerified Boolean        @default(false) @map("email_verified")
-  createdAt     DateTime       @default(now()) @map("created_at")
-  updatedAt     DateTime       @updatedAt @map("updated_at")
+  emailVerified Boolean      @default(false) @map("email_verified")
+  createdAt     DateTime     @default(now()) @map("created_at")
+  updatedAt     DateTime     @updatedAt @map("updated_at")
 
-  refreshTokens RefreshToken[]
+  // --- Relations ---
+  refreshTokens      RefreshToken[]
+  companyMemberships CompanyMember[] // <--- ADDED: This connects the User to their Companies
 
   @@map("users")
 }
@@ -118,7 +120,7 @@ model JobApplication {
   fullName    String   @map("full_name")
   email       String
   phone       String
-  coverLetter String   @db.Text @map("cover_letter")
+  coverLetter String   @map("cover_letter") @db.Text
   resumeUrl   String?  @map("resume_url")
   createdAt   DateTime @default(now()) @map("created_at")
 
@@ -126,4 +128,42 @@ model JobApplication {
 
   @@index([jobId])
   @@map("job_applications")
+}
+
+// ==========================================
+//               COMPANY MODULE
+// ==========================================
+
+model Company {
+  id          String   @id @default(uuid())
+  name        String
+  logo        String? // Optional logo URL
+  website     String?
+  description String?
+  location    String?
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  members CompanyMember[]
+  // jobs     Job[]   // Will uncomment this when I build the Job Management module!
+
+  @@map("companies") // <--- ADDED: Maps table name to plural snake_case
+}
+
+model CompanyMember {
+  id       String   @id @default(uuid())
+  role     String // e.g., 'COMPANY_OWNER', 'HR_MANAGER'
+  joinedAt DateTime @default(now()) @map("joined_at")
+
+  // Foreign Keys
+  userId    String @map("user_id")
+  companyId String @map("company_id")
+
+  // Relations
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade) // Added Cascade delete
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, companyId]) // Ensures a user can only have one membership per company
+  @@map("company_members") // <--- ADDED: Maps table name to clean snake_case
 }

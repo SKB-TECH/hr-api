@@ -5,6 +5,8 @@ import {
   HttpCode,
   HttpStatus,
   Post,
+  Req,
+  Res,
   UseGuards,
 } from '@nestjs/common';
 import {
@@ -18,6 +20,7 @@ import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { GoogleAuthGuard } from './guards/google-auth.guard';
 import { CurrentUser } from './decorators/current-user.decorator';
 
 @ApiTags('Auth')
@@ -67,5 +70,19 @@ export class AuthController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   me(@CurrentUser() user: { id: string; email: string; role: string }) {
     return user;
+  }
+
+  @Get('google')
+  @UseGuards(GoogleAuthGuard)
+  @ApiOperation({ summary: 'Redirect to Google login (Sign Up / Login with Google)' })
+  googleAuth() {}
+
+  @Get('google/callback')
+  @UseGuards(GoogleAuthGuard)
+  @ApiOperation({ summary: 'Google OAuth callback — returns tokens' })
+  @ApiResponse({ status: 200, description: 'Google login successful' })
+  async googleCallback(@Req() req, @Res() res) {
+    const result = await this.authService.googleLogin(req.user);
+    return res.json(result);
   }
 }
