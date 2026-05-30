@@ -1,10 +1,11 @@
-import { IsString, IsOptional, IsEnum, IsInt,IsBoolean, IsNumber,Min, IsDateString } from 'class-validator';
+// src/modules/candidate-profile/dto/update-candidate-profile.dto.ts
+import { IsString, IsOptional, IsEnum, IsInt, IsBoolean, IsNumber, Min, IsDateString } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Availability, WorkType, ProfileVisibility } from '@prisma/client';
 
 export class UpdateUserCandidateProfileDto {
-  // --- Core User Table Fields ---
-  @ApiPropertyOptional({ example: 'Prience' })
+  
+  @ApiPropertyOptional({ example: 'Prince' })
   @IsString()
   @IsOptional()
   firstName?: string;
@@ -14,12 +15,9 @@ export class UpdateUserCandidateProfileDto {
   @IsOptional()
   lastName?: string;
 
-  @ApiPropertyOptional({ example: 'https://example.com/avatar.jpg' })
-  @IsString()
-  @IsOptional()
+ 
   avatar?: string;
 
- 
   @ApiPropertyOptional({ example: 'Male' })
   @IsString()
   @IsOptional()

@@ -68,10 +68,10 @@ export class UserCandidateEntity {
   @ApiProperty({ example: 'manzp@gmail.com' })
   email: string;
 
-  @ApiProperty({ example: 'John' })
+  @ApiProperty({ example: 'manzi' })
   firstName: string;
 
-  @ApiProperty({ example: 'Doe' })
+  @ApiProperty({ example: 'prience' })
   lastName: string;
 
   @ApiProperty({ enum: UserRole, example: UserRole.CANDIDATE })
