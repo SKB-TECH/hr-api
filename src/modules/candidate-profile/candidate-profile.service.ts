@@ -4,8 +4,6 @@ import { Injectable, NotFoundException, BadRequestException,ConflictException, }
 import { CandidateProfilesRepository } from './candidateProfiles.repository';
 import { UpdateUserCandidateProfileDto } from './dto/update-candidate-profile.dto';
 import { CloudinaryService } from '../../infrastructure/cloudinary/cloudinary.service';
-import { UpdateAccountDto } from './dto/update_candidate_email_password';
-import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class CandidateProfilesService {
@@ -14,6 +12,7 @@ export class CandidateProfilesService {
     private readonly cloudinaryService: CloudinaryService,
   ) {}
 
+  //geting user prifile data
   async getCandidateProfile(userId: string) {
     const userWithProfile = await this.profilesRepository.findProfileByUserId(userId);
     if (!userWithProfile) {
@@ -26,7 +25,7 @@ export class CandidateProfilesService {
   async updateCandidateProfile(
     userId: string, 
     dto: UpdateUserCandidateProfileDto,
-    file?: Express.Multer.File,
+    file?: any,
   ) {
     const existingUser = await this.profilesRepository.findProfileByUserId(userId);
     if (!existingUser) {
@@ -56,84 +55,6 @@ export class CandidateProfilesService {
     const { password, ...sanitizedUser } = updatedUser;
     return sanitizedUser;
   }
-async updateAccount(
-  userId: string,
-  dto: UpdateAccountDto,
-) {
-  const user = await this.profilesRepository.findProfileByUserId(userId);
 
-  if (!user) {
-    throw new NotFoundException('User not found');
-  }
-
-  const updateData: Record<string, any> = {};
-
- 
-   //EMAIL UPDATE 
-  
-  if (dto.email) {
-    const existingUser =
-      await this.profilesRepository.findUserByEmail(dto.email);
-
-    if (existingUser && existingUser.id !== userId) {
-      throw new ConflictException('Email already exists');
-    }
-
-    updateData.email = dto.email;
-    updateData.emailVerified = false;
-  }
-
- // PASSWORD UPDATE
-  if (dto.newPassword) {
-    if (!dto.currentPassword) {
-      throw new BadRequestException(
-        'Current password is required',
-      );
-    }
-
-    const isValidPassword = await bcrypt.compare(
-      dto.currentPassword,
-      user.password ?? '',
-    );
-
-    if (!isValidPassword) {
-      throw new BadRequestException(
-        'Current password is incorrect',
-      );
-    }
-
-    const isSamePassword = await bcrypt.compare(
-      dto.newPassword,
-      user.password ?? '',
-    );
-
-    if (isSamePassword) {
-      throw new BadRequestException(
-        'New password must be different from current password',
-      );
-    }
-
-    updateData.password = await bcrypt.hash(
-      dto.newPassword,
-      10,
-    );
-  }
-
-  
-  if (Object.keys(updateData).length === 0) {
-    throw new BadRequestException(
-      'No account information provided',
-    );
-  }
-
-  await this.profilesRepository.updateUserAccount(
-    userId,
-    updateData,
-  );
-
-  return {
-    message: 'Account updated successfully',
-  };
-}
 
 }

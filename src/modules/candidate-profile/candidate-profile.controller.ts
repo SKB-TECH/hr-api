@@ -10,7 +10,10 @@ import { ParseProfileJsonPipe } from '../../common/pipes/parse-json.pipe'; // âœ
 import { RolesGuard } from './guards/roles.guard';
 import { Roles } from './decorators/roles.decorator';
 import { UserRole } from '@prisma/client';
-import { UpdateAccountDto } from './dto/update_candidate_email_password';
+import { Express } from 'express';
+
+
+
 
 @ApiTags('CandidateProfiles')
 @ApiBearerAuth()
@@ -43,30 +46,12 @@ export class CandidateProfilesController {
     @Req() req: any, 
     @Body() formPayload: CandidateProfileUploadDto, 
     @Body('data', ParseProfileJsonPipe) validatedDto: UpdateUserCandidateProfileDto, 
-    @UploadedFile() file?: Express.Multer.File,
+    @UploadedFile() file?: any,
   ): Promise<UserCandidateEntity> {
     const userId = req.user.id;
 
     // Send the cleanly parsed JSON data straight to your service
     const updatedProfile = await this.profilesService.updateCandidateProfile(userId, validatedDto, file);
     return new UserCandidateEntity(updatedProfile);
-  }
-  @Patch('account')
-  @Roles(UserRole.CANDIDATE)
-  @ApiResponse({ status: 200, description: 'Account updated successfully' })
-  @ApiResponse({ status: 404, description: 'User not found' })
-  @ApiResponse({ status: 401, description: 'Unauthorized' })
-  @ApiOperation({
-    
-    summary: 'Update account email or password',
-  })
-  async updateAccount(
-    @Req() req: any,
-    @Body() dto: UpdateAccountDto,
-  ) {
-    return this.profilesService.updateAccount(
-      req.user.id,
-      dto,
-    );
   }
 }

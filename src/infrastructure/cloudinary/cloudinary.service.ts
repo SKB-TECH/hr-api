@@ -7,7 +7,7 @@ export class CloudinaryService {
   constructor() {}
 
   async uploadFile(
-    file: Express.Multer.File,
+    file: any,
     folder: string = 'infinity_job_assets',
   ): Promise<UploadApiResponse | UploadApiErrorResponse> {
     if (!file) {
@@ -43,7 +43,7 @@ export class CloudinaryService {
   }
 
   async uploadImage(
-    file: Express.Multer.File,
+    file: any,
     folder: string = 'infinity job image',
   ): Promise<UploadApiResponse | UploadApiErrorResponse> {
     return this.uploadFile(file, folder);
@@ -66,7 +66,7 @@ export class CloudinaryService {
   }
 
   async replaceFile(
-    file: Express.Multer.File,
+    file:any,
     oldPublicId: string,
     folder: string = 'infinity_job_assets',
   ): Promise<UploadApiResponse | UploadApiErrorResponse> {
