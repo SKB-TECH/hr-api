@@ -1,4 +1,4 @@
-<<<<<<< HEAD
+
 # HR API
 
 Backend REST API for the HR recruitment platform, built with NestJS, TypeORM, and PostgreSQL.
@@ -75,20 +75,11 @@ src/
 - pnpm
 - Docker (for PostgreSQL)
 
-<<<<<<< HEAD
-## Setup
-
-**1. Install dependencies**
-=======
 1. **Install dependencies:**
->>>>>>> a7948a2e2f81b2b8bfd274b5e9660dbde1d4ad91
 ```bash
 pnpm install
 ```
 
-<<<<<<< HEAD
-**2. Create your .env file**
-=======
 2. **Environment Configuration:**
 Create `.env` and `.env.local` files based on the `.env.example` template. Ensure your database and Cloudinary keys are set.
 ```env
@@ -101,139 +92,10 @@ PORT=3000
 
 3. **Database Initialization & Seeding:**
 Push the schema to your local PostgreSQL instance and seed the mock data:
->>>>>>> a7948a2e2f81b2b8bfd274b5e9660dbde1d4ad91
 ```bash
 cp .env.example .env
 ```
 
-<<<<<<< HEAD
-**3. Start the PostgreSQL Docker container**
-```bash
-docker start hr-api-db
-```
-
-**4. Start the server**
-```bash
-pnpm run start:dev
-```
-
-Server runs on `http://localhost:3000`
-
-Uploaded files are served at `http://localhost:3000/files/<filename>`
-
----
-
-## Project Structure
-
-```
-src/
-├── common/
-│   ├── errors/
-│   │   ├── app-error.ts                  # Custom error class
-│   │   └── global-exception.filter.ts    # Uniform error responses
-│   ├── guards/
-│   │   └── admin.guard.ts                # Bearer token auth stub
-│   └── response/
-│       └── api-response.ts               # Uniform success responses
-│
-├── modules/
-│   ├── about/                            # About page feature
-│   │   ├── dto/                          # Request validation
-│   │   ├── entities/                     # Database table definitions
-│   │   ├── repositories/
-│   │   │   └── about.repository.ts       # All DB calls
-│   │   ├── about.controller.ts           # HTTP layer
-│   │   ├── about.service.ts              # Business logic
-│   │   └── about.module.ts
-│   │
-│   └── media/                            # Shared image upload module
-│       ├── entities/media.entity.ts
-│       ├── media.controller.ts
-│       ├── media.service.ts
-│       ├── media.storage.ts              # StorageProvider interface
-│       └── media.module.ts
-│
-├── app.module.ts
-└── main.ts
-```
-
-## API Endpoints
-
-### About — Public
-
-| Method | URL | Description |
-|--------|-----|-------------|
-| GET | /api/about/hero | Hero banner (title, subtitle, background image) |
-| GET | /api/about/ceo | CEO section (name, title, photo, message) |
-| GET | /api/about/team | All team members ordered by `order` field |
-| POST | /api/about/contact | Submit contact form |
-
-### About — Admin (requires `Authorization: Bearer <token>`)
-
-| Method | URL | Description |
-|--------|-----|-------------|
-| PUT | /api/about/hero | Update hero content + image URL |
-| PUT | /api/about/ceo | Update CEO content + image URL |
-| POST | /api/about/team | Add a team member |
-| PUT | /api/about/team/:id | Update a team member |
-| DELETE | /api/about/team/:id | Delete a team member |
-
-### Media — Admin (requires `Authorization: Bearer <token>`)
-
-| Method | URL | Description |
-|--------|-----|-------------|
-| POST | /api/media/upload | Upload image file → returns URL |
-| DELETE | /api/media/:id | Delete image from storage + DB |
-
-## Image Upload Flow
-
-Images are a two-step process:
-
-```
-1. POST /api/media/upload   →  { url: "http://localhost:3000/files/image.jpg" }
-2. PUT  /api/about/hero     →  { imageUrl: "<url from step 1>", title: "...", subtitle: "..." }
-```
-
-The about module never handles file buffers — it only stores and serves URL strings.
-
-## Uniform Response Format
-
-All endpoints return the same shape:
-
-```json
-{
-  "success": true,
-  "message": "Success",
-  "data": {}
-}
-```
-
-Errors follow the same shape with `success: false`.
-
-## Running Tests
-
-```bash
-# Unit tests
-pnpm run test
-
-# Test coverage
-pnpm run test:cov
-```
-
-Unit tests cover `AboutService` with mocked repository (13 tests, 100% service coverage).
-
----
-
-## Database Tables
-
-| Table | Description |
-|-------|-------------|
-| `hero_section` | One row — banner image, title, subtitle |
-| `ceo_section` | One row — CEO name, title, photo, message |
-| `team_members` | One row per member — name, role, photo, order |
-| `contact_submissions` | One row per form submission |
-| `media` | One row per uploaded file |
-=======
 ---
 
 ## Running the Application
@@ -271,7 +133,6 @@ Once the server is running, navigate to the auto-generated Swagger UI to explore
 ---
 
 
->>>>>>> a7948a2e2f81b2b8bfd274b5e9660dbde1d4ad91
 =======
 # Feature: Job Detail API
 
