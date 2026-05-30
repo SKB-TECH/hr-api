@@ -8,7 +8,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
     super({
       datasources: {
         db: {
-          url: "postgresql://postgres:postgres@localhost:5432/hr_api?schema=public",
+          url: process.env.DATABASE_URL,
         },
       },
     });

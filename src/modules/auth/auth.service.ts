@@ -116,6 +116,7 @@ export class AuthService {
         lastName: googleUser.lastName,
         avatar: googleUser.avatar,
         provider: 'google',
+        role: 'CANDIDATE',
         status: 'active',
         emailVerified: true,
       });
