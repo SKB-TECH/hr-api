@@ -10,21 +10,26 @@ datasource db {
 }
 
 model User {
-  id               String            @id @default(uuid()) @db.Uuid
-  email            String            @unique
-  password         String?
-  firstName        String            @map("first_name")
-  lastName         String            @map("last_name")
-  role             UserRole          @default(CANDIDATE)
-  status           UserStatus        @default(pending)
-  provider         AuthProvider      @default(local)
-  avatar           String?
-  emailVerified    Boolean           @default(false) @map("email_verified")
-  createdAt        DateTime          @default(now()) @map("created_at")
-  updatedAt        DateTime          @updatedAt @map("updated_at")
-  refreshTokens    RefreshToken[]
-  candidateProfile CandidateProfile?
-  auditLogs        AuditLog[]
+  id                 String            @id @default(uuid()) @db.Uuid
+  email              String            @unique
+  phone              String?           @unique
+  password           String?
+  firstName          String            @map("first_name")
+  lastName           String            @map("last_name")
+  role               UserRole          @default(CANDIDATE)
+  status             UserStatus        @default(pending)
+  provider           AuthProvider      @default(local)
+  avatar             String?
+  emailVerified      Boolean           @default(false) @map("email_verified")
+  phoneVerified      Boolean           @default(false) @map("phone_verified")
+  lastLogin          DateTime?         @map("last_login")
+  twoFactorEnabled   Boolean           @default(false) @map("two_factor_enabled")
+  createdAt          DateTime          @default(now()) @map("created_at")
+  updatedAt          DateTime          @updatedAt @map("updated_at")
+  deletedAt          DateTime?         @map("deleted_at")
+  refreshTokens      RefreshToken[]
+  candidateProfile   CandidateProfile?
+  auditLogs          AuditLog[]
 
   @@map("users")
 }
@@ -48,6 +53,7 @@ enum UserRole {
   RECRUITER
   ADMIN
   SUPER_ADMIN
+  MODERATOR
 }
 
 enum UserStatus {
@@ -60,6 +66,8 @@ enum UserStatus {
 enum AuthProvider {
   local
   google
+  linkedin
+  github
 }
 
 enum EmploymentType {
