@@ -5,11 +5,11 @@ import { ThrottlerModule } from '@nestjs/throttler';
 
 
 import { AuthModule } from './modules/auth/auth.module';
+import { UsersModule } from './modules/users/users.module';
 import { PrismaModule } from './infrastructure/prisma/prisma.module';
 import { CloudinaryModule } from './infrastructure/cloudinary/cloudinary.module';
-
-
 import { CandidateProfileModule } from './modules/candidate-profile/candidate-profile.module';
+import { AuditLogModule } from './modules/audit-logs/audit-log.module';
 
 @Module({
   imports: [
@@ -28,14 +28,16 @@ import { CandidateProfileModule } from './modules/candidate-profile/candidate-pr
         username: config.get<string>('DB_USERNAME', 'postgres'),
         password: config.get<string>('DB_PASSWORD', 'postgres'),
         database: config.get<string>('DB_NAME', 'hr_api'),
-       
         synchronize: true,
         logging: false,
       }),
     }),
     PrismaModule,
+    CloudinaryModule,
     AuthModule,
+    UsersModule,
     CandidateProfileModule,
+    AuditLogModule,
   ],
   controllers: [],
   providers: [],
