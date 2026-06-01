@@ -101,6 +101,31 @@ export class AuthService {
     return { accessToken, refreshToken };
   }
 
+  async googleLogin(googleUser: {
+    email: string;
+    firstName: string;
+    lastName: string;
+    avatar: string;
+  }) {
+    let user = await this.usersRepository.findByEmail(googleUser.email);
+
+    if (!user) {
+      user = await this.usersRepository.create({
+        email: googleUser.email,
+        firstName: googleUser.firstName,
+        lastName: googleUser.lastName,
+        avatar: googleUser.avatar,
+        provider: 'google',
+        role: 'CANDIDATE',
+        status: 'active',
+        emailVerified: true,
+      });
+    }
+
+    const tokens = await this.generateTokens(user, false);
+    return { user: this.sanitize(user), ...tokens };
+  }
+
   private sanitize(user: User) {
     const { password, ...safe } = user;
     return safe;

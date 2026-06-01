@@ -6,24 +6,32 @@ import * as streamifier from 'streamifier';
 export class CloudinaryService {
   constructor() {}
 
-  async uploadImage(
-    file: Express.Multer.File,
-    folder: string = 'infinity job image',
+  async uploadFile(
+    file: any,
+    folder: string = 'infinity_job_assets',
   ): Promise<UploadApiResponse | UploadApiErrorResponse> {
     if (!file) {
       throw new BadRequestException('No file provided');
     }
 
-    // validate image
-    if (!file.mimetype.match(/\/(jpg|jpeg|png|gif|webp)$/)) {
-      throw new BadRequestException('Invalid file type. Only image files are allowed.');
+    const isImage = file.mimetype.match(/\/(jpg|jpeg|png|gif|webp)$/);
+    const isPdf = file.mimetype === 'application/pdf';
+
+    if (!isImage && !isPdf) {
+      throw new BadRequestException('Invalid file type. Only images (jpg, jpeg, png, gif, webp) and PDF files are allowed.');
     }
 
     return new Promise((resolve, reject) => {
+      const uploadOptions: any = {
+        folder: folder,
+      };
+
+      if (isPdf) {
+        uploadOptions.resource_type = 'raw'; 
+      }
+
       const uploadStream = cloudinary.uploader.upload_stream(
-        {
-          folder: folder,
-        },
+        uploadOptions,
         (error, result) => {
           if (error) return reject(error);
           resolve(result);
@@ -34,23 +42,38 @@ export class CloudinaryService {
     });
   }
 
-  async deleteImage(publicId: string): Promise<any> {
+  async uploadImage(
+    file: any,
+    folder: string = 'infinity job image',
+  ): Promise<UploadApiResponse | UploadApiErrorResponse> {
+    return this.uploadFile(file, folder);
+  }
+
+  async deleteFile(publicId: string, isPdf: boolean = false): Promise<any> {
     return new Promise((resolve, reject) => {
-      cloudinary.uploader.destroy(publicId, (error, result) => {
+      // Raw assets (PDFs) require the resource_type specified when running destroy()
+      const options = isPdf ? { resource_type: 'raw' } : {};
+      
+      cloudinary.uploader.destroy(publicId, options, (error, result) => {
         if (error) return reject(error);
         resolve(result);
       });
     });
   }
 
-  async replaceImage(
-    file: Express.Multer.File,
+  async deleteImage(publicId: string): Promise<any> {
+    return this.deleteFile(publicId, false);
+  }
+
+  async replaceFile(
+    file:any,
     oldPublicId: string,
-    folder: string = 'infinity job image',
+    folder: string = 'infinity_job_assets',
   ): Promise<UploadApiResponse | UploadApiErrorResponse> {
     if (oldPublicId) {
-      await this.deleteImage(oldPublicId);
+      const isPdf = file.mimetype === 'application/pdf';
+      await this.deleteFile(oldPublicId, isPdf);
     }
-    return this.uploadImage(file, folder);
+    return this.uploadFile(file, folder);
   }
 }
