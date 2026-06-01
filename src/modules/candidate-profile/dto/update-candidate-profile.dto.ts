@@ -15,6 +15,10 @@ export class UpdateUserCandidateProfileDto {
   @IsOptional()
   lastName?: string;
 
+  @ApiPropertyOptional({ example: '+250788123456' })
+  @IsString()
+  @IsOptional()
+  phoneNumber?: string;
  
   avatar?: string;
 

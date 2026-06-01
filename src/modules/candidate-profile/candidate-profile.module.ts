@@ -11,5 +11,6 @@ import { CloudinaryModule } from 'src/infrastructure/cloudinary/cloudinary.modul
   ],
   controllers: [CandidateProfilesController],
   providers: [CandidateProfilesService, CandidateProfilesRepository],
+  exports: [CandidateProfilesService],
 })
 export class CandidateProfileModule {}

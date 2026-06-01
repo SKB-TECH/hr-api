@@ -1,125 +1,143 @@
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
   previewFeatures = ["postgresqlExtensions"]
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
   extensions = [uuidOssp(map: "uuid-ossp")]
 }
 
 model User {
-  id            String         @id @default(uuid()) @db.Uuid
-  email         String         @unique
-  password      String?
-  firstName     String         @map("first_name")
-  lastName      String         @map("last_name")
-  role          UserRole       @default(CANDIDATE)
-  status        UserStatus     @default(pending)
-  provider      AuthProvider   @default(local)
-  avatar        String?
-  emailVerified Boolean        @default(false) @map("email_verified")
-  createdAt     DateTime       @default(now()) @map("created_at")
-  updatedAt     DateTime       @updatedAt @map("updated_at")
-  refreshTokens RefreshToken[]
-  candidateProfile CandidateProfile?
+  id               String            @id @default(uuid()) @db.Uuid
+  email            String            @unique
+  password         String?
+  firstName        String            @map("first_name")
+  lastName         String            @map("last_name")
+  role             UserRole          @default(CANDIDATE)
+  status           UserStatus        @default(pending)
+  provider         AuthProvider      @default(local)
+  avatar           String?
+  emailVerified    Boolean           @default(false) @map("email_verified")
+  createdAt        DateTime          @default(now()) @map("created_at")
+  updatedAt        DateTime          @updatedAt @map("updated_at")
+  refreshTokens    RefreshToken[]
+  candidateProfile CandidateProfile?
 
-  @@map("users")
+  @@map("users")
 }
 
 model RefreshToken {
-  id        String   @id @default(uuid()) @db.Uuid
-  userId    String   @map("user_id") @db.Uuid
-  token     String   @unique
-  expiresAt DateTime @map("expires_at")
-  createdAt DateTime @default(now()) @map("created_at")
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  token     String   @unique
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@index([userId])
-  @@map("refresh_tokens")
+  @@index([userId])
+  @@map("refresh_tokens")
 }
 
-
 enum UserRole {
-  CANDIDATE
-  COMPANY_OWNER
-  HR_MANAGER
-  RECRUITER
-  ADMIN
-  SUPER_ADMIN
+  CANDIDATE
+  COMPANY_OWNER
+  HR_MANAGER
+  RECRUITER
+  ADMIN
+  SUPER_ADMIN
 }
 
 enum UserStatus {
-  active
-  suspended
-  pending
-  deleted
+  active
+  suspended
+  pending
+  deleted
 }
 
 enum AuthProvider {
-  local
-  google
+  local
+  google
 }
 
 enum EmploymentType {
-  FULL_TIME
-  PART_TIME
-  CONTRACT
-  REMOTE
-  INTERNSHIP
+  FULL_TIME
+  PART_TIME
+  CONTRACT
+  REMOTE
+  INTERNSHIP
 }
 
 enum ExperienceLevel {
-  JUNIOR
-  MID
-  SENIOR
-  LEAD
+  JUNIOR
+  MID
+  SENIOR
+  LEAD
 }
 
 enum ProfileVisibility {
-  public
-  recruiters_only
-  private
+  public
+  recruiters_only
+  private
 }
 
 enum Availability {
-  immediate
-  one_week
-  two_weeks
-  one_month
+  immediate
+  one_week
+  two_weeks
+  one_month
 }
 
 enum WorkType {
-  remote
-  onsite
-  hybrid
+  remote
+  onsite
+  hybrid
 }
 
 model CandidateProfile {
-  id                String            @id @default(uuid()) @db.Uuid
-  userId            String            @unique @map("user_id") @db.Uuid
-  user              User              @relation(fields: [userId], references: [id], onDelete: Cascade)
-  gender            String?
-  birthDate         DateTime?         @map("birth_date")
-  headline          String?
-  bio               String?
-  countryName         String?           @map("country_name") 
-  cityName            String?           @map("city_name")
-  address           String?
-  currentSalary     Decimal?          @map("current_salary") @db.Decimal(12, 2)
-  expectedSalary    Decimal?          @map("expected_salary") @db.Decimal(12, 2)
-  salaryCurrency    String?           @map("salary_currency")
-  yearsExperience   Int?              @map("years_experience")
-  linkedinUrl       String?           @map("linkedin_url")
-  githubUrl         String?           @map("github_url")
-  portfolioUrl      String?           @map("portfolio_url")
-  availability      Availability?
-  workType          WorkType?         @map("work_type")
-  profileVisibility ProfileVisibility @default(public) @map("profile_visibility")
-  openToWork        Boolean           @default(true) @map("open_to_work")
-  createdAt         DateTime          @default(now()) @map("created_at")
-  updatedAt         DateTime          @updatedAt @map("updated_at")
+  id                String            @id @default(uuid()) @db.Uuid
+  userId            String            @unique @map("user_id") @db.Uuid
+  user              User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  gender            String?
+  phone             Int?              @map("phone_number")
+  birthDate         DateTime?         @map("birth_date")
+  headline          String?
+  bio               String?
+  countryName       String?           @map("country_name")
+  cityName          String?           @map("city_name")
+  address           String?
+  currentSalary     Decimal?          @map("current_salary") @db.Decimal(12, 2)
+  expectedSalary    Decimal?          @map("expected_salary") @db.Decimal(12, 2)
+  salaryCurrency    String?           @map("salary_currency")
+  yearsExperience   Int?              @map("years_experience")
+  linkedinUrl       String?           @map("linkedin_url")
+  githubUrl         String?           @map("github_url")
+  portfolioUrl      String?           @map("portfolio_url")
+  availability      Availability?
+  workType          WorkType?         @map("work_type")
+  profileVisibility ProfileVisibility @default(public) @map("profile_visibility")
+  openToWork        Boolean           @default(true) @map("open_to_work")
+  createdAt         DateTime          @default(now()) @map("created_at")
+  updatedAt         DateTime          @updatedAt @map("updated_at")
+  resumes           Resume[]
 
-  @@map("candidate_profiles")
+  @@map("candidate_profiles")
+}
+
+model Resume {
+  id          String           @id @default(uuid()) @db.Uuid
+  candidateId String           @map("candidate_id") @db.Uuid
+  candidate   CandidateProfile @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+
+  title    String
+  fileUrl  String @map("file_url")
+  publicId String @map("public_id")
+
+  isDefault Boolean @default(false) @map("is_default")
+  parsed    Boolean @default(false)
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("resumes")
 }

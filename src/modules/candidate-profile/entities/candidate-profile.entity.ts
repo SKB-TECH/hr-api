@@ -74,6 +74,9 @@ export class UserCandidateEntity {
   @ApiProperty({ example: 'prience' })
   lastName: string;
 
+  @ApiPropertyOptional({ example: '+250788123456' })
+  phoneNumber: string | null;
+
   @ApiProperty({ enum: UserRole, example: UserRole.CANDIDATE })
   role: UserRole;
 

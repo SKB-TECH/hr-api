@@ -50,7 +50,7 @@ export class CandidateProfilesController {
   ): Promise<UserCandidateEntity> {
     const userId = req.user.id;
 
-    // Send the cleanly parsed JSON data straight to your service
+    
     const updatedProfile = await this.profilesService.updateCandidateProfile(userId, validatedDto, file);
     return new UserCandidateEntity(updatedProfile);
   }
