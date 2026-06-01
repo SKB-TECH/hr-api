@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ConflictException, UnauthorizedException, NotFoundException } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { UsersRepository } from './users.repository';
+import { AuditLogService } from '../audit-logs/audit-log.service';
 import * as bcrypt from 'bcrypt';
 
 const mockUser = {
@@ -15,8 +16,12 @@ const mockUser = {
   provider: 'local',
   avatar: null,
   emailVerified: true,
+  phoneVerified: false,
+  lastLogin: null,
+  twoFactorEnabled: false,
   createdAt: new Date(),
   updatedAt: new Date(),
+  deletedAt: null,
 };
 
 const mockUsersRepository = {
@@ -27,6 +32,10 @@ const mockUsersRepository = {
   deleteRefreshTokens: jest.fn(),
 };
 
+const mockAuditLogService = {
+  log: jest.fn().mockResolvedValue(undefined),
+};
+
 describe('UsersService', () => {
   let service: UsersService;
 
@@ -35,6 +44,7 @@ describe('UsersService', () => {
       providers: [
         UsersService,
         { provide: UsersRepository, useValue: mockUsersRepository },
+        { provide: AuditLogService, useValue: mockAuditLogService },
       ],
     }).compile();
 
@@ -45,6 +55,7 @@ describe('UsersService', () => {
   describe('updateEmail', () => {
     it('should update email and set emailVerified to false', async () => {
       mockUsersRepository.findByEmail.mockResolvedValue(null);
+      mockUsersRepository.findById.mockResolvedValue(mockUser);
       mockUsersRepository.update.mockResolvedValue({ ...mockUser, email: 'new@example.com', emailVerified: false });
 
       const result = await service.updateEmail('uuid-user-1', { email: 'new@example.com' });
@@ -68,10 +79,28 @@ describe('UsersService', () => {
 
     it('should allow updating to the same email (own email)', async () => {
       mockUsersRepository.findByEmail.mockResolvedValue(mockUser);
+      mockUsersRepository.findById.mockResolvedValue(mockUser);
       mockUsersRepository.update.mockResolvedValue({ ...mockUser, emailVerified: false });
 
       const result = await service.updateEmail('uuid-user-1', { email: 'jake@example.com' });
       expect(result).toBeDefined();
+    });
+
+    it('should fire an audit log with old and new email', async () => {
+      mockUsersRepository.findByEmail.mockResolvedValue(null);
+      mockUsersRepository.findById.mockResolvedValue(mockUser);
+      mockUsersRepository.update.mockResolvedValue({ ...mockUser, email: 'new@example.com', emailVerified: false });
+
+      await service.updateEmail('uuid-user-1', { email: 'new@example.com' });
+
+      expect(mockAuditLogService.log).toHaveBeenCalledWith(
+        expect.objectContaining({
+          action: 'UPDATE_EMAIL',
+          module: 'users',
+          oldValues: { email: 'jake@example.com' },
+          newValues: { email: 'new@example.com' },
+        }),
+      );
     });
   });
 
@@ -123,18 +152,50 @@ describe('UsersService', () => {
         }),
       ).rejects.toThrow(UnauthorizedException);
     });
+
+    it('should fire an audit log on successful password change', async () => {
+      const hashed = await bcrypt.hash('oldpassword123', 10);
+      mockUsersRepository.findById.mockResolvedValue({ ...mockUser, password: hashed });
+      mockUsersRepository.update.mockResolvedValue(mockUser);
+
+      await service.updatePassword('uuid-user-1', {
+        oldPassword: 'oldpassword123',
+        newPassword: 'newpassword123',
+      });
+
+      expect(mockAuditLogService.log).toHaveBeenCalledWith(
+        expect.objectContaining({ action: 'UPDATE_PASSWORD', module: 'users' }),
+      );
+    });
   });
 
   describe('closeAccount', () => {
     it('should soft delete user and clear refresh tokens', async () => {
       mockUsersRepository.deleteRefreshTokens.mockResolvedValue(undefined);
-      mockUsersRepository.update.mockResolvedValue({ ...mockUser, status: 'deleted' });
+      mockUsersRepository.update.mockResolvedValue({ ...mockUser, status: 'deleted', deletedAt: new Date() });
 
       const result = await service.closeAccount('uuid-user-1');
 
       expect(result).toEqual({ success: true });
       expect(mockUsersRepository.deleteRefreshTokens).toHaveBeenCalledWith('uuid-user-1');
-      expect(mockUsersRepository.update).toHaveBeenCalledWith('uuid-user-1', { status: 'deleted' });
+      expect(mockUsersRepository.update).toHaveBeenCalledWith(
+        'uuid-user-1',
+        expect.objectContaining({
+          status: 'deleted',
+          deletedAt: expect.any(Date),
+        }),
+      );
+    });
+
+    it('should fire an audit log on account closure', async () => {
+      mockUsersRepository.deleteRefreshTokens.mockResolvedValue(undefined);
+      mockUsersRepository.update.mockResolvedValue({ ...mockUser, status: 'deleted' });
+
+      await service.closeAccount('uuid-user-1');
+
+      expect(mockAuditLogService.log).toHaveBeenCalledWith(
+        expect.objectContaining({ action: 'CLOSE_ACCOUNT', module: 'users' }),
+      );
     });
   });
 });

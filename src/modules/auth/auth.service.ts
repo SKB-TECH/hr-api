@@ -6,9 +6,10 @@ import {
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
-import { User } from '@prisma/client';
+import { User, UserRole, UserStatus, AuthProvider } from '@prisma/client';
 import { UsersRepository } from '../users/users.repository';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service';
+import { AuditLogService } from '../audit-logs/audit-log.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 
@@ -19,6 +20,7 @@ export class AuthService {
     private readonly jwtService: JwtService,
     private readonly config: ConfigService,
     private readonly prisma: PrismaService,
+    private readonly auditLogService: AuditLogService,
   ) {}
 
   async register(dto: RegisterDto) {
@@ -32,7 +34,14 @@ export class AuthService {
       firstName: dto.firstName,
       lastName: dto.lastName,
       role: dto.role,
-      status: 'active',
+      status: UserStatus.active,
+    });
+
+    void this.auditLogService.log({
+      userId: user.id,
+      action: 'REGISTER',
+      module: 'auth',
+      newValues: { email: user.email, role: user.role },
     });
 
     const tokens = await this.generateTokens(user, false);
@@ -47,12 +56,34 @@ export class AuthService {
     const valid = await bcrypt.compare(dto.password, user.password);
     if (!valid) throw new UnauthorizedException('Invalid credentials');
 
+    await this.usersRepository.update(user.id, { lastLogin: new Date() });
+
+    void this.auditLogService.log({
+      userId: user.id,
+      action: 'LOGIN',
+      module: 'auth',
+      newValues: { email: user.email },
+    });
+
     const tokens = await this.generateTokens(user, dto.rememberMe ?? false);
     return { user: this.sanitize(user), ...tokens };
   }
 
   async logout(refreshToken: string) {
+    const stored = await this.prisma.refreshToken.findUnique({
+      where: { token: refreshToken },
+    });
+
     await this.prisma.refreshToken.deleteMany({ where: { token: refreshToken } });
+
+    if (stored?.userId) {
+      void this.auditLogService.log({
+        userId: stored.userId,
+        action: 'LOGOUT',
+        module: 'auth',
+      });
+    }
+
     return { success: true };
   }
 
@@ -115,12 +146,21 @@ export class AuthService {
         firstName: googleUser.firstName,
         lastName: googleUser.lastName,
         avatar: googleUser.avatar,
-        provider: 'google',
-        role: 'CANDIDATE',
-        status: 'active',
+        provider: AuthProvider.google,
+        role: UserRole.CANDIDATE,
+        status: UserStatus.active,
         emailVerified: true,
       });
     }
+
+    await this.usersRepository.update(user.id, { lastLogin: new Date() });
+
+    void this.auditLogService.log({
+      userId: user.id,
+      action: 'GOOGLE_LOGIN',
+      module: 'auth',
+      newValues: { email: user.email },
+    });
 
     const tokens = await this.generateTokens(user, false);
     return { user: this.sanitize(user), ...tokens };
