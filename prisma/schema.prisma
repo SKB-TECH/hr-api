@@ -10,20 +10,21 @@ datasource db {
 }
 
 model User {
-  id               String            @id @default(uuid()) @db.Uuid
-  email            String            @unique
-  password         String?
-  firstName        String            @map("first_name")
-  lastName         String            @map("last_name")
-  role             UserRole          @default(CANDIDATE)
-  status           UserStatus        @default(pending)
-  provider         AuthProvider      @default(local)
-  avatar           String?
-  emailVerified    Boolean           @default(false) @map("email_verified")
-  createdAt        DateTime          @default(now()) @map("created_at")
-  updatedAt        DateTime          @updatedAt @map("updated_at")
-  refreshTokens    RefreshToken[]
-  candidateProfile CandidateProfile?
+  id                 String            @id @default(uuid()) @db.Uuid
+  email              String            @unique
+  password           String?
+  firstName          String            @map("first_name")
+  lastName           String            @map("last_name")
+  role               UserRole          @default(CANDIDATE)
+  status             UserStatus        @default(pending)
+  provider           AuthProvider      @default(local)
+  avatar             String?
+  emailVerified      Boolean           @default(false) @map("email_verified")
+  createdAt          DateTime          @default(now()) @map("created_at")
+  updatedAt          DateTime          @updatedAt @map("updated_at")
+  refreshTokens      RefreshToken[]
+  candidateProfile   CandidateProfile?
+  companyMemberships CompanyMember[]
 
   @@map("users")
 }
@@ -129,15 +130,51 @@ model Resume {
   id          String           @id @default(uuid()) @db.Uuid
   candidateId String           @map("candidate_id") @db.Uuid
   candidate   CandidateProfile @relation(fields: [candidateId], references: [id], onDelete: Cascade)
-
-  title    String
-  fileUrl  String @map("file_url")
-  publicId String @map("public_id")
-
-  isDefault Boolean @default(false) @map("is_default")
-  parsed    Boolean @default(false)
-
-  createdAt DateTime @default(now()) @map("created_at")
+  title       String
+  fileUrl     String           @map("file_url")
+  publicId    String           @map("public_id")
+  isDefault   Boolean          @default(false) @map("is_default")
+  parsed      Boolean          @default(false)
+  createdAt   DateTime         @default(now()) @map("created_at")
 
   @@map("resumes")
+}
+
+// ==========================================
+//               COMPANY MODULE
+// ==========================================
+
+model Company {
+  id             String          @id @default(uuid())
+  name           String
+  description    String?         @db.Text
+  location       String?
+  foundationDate DateTime?       @map("foundation_date")
+  companySize    String?         @map("company_size")
+  logo           String?
+  coverImage     String?         @map("cover_image")
+  website        String?
+  facebook       String?
+  twitter        String?
+  instagram      String?
+  linkedin       String?
+  youtube        String?
+  createdAt      DateTime        @default(now()) @map("created_at")
+  updatedAt      DateTime        @updatedAt @map("updated_at")
+  members        CompanyMember[]
+
+  @@map("companies")
+}
+
+model CompanyMember {
+  id        String   @id @default(uuid())
+  role      String
+  joinedAt  DateTime @default(now()) @map("joined_at")
+  userId    String   @map("user_id") @db.Uuid
+  companyId String   @map("company_id")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, companyId])
+  @@map("company_members")
 }
