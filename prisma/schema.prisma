@@ -57,9 +57,9 @@ model User {
   createdAt     DateTime     @default(now()) @map("created_at")
   updatedAt     DateTime     @updatedAt @map("updated_at")
 
-  // --- Relations ---
+  // Relations
   refreshTokens      RefreshToken[]
-  companyMemberships CompanyMember[] // <--- ADDED: This connects the User to their Companies
+  companyMemberships CompanyMember[]
 
   @@map("users")
 }
@@ -135,25 +135,42 @@ model JobApplication {
 // ==========================================
 
 model Company {
-  id          String   @id @default(uuid())
-  name        String
-  logo        String? // Optional logo URL
-  website     String?
-  description String?
-  location    String?
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  id String @id @default(uuid())
+
+  // Core Profile Info
+  name           String
+  description    String?   @db.Text
+  location       String?
+  foundationDate DateTime? @map("foundation_date")
+  companySize    String?   @map("company_size")
+
+  // Branding & Media
+  logo       String?
+  coverImage String? @map("cover_image")
+
+  // External Links
+  website   String?
+  facebook  String?
+  twitter   String?
+  instagram String?
+  linkedin  String?
+  youtube   String?
+
+  // Timestamps
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   // Relations
   members CompanyMember[]
-  // jobs     Job[]   // Will uncomment this when I build the Job Management module!
+  // TODO: Uncomment job relations once Job Management module is implemented
+  // jobs        Job[]   
 
-  @@map("companies") // <--- ADDED: Maps table name to plural snake_case
+  @@map("companies")
 }
 
 model CompanyMember {
   id       String   @id @default(uuid())
-  role     String // e.g., 'COMPANY_OWNER', 'HR_MANAGER'
+  role     String
   joinedAt DateTime @default(now()) @map("joined_at")
 
   // Foreign Keys
@@ -161,9 +178,10 @@ model CompanyMember {
   companyId String @map("company_id")
 
   // Relations
-  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade) // Added Cascade delete
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
   company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
 
-  @@unique([userId, companyId]) // Ensures a user can only have one membership per company
-  @@map("company_members") // <--- ADDED: Maps table name to clean snake_case
+  // Constraints
+  @@unique([userId, companyId])
+  @@map("company_members")
 }
