@@ -2,24 +2,22 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service';
 import { CreateCompanyDto } from './dto/create-company.dto';
 import { UpdateCompanyDto } from './dto/update-company.dto';
+import { QueryCompanyDto } from './dto/query-company.dto';
+import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class CompaniesService {
   constructor(private prisma: PrismaService) {}
 
   async create(createCompanyDto: CreateCompanyDto, userId: string) {
-    // Use a transaction to ensure both records are created safely
     return this.prisma.$transaction(async (prisma) => {
-      
-      // 1. Create the Company profile
       const company = await prisma.company.create({
         data: createCompanyDto,
       });
 
-      // 2. Link the User as the COMPANY_OWNER
       await prisma.companyMember.create({
         data: {
-          userId: userId,
+          userId,
           companyId: company.id,
           role: 'COMPANY_OWNER',
         },
@@ -29,26 +27,71 @@ export class CompaniesService {
     });
   }
 
-  async findAll() {
-    return this.prisma.company.findMany({
-      orderBy: { createdAt: 'desc' }
-    });
+  async findAll(query: QueryCompanyDto = {}) {
+    const { search, location, industry, companySize, page = 1, limit = 12 } = query;
+    const skip = (page - 1) * limit;
+
+    const where: Prisma.CompanyWhereInput = {
+      ...(search && {
+        OR: [
+          { name: { contains: search, mode: 'insensitive' } },
+          { description: { contains: search, mode: 'insensitive' } },
+        ],
+      }),
+      ...(location && { location: { contains: location, mode: 'insensitive' } }),
+      ...(industry && { industry: { contains: industry, mode: 'insensitive' } }),
+      ...(companySize && { companySize }),
+    };
+
+    const [data, totalItems] = await this.prisma.$transaction([
+      this.prisma.company.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+          logo: true,
+          description: true,
+          industry: true,
+          location: true,
+          companySize: true,
+          website: true,
+          createdAt: true,
+        },
+      }),
+      this.prisma.company.count({ where }),
+    ]);
+
+    const totalPages = Math.ceil(totalItems / limit);
+
+    return {
+      data,
+      meta: {
+        totalItems,
+        totalPages,
+        currentPage: page,
+        hasNextPage: page < totalPages,
+        hasPreviousPage: page > 1,
+      },
+    };
   }
-// --- NEW: Fetch Company Profile ---
+
   async findOne(id: string) {
     const company = await this.prisma.company.findUnique({
       where: { id },
-      include: { members: true }, // Includes the team members for the frontend
+      include: { members: true },
     });
-    
+
     if (!company) throw new NotFoundException('Company not found');
     return company;
   }
 
-  // --- NEW: Update Company Settings ---
-  async update(id: string, updateCompanyDto: UpdateCompanyDto) { // Using 'any' briefly to avoid DTO import errors while we rush
-    await this.findOne(id); // Verify it exists first
-    
+  async update(id: string, updateCompanyDto: UpdateCompanyDto) {
+    await this.findOne(id);
+
     return this.prisma.company.update({
       where: { id },
       data: updateCompanyDto,

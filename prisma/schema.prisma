@@ -147,7 +147,9 @@ model Resume {
 model Company {
   id             String          @id @default(uuid())
   name           String
+  slug           String?         @unique
   description    String?         @db.Text
+  industry       String?
   location       String?
   foundationDate DateTime?       @map("foundation_date")
   companySize    String?         @map("company_size")
