@@ -10,6 +10,9 @@ import { CloudinaryModule } from './infrastructure/cloudinary/cloudinary.module'
 
 
 import { CandidateProfileModule } from './modules/candidate-profile/candidate-profile.module';
+import { CandidateResumeModule } from './modules/candidate-resume/candidate-resume.module';
+import { CandidateResumeController } from './modules/candidate-resume/candidate-resume.controller';
+import { CandidateResumeService } from './modules/candidate-resume/candidate-resume.service';
 
 @Module({
   imports: [
@@ -36,8 +39,9 @@ import { CandidateProfileModule } from './modules/candidate-profile/candidate-pr
     PrismaModule,
     AuthModule,
     CandidateProfileModule,
+    CandidateResumeModule,
   ],
-  controllers: [],
-  providers: [],
+  controllers: [CandidateResumeController],
+  providers: [CandidateResumeService],
 })
 export class AppModule {}

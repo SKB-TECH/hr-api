@@ -2,6 +2,7 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
 import { UpdateUserCandidateProfileDto } from './update-candidate-profile.dto';
 
+// dto for uploading candidate profile data and avatar file 
 export class CandidateProfileUploadDto {
   @ApiPropertyOptional({ 
     type: 'string', 

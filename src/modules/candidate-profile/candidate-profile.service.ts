@@ -3,13 +3,15 @@ import { Injectable, NotFoundException, BadRequestException,ConflictException, }
 
 import { CandidateProfilesRepository } from './candidateProfiles.repository';
 import { UpdateUserCandidateProfileDto } from './dto/update-candidate-profile.dto';
-import { CloudinaryService } from '../../infrastructure/cloudinary/cloudinary.service';
+import { CloudinaryService } from '@/infrastructure/cloudinary/cloudinary.service';
+
 
 @Injectable()
 export class CandidateProfilesService {
   constructor(
     private readonly profilesRepository: CandidateProfilesRepository,
     private readonly cloudinaryService: CloudinaryService,
+    
   ) {}
 
   //geting user prifile data
@@ -21,7 +23,7 @@ export class CandidateProfilesService {
     const { password, ...sanitizedUser } = userWithProfile;
     return sanitizedUser;
   }
-
+  // service to update canditade profile
   async updateCandidateProfile(
     userId: string, 
     dto: UpdateUserCandidateProfileDto,
@@ -44,7 +46,7 @@ export class CandidateProfilesService {
         oldPublicId = `${folderName}/${publicIdWithoutExtension}`;
       }
 
-      const uploadResult = await this.cloudinaryService.replaceFile(file, oldPublicId, 'infinity_profile_images');
+      const uploadResult = await this.cloudinaryService.replaceFile(file, oldPublicId, 'infinity_profiles_images');
       dto.avatar = uploadResult.secure_url;
     }
 
