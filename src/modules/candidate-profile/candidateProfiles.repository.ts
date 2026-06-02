@@ -1,6 +1,6 @@
 // src/modules/candidate-profile/candidateProfiles.repository.ts
 import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../../infrastructure/prisma/prisma.service';
+import { PrismaService } from '@/infrastructure/prisma/prisma.service';
 import { UpdateUserCandidateProfileDto } from './dto/update-candidate-profile.dto';
 
 @Injectable()

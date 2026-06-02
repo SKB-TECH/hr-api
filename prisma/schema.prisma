@@ -1,11 +1,11 @@
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
   previewFeatures = ["postgresqlExtensions"]
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
   extensions = [uuidOssp(map: "uuid-ossp")]
 }
 
@@ -29,6 +29,7 @@ model User {
   deletedAt          DateTime?         @map("deleted_at")
   refreshTokens      RefreshToken[]
   candidateProfile   CandidateProfile?
+  companyMemberships CompanyMember[]
   auditLogs          AuditLog[]
 
   @@map("users")
@@ -109,6 +110,7 @@ model CandidateProfile {
   userId            String            @unique @map("user_id") @db.Uuid
   user              User              @relation(fields: [userId], references: [id], onDelete: Cascade)
   gender            String?
+  phone             Int?              @map("phone_number")
   birthDate         DateTime?         @map("birth_date")
   headline          String?
   bio               String?
@@ -128,8 +130,23 @@ model CandidateProfile {
   openToWork        Boolean           @default(true) @map("open_to_work")
   createdAt         DateTime          @default(now()) @map("created_at")
   updatedAt         DateTime          @updatedAt @map("updated_at")
+  resumes           Resume[]
 
   @@map("candidate_profiles")
+}
+
+model Resume {
+  id          String           @id @default(uuid()) @db.Uuid
+  candidateId String           @map("candidate_id") @db.Uuid
+  candidate   CandidateProfile @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  title       String
+  fileUrl     String           @map("file_url")
+  publicId    String           @map("public_id")
+  isDefault   Boolean          @default(false) @map("is_default")
+  parsed      Boolean          @default(false)
+  createdAt   DateTime         @default(now()) @map("created_at")
+
+  @@map("resumes")
 }
 
 model AuditLog {
@@ -148,4 +165,45 @@ model AuditLog {
   @@index([module])
   @@index([createdAt])
   @@map("audit_logs")
+}
+
+// ==========================================
+//               COMPANY MODULE
+// ==========================================
+
+model Company {
+  id             String          @id @default(uuid())
+  name           String
+  slug           String?         @unique
+  description    String?         @db.Text
+  industry       String?
+  location       String?
+  foundationDate DateTime?       @map("foundation_date")
+  companySize    String?         @map("company_size")
+  logo           String?
+  coverImage     String?         @map("cover_image")
+  website        String?
+  facebook       String?
+  twitter        String?
+  instagram      String?
+  linkedin       String?
+  youtube        String?
+  createdAt      DateTime        @default(now()) @map("created_at")
+  updatedAt      DateTime        @updatedAt @map("updated_at")
+  members        CompanyMember[]
+
+  @@map("companies")
+}
+
+model CompanyMember {
+  id        String   @id @default(uuid())
+  role      String
+  joinedAt  DateTime @default(now()) @map("joined_at")
+  userId    String   @map("user_id") @db.Uuid
+  companyId String   @map("company_id")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, companyId])
+  @@map("company_members")
 }
