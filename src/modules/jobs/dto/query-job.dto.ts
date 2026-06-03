@@ -1,4 +1,12 @@
-import { IsOptional, IsString, IsInt, Min, IsEnum, IsNumber, IsArray } from 'class-validator';
+import {
+  IsOptional,
+  IsString,
+  IsInt,
+  Min,
+  IsEnum,
+  IsNumber,
+  IsArray,
+} from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Type, Transform } from 'class-transformer';
 import { EmploymentType, JobLevel, JobCategory } from '@prisma/client';
@@ -13,12 +21,18 @@ export enum JobSortOption {
 export class QueryJobDto {
   @IsOptional()
   @IsString()
-  @ApiPropertyOptional({ example: 'Social Media', description: 'Search by job title or keyword' })
+  @ApiPropertyOptional({
+    example: 'Social Media',
+    description: 'Search by job title or keyword',
+  })
   keyword?: string;
 
   @IsOptional()
   @IsString()
-  @ApiPropertyOptional({ example: 'Paris, France', description: 'Filter by location' })
+  @ApiPropertyOptional({
+    example: 'Paris, France',
+    description: 'Filter by location',
+  })
   location?: string;
 
   @IsOptional()
@@ -73,7 +87,10 @@ export class QueryJobDto {
 
   @IsOptional()
   @IsEnum(JobSortOption)
-  @ApiPropertyOptional({ enum: JobSortOption, default: JobSortOption.MOST_RELEVANT })
+  @ApiPropertyOptional({
+    enum: JobSortOption,
+    default: JobSortOption.MOST_RELEVANT,
+  })
   sort?: JobSortOption = JobSortOption.MOST_RELEVANT;
 
   @IsOptional()

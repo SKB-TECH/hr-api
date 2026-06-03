@@ -19,7 +19,12 @@ const mockJobCard = {
   capacity: 10,
   applyBefore: new Date('2026-07-31'),
   postedAt: new Date('2026-07-01'),
-  company: { id: 'uuid-company-1', name: 'Stripe', logo: null, location: 'Paris, France' },
+  company: {
+    id: 'uuid-company-1',
+    name: 'Stripe',
+    logo: null,
+    location: 'Paris, France',
+  },
 };
 
 const mockPaginatedResult = {
@@ -73,7 +78,9 @@ describe('JobsController', () => {
     it('should forward employment type filter to service', async () => {
       mockJobsService.findAll.mockResolvedValue(mockPaginatedResult);
 
-      const query = { employmentType: [EmploymentType.FULL_TIME, EmploymentType.REMOTE] };
+      const query = {
+        employmentType: [EmploymentType.FULL_TIME, EmploymentType.REMOTE],
+      };
       await controller.findAll(query);
 
       expect(mockJobsService.findAll).toHaveBeenCalledWith(query);
@@ -82,7 +89,10 @@ describe('JobsController', () => {
     it('should forward category and job level filters to service', async () => {
       mockJobsService.findAll.mockResolvedValue(mockPaginatedResult);
 
-      const query = { category: [JobCategory.DESIGN], jobLevel: [JobLevel.MID_LEVEL] };
+      const query = {
+        category: [JobCategory.DESIGN],
+        jobLevel: [JobLevel.MID_LEVEL],
+      };
       await controller.findAll(query);
 
       expect(mockJobsService.findAll).toHaveBeenCalledWith(query);
@@ -109,7 +119,13 @@ describe('JobsController', () => {
     it('should return empty data when no jobs match', async () => {
       mockJobsService.findAll.mockResolvedValue({
         data: [],
-        meta: { totalItems: 0, totalPages: 0, currentPage: 1, hasNextPage: false, hasPreviousPage: false },
+        meta: {
+          totalItems: 0,
+          totalPages: 0,
+          currentPage: 1,
+          hasNextPage: false,
+          hasPreviousPage: false,
+        },
       });
 
       const result = await controller.findAll({ keyword: 'nonexistent' });
@@ -130,9 +146,13 @@ describe('JobsController', () => {
     });
 
     it('should propagate NotFoundException from service', async () => {
-      mockJobsService.findOne.mockRejectedValue(new NotFoundException('Job not found'));
+      mockJobsService.findOne.mockRejectedValue(
+        new NotFoundException('Job not found'),
+      );
 
-      await expect(controller.findOne('bad-uuid')).rejects.toThrow(NotFoundException);
+      await expect(controller.findOne('bad-uuid')).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 });

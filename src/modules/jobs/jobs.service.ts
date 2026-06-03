@@ -118,7 +118,9 @@ export class JobsService {
     return job;
   }
 
-  private buildOrderBy(sort: JobSortOption): Prisma.JobOrderByWithRelationInput {
+  private buildOrderBy(
+    sort: JobSortOption,
+  ): Prisma.JobOrderByWithRelationInput {
     switch (sort) {
       case JobSortOption.NEWEST:
         return { postedAt: 'desc' };

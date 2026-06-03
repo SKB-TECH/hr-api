@@ -1,6 +1,11 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { NotFoundException } from '@nestjs/common';
-import { EmploymentType, JobLevel, JobCategory, JobStatus } from '@prisma/client';
+import {
+  EmploymentType,
+  JobLevel,
+  JobCategory,
+  JobStatus,
+} from '@prisma/client';
 import { JobsService } from './jobs.service';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service';
 import { JobSortOption } from './dto/query-job.dto';
@@ -40,7 +45,13 @@ const mockJobDetail = {
   createdAt: new Date(),
   updatedAt: new Date(),
   skills: [{ id: 'uuid-skill-1', name: 'Copywriting' }],
-  benefits: [{ id: 'uuid-benefit-1', title: 'Full Healthcare', description: 'We cover all healthcare.' }],
+  benefits: [
+    {
+      id: 'uuid-benefit-1',
+      title: 'Full Healthcare',
+      description: 'We cover all healthcare.',
+    },
+  ],
 };
 
 const mockPrismaService = {
@@ -101,7 +112,9 @@ describe('JobsService', () => {
     it('should filter by employment type', async () => {
       mockPrismaService.$transaction.mockResolvedValue([[mockJob], 1]);
 
-      const result = await service.findAll({ employmentType: [EmploymentType.FULL_TIME] });
+      const result = await service.findAll({
+        employmentType: [EmploymentType.FULL_TIME],
+      });
 
       expect(result.data).toHaveLength(1);
     });
@@ -119,7 +132,9 @@ describe('JobsService', () => {
     it('should filter by category', async () => {
       mockPrismaService.$transaction.mockResolvedValue([[mockJob], 1]);
 
-      const result = await service.findAll({ category: [JobCategory.MARKETING] });
+      const result = await service.findAll({
+        category: [JobCategory.MARKETING],
+      });
 
       expect(result.data).toHaveLength(1);
     });
@@ -127,7 +142,9 @@ describe('JobsService', () => {
     it('should filter by job level', async () => {
       mockPrismaService.$transaction.mockResolvedValue([[mockJob], 1]);
 
-      const result = await service.findAll({ jobLevel: [JobLevel.ENTRY_LEVEL] });
+      const result = await service.findAll({
+        jobLevel: [JobLevel.ENTRY_LEVEL],
+      });
 
       expect(result.data).toHaveLength(1);
     });
@@ -181,7 +198,10 @@ describe('JobsService', () => {
     });
 
     it('should return correct hasNextPage when more pages exist', async () => {
-      const jobs = Array.from({ length: 10 }, (_, i) => ({ ...mockJob, id: `uuid-job-${i}` }));
+      const jobs = Array.from({ length: 10 }, (_, i) => ({
+        ...mockJob,
+        id: `uuid-job-${i}`,
+      }));
       mockPrismaService.$transaction.mockResolvedValue([jobs, 73]);
 
       const result = await service.findAll({ page: 1, limit: 10 });
@@ -193,7 +213,10 @@ describe('JobsService', () => {
     });
 
     it('should return correct hasPreviousPage on page 2', async () => {
-      const jobs = Array.from({ length: 10 }, (_, i) => ({ ...mockJob, id: `uuid-job-${i}` }));
+      const jobs = Array.from({ length: 10 }, (_, i) => ({
+        ...mockJob,
+        id: `uuid-job-${i}`,
+      }));
       mockPrismaService.$transaction.mockResolvedValue([jobs, 73]);
 
       const result = await service.findAll({ page: 2, limit: 10 });
@@ -229,13 +252,17 @@ describe('JobsService', () => {
     it('should throw NotFoundException when job does not exist', async () => {
       mockPrismaService.job.findFirst.mockResolvedValue(null);
 
-      await expect(service.findOne('bad-uuid')).rejects.toThrow(NotFoundException);
+      await expect(service.findOne('bad-uuid')).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('should throw NotFoundException for a deleted job', async () => {
       mockPrismaService.job.findFirst.mockResolvedValue(null);
 
-      await expect(service.findOne('uuid-deleted-job')).rejects.toThrow(NotFoundException);
+      await expect(service.findOne('uuid-deleted-job')).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 });
