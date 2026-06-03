@@ -5,17 +5,17 @@ import { CandidateProfilesService } from './candidate-profile.service';
 import { UserCandidateEntity } from './entities/candidate-profile.entity';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { UpdateUserCandidateProfileDto } from './dto/update-candidate-profile.dto';
-import { CandidateProfileUploadDto } from './dto/candidate-profile-upload.dto'; // ✅ Imported
-import { ParseProfileJsonPipe } from '../../common/pipes/parse-json.pipe'; // ✅ Imported custom parsing pipe
-import { RolesGuard } from './guards/roles.guard';
-import { Roles } from './decorators/roles.decorator';
+import { CandidateProfileUploadDto } from './dto/candidate-profile-upload.dto'; 
+import { ParseProfileJsonPipe } from '../../common/pipes/parse-json.pipe'; 
+import { RolesGuard } from '@/common/guards/roles.guard';
+import { Roles } from '@/common/decorators/roles.decorator';
 import { UserRole } from '@prisma/client';
-import { Express } from 'express';
 
 
 
 
-@ApiTags('CandidateProfiles')
+
+@ApiTags('Candidate-Profiles')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('candidate')

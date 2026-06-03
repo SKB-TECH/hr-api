@@ -1,12 +1,12 @@
 import {Controller,Post,Get,Delete,Patch,Param,UploadedFile,UseInterceptors,Body, ParseUUIDPipe,} from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { CandidateResumeService } from './candidate-resume.service';
-import { RolesGuard } from '../candidate-profile/guards/roles.guard';
+import { RolesGuard } from '@/common/guards/roles.guard';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags, ApiConsumes, ApiBody} from '@nestjs/swagger';
 import {UseGuards,Req} from '@nestjs/common';
 import { ResumeFileInterceptor } from './interceptors/resume-upload.interceptor';
-import { Roles } from '../candidate-profile/decorators/roles.decorator';
+import { Roles } from '@/common/decorators/roles.decorator';
 import { UserRole } from '@prisma/client';
 
 
