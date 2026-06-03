@@ -21,6 +21,11 @@ export class CreateCompanyDto {
   @IsDateString()
   foundationDate?: string;
 
+  @ApiPropertyOptional({ example: 'Design', description: 'Industry or category of the company' })
+  @IsOptional()
+  @IsString()
+  industry?: string;
+
   @ApiPropertyOptional({ example: '50-100 employees' })
   @IsOptional()
   @IsString()
