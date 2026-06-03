@@ -5,6 +5,7 @@ import { CloudinaryService } from '@/infrastructure/cloudinary/cloudinary.servic
 import { CandidateProfilesRepository } from './candidate-resume.repository';
 import { InternalServerErrorException } from '@nestjs/common';
 
+
 describe('CandidateResumeService', () => {
   let service: CandidateResumeService;
   let prisma: PrismaService;

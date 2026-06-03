@@ -4,7 +4,8 @@ import { CloudinaryService } from '@/infrastructure/cloudinary/cloudinary.servic
 import { NotFoundException } from '@nestjs/common';
 import { CandidateProfilesService } from '../candidate-profile/candidate-profile.service';
 import { CandidateProfilesRepository } from './candidate-resume.repository';
-import { profile } from 'console';
+import { validate as isUuid } from 'uuid';
+
 
 
 
@@ -19,9 +20,9 @@ export class CandidateResumeService {
     private candidateProfileRepository: CandidateProfilesRepository,
   ) {}
 
-private logDebug(label: string, data: any) {
-  console.log(`[DEBUG - ${label}]:`, JSON.stringify(data, null, 2));
-}
+// private logDebug(label: string, data: any) {
+//   console.log(`[DEBUG - ${label}]:`, JSON.stringify(data, null, 2));
+// }
 
 // service method to upload a resume file, store it in cloudinary
 async uploadResume(file: any, userId: string, title: string) {
@@ -85,6 +86,9 @@ async uploadResume(file: any, userId: string, title: string) {
 }
 
   async getAll(userId: string) {
+    if(!isUuid(userId)) {
+      throw new BadRequestException('Invalid user ID format');
+    }
     const candidateId = await this.candidateProfileRepository.getCandidateProfileId(userId);
     return this.prisma.resume.findMany({
       where: { candidateId },
@@ -93,6 +97,9 @@ async uploadResume(file: any, userId: string, title: string) {
 
 // service method to set a resume as default for a candidate, ensuring only one default resume per candidate
 async setDefault(resumeId: string, userId: string) {
+  if(!isUuid(userId)) {
+    throw new BadRequestException('Invalid user ID format');
+  }
   const candidateId = await this.candidateProfileRepository.getCandidateProfileId(userId);
   const currentDefault = await this.prisma.resume.findFirst({
     where: { candidateId, isDefault: true },
@@ -119,15 +126,51 @@ async setDefault(resumeId: string, userId: string) {
 
 // service method to get the default resume for a candidate
 async getDefault(userId: string) {
+  if(!isUuid(userId)) {
+    throw new BadRequestException('Invalid user ID format');
+  }
   const candidateId = await this.candidateProfileRepository .getCandidateProfileId(userId);
   return this.prisma.resume.findFirst({
     where: { candidateId, isDefault: true },
   });
 }
 
+async getPublicDefault(candidateId: string) {
+  if (!isUuid(candidateId)) {
+    throw new BadRequestException('Invalid candidate ID');
+  }
+
+  const candidateExists = await this.prisma.candidateProfile.count({
+    where: { id: candidateId },
+  });
+
+  if (!candidateExists) {
+    throw new NotFoundException('Candidate does not exist');
+  }
+
+  const resume = await this.prisma.resume.findFirst({
+    where: {
+      candidateId,
+      isDefault: true,
+    },
+  });
+
+  if (!resume) {
+    throw new NotFoundException('Default resume not found');
+  }
+
+  return resume;
+}
+
 
   // service method to delete a resume, including the file from cloudinary
 async deleteResume(id: string, userId: string) {
+  if (!isUuid(id)) {
+    throw new BadRequestException('Invalid resume ID format');
+  }
+  if(!isUuid(userId)) {
+    throw new BadRequestException('Invalid user ID format');
+  }
   const resume = await this.prisma.resume.findUnique({
     where: { id },
   });
