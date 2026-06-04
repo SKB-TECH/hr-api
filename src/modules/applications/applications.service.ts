@@ -242,12 +242,28 @@ export class ApplicationsService {
     return application;
   }
 
-  async updateStage(id: string, dto: UpdateApplicationStageDto) {
-    await this.findOne(id);
-    return this.prisma.application.update({
-      where: { id },
-      data: { status: dto.status },
-    });
+  async updateStage(
+    id: string,
+    dto: UpdateApplicationStageDto,
+    changedById: string,
+  ) {
+    const application = await this.findOne(id);
+
+    return this.prisma.$transaction([
+      this.prisma.application.update({
+        where: { id },
+        data: { status: dto.status },
+      }),
+      this.prisma.applicationStageHistory.create({
+        data: {
+          applicationId: id,
+          oldStatus: application.status,
+          newStatus: dto.status,
+          changedById,
+          note: dto.notes,
+        },
+      }),
+    ]);
   }
 
   async updateScore(id: string, dto: UpdateApplicationScoreDto) {
@@ -255,6 +271,14 @@ export class ApplicationsService {
     return this.prisma.application.update({
       where: { id },
       data: { score: dto.score },
+    });
+  }
+
+  async getStageHistory(id: string) {
+    await this.findOne(id);
+    return this.prisma.applicationStageHistory.findMany({
+      where: { applicationId: id },
+      orderBy: { createdAt: 'desc' },
     });
   }
 }

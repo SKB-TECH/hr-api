@@ -14,7 +14,13 @@ const mockPaginatedResult = {
       ipAddress: '127.0.0.1',
       userAgent: 'Mozilla/5.0',
       createdAt: new Date(),
-      user: { id: 'uuid-user-1', email: 'admin@example.com', firstName: 'Admin', lastName: 'User', role: 'ADMIN' },
+      user: {
+        id: 'uuid-user-1',
+        email: 'admin@example.com',
+        firstName: 'Admin',
+        lastName: 'User',
+        role: 'ADMIN',
+      },
     },
   ],
   meta: {
@@ -56,7 +62,12 @@ describe('AuditLogController', () => {
     it('should forward query filters to the service', async () => {
       mockAuditLogService.findAll.mockResolvedValue(mockPaginatedResult);
 
-      const query = { module: 'users', action: 'UPDATE_EMAIL', page: 1, limit: 10 };
+      const query = {
+        module: 'users',
+        action: 'UPDATE_EMAIL',
+        page: 1,
+        limit: 10,
+      };
       await controller.findAll(query);
 
       expect(mockAuditLogService.findAll).toHaveBeenCalledWith(query);
@@ -65,7 +76,13 @@ describe('AuditLogController', () => {
     it('should return empty data array when no logs match filters', async () => {
       mockAuditLogService.findAll.mockResolvedValue({
         data: [],
-        meta: { totalItems: 0, totalPages: 0, currentPage: 1, hasNextPage: false, hasPreviousPage: false },
+        meta: {
+          totalItems: 0,
+          totalPages: 0,
+          currentPage: 1,
+          hasNextPage: false,
+          hasPreviousPage: false,
+        },
       });
 
       const result = await controller.findAll({ module: 'nonexistent' });

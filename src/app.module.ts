@@ -15,7 +15,6 @@ import { CompaniesModule } from './modules/companies/companies.module';
 import { AuditLogModule } from './modules/audit-logs/audit-log.module';
 import { JobsModule } from './modules/jobs/jobs.module';
 import { ApplicationsModule } from './modules/applications/applications.module';
-import { InterviewsModule } from './modules/interviews/interviews.module';
 
 @Module({
   imports: [
@@ -34,7 +33,6 @@ import { InterviewsModule } from './modules/interviews/interviews.module';
     AuditLogModule,
     JobsModule,
     ApplicationsModule,
-    InterviewsModule,
   ],
   controllers: [CandidateResumeController],
   providers: [CandidateResumeService],

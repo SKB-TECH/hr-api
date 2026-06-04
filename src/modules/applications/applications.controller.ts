@@ -87,8 +87,15 @@ export class ApplicationsController {
   updateStage(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateApplicationStageDto,
+    @CurrentUser() user: { id: string },
   ) {
-    return this.applicationsService.updateStage(id, dto);
+    return this.applicationsService.updateStage(id, dto, user.id);
+  }
+
+  @Get(':id/history')
+  @ApiOperation({ summary: 'Get stage change history with notes (screen 3.7)' })
+  getStageHistory(@Param('id', ParseUUIDPipe) id: string) {
+    return this.applicationsService.getStageHistory(id);
   }
 
   @Patch(':id/score')

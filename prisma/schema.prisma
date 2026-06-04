@@ -32,6 +32,7 @@ model User {
   companyMemberships CompanyMember[]
   auditLogs          AuditLog[]
   applications       Application[]
+  stageHistories     ApplicationStageHistory[]
 
   @@map("users")
 }
@@ -143,9 +144,10 @@ model Resume {
   title       String
   fileUrl     String           @map("file_url")
   publicId    String           @map("public_id")
-  isDefault   Boolean          @default(false) @map("is_default")
-  parsed      Boolean          @default(false)
-  createdAt   DateTime         @default(now()) @map("created_at")
+  isDefault    Boolean       @default(false) @map("is_default")
+  parsed       Boolean       @default(false)
+  createdAt    DateTime      @default(now()) @map("created_at")
+  applications Application[]
 
   @@map("resumes")
 }
@@ -183,31 +185,48 @@ enum ApplicationStatus {
 }
 
 model Application {
-  id               String            @id @default(uuid()) @db.Uuid
-  jobId            String            @map("job_id") @db.Uuid
-  job              Job               @relation(fields: [jobId], references: [id], onDelete: Cascade)
-  candidateId      String            @map("candidate_id") @db.Uuid
-  candidate        User              @relation(fields: [candidateId], references: [id], onDelete: Cascade)
-  fullName         String            @map("full_name")
+  id               String                    @id @default(uuid()) @db.Uuid
+  jobId            String                    @map("job_id") @db.Uuid
+  job              Job                       @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  candidateId      String                    @map("candidate_id") @db.Uuid
+  candidate        User                      @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  resumeId         String?                   @map("resume_id") @db.Uuid
+  resume           Resume?                   @relation(fields: [resumeId], references: [id], onDelete: SetNull)
+  fullName         String                    @map("full_name")
   email            String
   phone            String?
-  currentJobTitle  String?           @map("current_job_title")
-  linkedinUrl      String?           @map("linkedin_url")
-  portfolioUrl     String?           @map("portfolio_url")
-  coverLetter      String?           @map("cover_letter") @db.Text
-  resumeUrl        String?           @map("resume_url")
-  status           ApplicationStatus @default(IN_REVIEW)
-  score            Decimal?          @db.Decimal(3, 2)
-  appliedAt        DateTime          @default(now()) @map("applied_at")
-  createdAt        DateTime          @default(now()) @map("created_at")
-  updatedAt        DateTime          @updatedAt @map("updated_at")
+  currentJobTitle  String?                   @map("current_job_title")
+  linkedinUrl      String?                   @map("linkedin_url")
+  portfolioUrl     String?                   @map("portfolio_url")
+  coverLetter      String?                   @map("cover_letter") @db.Text
+  status           ApplicationStatus         @default(IN_REVIEW)
+  score            Decimal?                  @db.Decimal(3, 2)
+  appliedAt        DateTime                  @default(now()) @map("applied_at")
+  createdAt        DateTime                  @default(now()) @map("created_at")
+  updatedAt        DateTime                  @updatedAt @map("updated_at")
   interviews       Interview[]
+  stageHistory     ApplicationStageHistory[]
 
   @@unique([jobId, candidateId])
   @@index([candidateId])
   @@index([jobId])
   @@index([status])
   @@map("applications")
+}
+
+model ApplicationStageHistory {
+  id            String            @id @default(uuid()) @db.Uuid
+  applicationId String            @map("application_id") @db.Uuid
+  application   Application       @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  oldStatus     ApplicationStatus @map("old_status")
+  newStatus     ApplicationStatus @map("new_status")
+  changedById   String            @map("changed_by") @db.Uuid
+  changedBy     User              @relation(fields: [changedById], references: [id], onDelete: Cascade)
+  note          String?           @db.Text
+  createdAt     DateTime          @default(now()) @map("created_at")
+
+  @@index([applicationId])
+  @@map("application_stage_history")
 }
 
 // ==========================================

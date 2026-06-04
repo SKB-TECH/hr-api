@@ -43,6 +43,10 @@ const mockPrismaService = {
     update: jest.fn(),
     groupBy: jest.fn(),
   },
+  applicationStageHistory: {
+    create: jest.fn(),
+    findMany: jest.fn(),
+  },
   $transaction: jest.fn(),
 };
 
@@ -217,18 +221,29 @@ describe('ApplicationsService', () => {
         status: ApplicationStatus.SHORTLISTED,
       });
 
-      const result = await service.updateStage('uuid-app-1', {
-        status: ApplicationStatus.SHORTLISTED,
-      });
+      mockPrismaService.$transaction.mockResolvedValue([
+        { ...mockApplication, status: ApplicationStatus.SHORTLISTED },
+        { id: 'uuid-history-1' },
+      ]);
 
-      expect(result.status).toBe(ApplicationStatus.SHORTLISTED);
+      const result = await service.updateStage(
+        'uuid-app-1',
+        { status: ApplicationStatus.SHORTLISTED },
+        'uuid-user-1',
+      );
+
+      expect(result[0].status).toBe(ApplicationStatus.SHORTLISTED);
     });
 
     it('should throw NotFoundException for non-existent application', async () => {
       mockPrismaService.application.findUnique.mockResolvedValue(null);
 
       await expect(
-        service.updateStage('bad-id', { status: ApplicationStatus.HIRED }),
+        service.updateStage(
+          'bad-id',
+          { status: ApplicationStatus.HIRED },
+          'uuid-user-1',
+        ),
       ).rejects.toThrow(NotFoundException);
     });
   });

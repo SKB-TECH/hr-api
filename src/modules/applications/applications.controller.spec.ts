@@ -133,16 +133,18 @@ describe('ApplicationsController', () => {
 
   describe('updateStage', () => {
     it('should update application hiring stage', async () => {
-      mockApplicationsService.updateStage.mockResolvedValue({
-        ...mockApplication,
-        status: ApplicationStatus.SHORTLISTED,
-      });
+      mockApplicationsService.updateStage.mockResolvedValue([
+        { ...mockApplication, status: ApplicationStatus.SHORTLISTED },
+        { id: 'uuid-history-1' },
+      ]);
 
-      const result = await controller.updateStage('uuid-app-1', {
-        status: ApplicationStatus.SHORTLISTED,
-      });
+      const result = await controller.updateStage(
+        'uuid-app-1',
+        { status: ApplicationStatus.SHORTLISTED },
+        { id: 'uuid-user-1' },
+      );
 
-      expect(result.status).toBe(ApplicationStatus.SHORTLISTED);
+      expect(result[0].status).toBe(ApplicationStatus.SHORTLISTED);
     });
   });
 

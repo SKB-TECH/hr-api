@@ -40,7 +40,10 @@ export class CreateApplicationDto {
   coverLetter?: string;
 
   @IsOptional()
-  @IsString()
-  @ApiPropertyOptional({ example: 'https://cdn.example.com/resume.pdf' })
-  resumeUrl?: string;
+  @IsUUID()
+  @ApiPropertyOptional({
+    example: 'uuid-resume-1',
+    description: 'ID of saved resume to attach',
+  })
+  resumeId?: string;
 }

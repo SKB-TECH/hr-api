@@ -8,7 +8,11 @@ const mockUsersService = {
   closeAccount: jest.fn(),
 };
 
-const mockUser = { id: 'uuid-user-1', email: 'jake@example.com', role: 'CANDIDATE' };
+const mockUser = {
+  id: 'uuid-user-1',
+  email: 'jake@example.com',
+  role: 'CANDIDATE',
+};
 
 describe('UsersController', () => {
   let controller: UsersController;
@@ -25,12 +29,19 @@ describe('UsersController', () => {
 
   describe('updateEmail', () => {
     it('should call usersService.updateEmail and return updated user', async () => {
-      mockUsersService.updateEmail.mockResolvedValue({ ...mockUser, email: 'new@example.com' });
+      mockUsersService.updateEmail.mockResolvedValue({
+        ...mockUser,
+        email: 'new@example.com',
+      });
 
-      const result = await controller.updateEmail(mockUser, { email: 'new@example.com' });
+      const result = await controller.updateEmail(mockUser, {
+        email: 'new@example.com',
+      });
 
       expect(result.email).toBe('new@example.com');
-      expect(mockUsersService.updateEmail).toHaveBeenCalledWith('uuid-user-1', { email: 'new@example.com' });
+      expect(mockUsersService.updateEmail).toHaveBeenCalledWith('uuid-user-1', {
+        email: 'new@example.com',
+      });
     });
   });
 
@@ -44,10 +55,13 @@ describe('UsersController', () => {
       });
 
       expect(result).toEqual({ success: true });
-      expect(mockUsersService.updatePassword).toHaveBeenCalledWith('uuid-user-1', {
-        oldPassword: 'oldpassword123',
-        newPassword: 'newpassword123',
-      });
+      expect(mockUsersService.updatePassword).toHaveBeenCalledWith(
+        'uuid-user-1',
+        {
+          oldPassword: 'oldpassword123',
+          newPassword: 'newpassword123',
+        },
+      );
     });
   });
 
