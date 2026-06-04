@@ -168,6 +168,89 @@ model AuditLog {
 }
 
 // ==========================================
+//               JOB MODULE
+// ==========================================
+
+enum JobStatus {
+  DRAFT
+  LIVE
+  CLOSED
+}
+
+enum JobLevel {
+  ENTRY_LEVEL
+  MID_LEVEL
+  SENIOR_LEVEL
+  DIRECTOR
+  VP_OR_ABOVE
+}
+
+enum JobCategory {
+  DESIGN
+  SALES
+  MARKETING
+  BUSINESS
+  HUMAN_RESOURCE
+  FINANCE
+  ENGINEERING
+  TECHNOLOGY
+}
+
+model Job {
+  id               String        @id @default(uuid()) @db.Uuid
+  companyId        String        @map("company_id")
+  company          Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  title            String
+  employmentType   EmploymentType @map("employment_type")
+  jobLevel         JobLevel      @map("job_level")
+  category         JobCategory
+  location         String
+  salaryMin        Decimal?      @map("salary_min") @db.Decimal(12, 2)
+  salaryMax        Decimal?      @map("salary_max") @db.Decimal(12, 2)
+  salaryCurrency   String        @default("USD") @map("salary_currency")
+  description      String        @db.Text
+  responsibilities String        @db.Text
+  whoYouAre        String        @map("who_you_are") @db.Text
+  niceToHaves      String?       @map("nice_to_haves") @db.Text
+  capacity         Int           @default(10)
+  applicationsCount Int          @default(0) @map("applications_count")
+  status           JobStatus     @default(DRAFT)
+  applyBefore      DateTime?     @map("apply_before")
+  postedAt         DateTime?     @map("posted_at")
+  createdAt        DateTime      @default(now()) @map("created_at")
+  updatedAt        DateTime      @updatedAt @map("updated_at")
+  deletedAt        DateTime?     @map("deleted_at")
+  skills           JobSkill[]
+  benefits         JobBenefit[]
+
+  @@index([status])
+  @@index([category])
+  @@index([jobLevel])
+  @@index([employmentType])
+  @@index([companyId])
+  @@map("jobs")
+}
+
+model JobSkill {
+  id    String @id @default(uuid()) @db.Uuid
+  jobId String @map("job_id") @db.Uuid
+  job   Job    @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  name  String
+
+  @@map("job_skills")
+}
+
+model JobBenefit {
+  id          String @id @default(uuid()) @db.Uuid
+  jobId       String @map("job_id") @db.Uuid
+  job         Job    @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  title       String
+  description String
+
+  @@map("job_benefits")
+}
+
+// ==========================================
 //               COMPANY MODULE
 // ==========================================
 
@@ -191,6 +274,7 @@ model Company {
   createdAt      DateTime        @default(now()) @map("created_at")
   updatedAt      DateTime        @updatedAt @map("updated_at")
   members        CompanyMember[]
+  jobs           Job[]
 
   @@map("companies")
 }
