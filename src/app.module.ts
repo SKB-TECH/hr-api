@@ -13,7 +13,7 @@ import { CandidateResumeController } from './modules/candidate-resume/candidate-
 import { CandidateResumeService } from './modules/candidate-resume/candidate-resume.service';
 import { CompaniesModule } from './modules/companies/companies.module';
 import { AuditLogModule } from './modules/audit-logs/audit-log.module';
-import { CandidateEducationModule } from './modules/candidate-education/candidate-education.module';
+import { JobsModule } from './modules/jobs/jobs.module';
 
 @Module({
   imports: [
@@ -30,7 +30,7 @@ import { CandidateEducationModule } from './modules/candidate-education/candidat
     CandidateResumeModule,
     CompaniesModule,
     AuditLogModule,
-    CandidateEducationModule,
+    JobsModule,
   ],
   controllers: [CandidateResumeController],
   providers: [CandidateResumeService],
