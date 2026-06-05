@@ -9,8 +9,7 @@ import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
 import { CandidateProfileModule } from './modules/candidate-profile/candidate-profile.module';
 import { CandidateResumeModule } from './modules/candidate-resume/candidate-resume.module';
-import { CandidateResumeController } from './modules/candidate-resume/candidate-resume.controller';
-import { CandidateResumeService } from './modules/candidate-resume/candidate-resume.service';
+import { CandidateEducationModule } from './modules/candidate-education/candidate-education.module';
 import { CompaniesModule } from './modules/companies/companies.module';
 import { AuditLogModule } from './modules/audit-logs/audit-log.module';
 import { JobsModule } from './modules/jobs/jobs.module';
@@ -28,11 +27,12 @@ import { JobsModule } from './modules/jobs/jobs.module';
     UsersModule,
     CandidateProfileModule,
     CandidateResumeModule,
+    CandidateEducationModule,
     CompaniesModule,
     AuditLogModule,
     JobsModule,
   ],
-  controllers: [CandidateResumeController],
-  providers: [CandidateResumeService],
+  controllers: [],
+  providers: [],
 })
 export class AppModule {}

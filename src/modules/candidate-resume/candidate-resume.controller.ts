@@ -7,21 +7,29 @@ import {UseGuards,Req} from '@nestjs/common';
 import { ResumeFileInterceptor } from './interceptors/resume-upload.interceptor';
 import { Roles } from '@/common/decorators/roles.decorator';
 import { UserRole } from '@prisma/client';
+import { CreateResumeDto } from './dto/create-resume.dto';
+import { UnauthorizedErrorDto } from '@/common/response/unauthorized.response';
+import { ResumeResponseDto} from './dto/resume.response.dto';
 
 
 
 @ApiTags('Candidate-Resumes')
 @Controller('resumes')
 @ApiBearerAuth()
-
-
-export class CandidateResumeController {
+  export class CandidateResumeController {
   constructor(private readonly resumeService: CandidateResumeService) {}
   
   @Post()
   @Roles(UserRole.CANDIDATE)
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @ApiOperation({ summary: 'add candidate resumes' })
+  @ApiOperation({ 
+    summary: 'add candidate resumes',
+    description: `
+    notes:
+        - upload a new resume for the authenticated candidate user.
+        - This endpoint is accessible only to users with the CANDIDATE role.
+    `
+   })
   @ApiConsumes('multipart/form-data')
   @ApiBody({
   schema: {
@@ -35,9 +43,9 @@ export class CandidateResumeController {
     },
   },
 })
-  @ApiResponse({ status: 201, description: 'Resume uploaded successfully.' })
-  @ApiResponse({ status: 400, description: 'Bad Request' })
-  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 201, description: 'Resume uploaded successfully.', type: ResumeResponseDto })
+  @ApiResponse({ status: 400, description: 'Bad Request'  })
+  @ApiResponse({ status: 401, description: 'Unauthorized', type: UnauthorizedErrorDto })
   @UseInterceptors(ResumeFileInterceptor)
   async upload(
     @UploadedFile() file: Express.Multer.File,
@@ -54,19 +62,33 @@ export class CandidateResumeController {
   @Get()
   @Roles(UserRole.CANDIDATE)
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @ApiOperation({ summary: 'Get all resumes for a candidate' })
-  @ApiResponse({ status: 200, description: 'Resumes retrieved successfully.' })
-  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiOperation({ 
+    summary: 'Get all resumes for a candidate',
+    description: `
+    notes:
+        - retrieve all resumes for the authenticated candidate user.
+        - This endpoint is accessible only to users with the CANDIDATE role.
+    `
+   })
+  @ApiResponse({ status: 200, description: 'Resumes retrieved successfully.', type: ResumeResponseDto })
+  @ApiResponse({ status: 401, description: 'Unauthorized', type: UnauthorizedErrorDto })
   getAll(@Req() req) {
     return this.resumeService.getAll(req.user.id);
   }
 
 @Get('default/:candidateId')
 @UseGuards(JwtAuthGuard, RolesGuard)
-@ApiOperation({ summary: 'Get default resume by candidate ID to all authenticated users' })
+@ApiOperation({ 
+  summary: 'Get default resume by candidate ID to all authenticated users',
+  description: `
+  notes:
+      - retrieve the default resume for a specific candidate by their ID.
+      - This endpoint is accessible to all authenticated users.
+  `
+ })
 @ApiParam({ name: 'candidateId', description: 'Candidate ID' })
-@ApiResponse({ status: 200, description: 'Default resume retrieved successfully.' })
-@ApiResponse({ status: 401, description: 'Unauthorized' })
+@ApiResponse({ status: 200, description: 'Default resume retrieved successfully.', type: ResumeResponseDto })
+@ApiResponse({ status: 401, description: 'Unauthorized', type: UnauthorizedErrorDto })
 getPublicDefault(@Param('candidateId') candidateId: string) {
   return this.resumeService.getPublicDefault(candidateId);
 }
@@ -76,9 +98,16 @@ getPublicDefault(@Param('candidateId') candidateId: string) {
   @Get('default')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.CANDIDATE)
-  @ApiOperation({ summary: 'Get default resume for a candidate for all authenticated users' })
-  @ApiResponse({ status: 200, description: 'Default resume retrieved successfully.' })
-  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiOperation({ 
+    summary: 'Get default resume for a candidate for all authenticated users',
+    description: `
+    notes:
+        - retrieve the default resume for the authenticated candidate user.
+        - This endpoint is accessible only to users with the CANDIDATE role.
+    `
+   })
+  @ApiResponse({ status: 200, description: 'Default resume retrieved successfully.', type: ResumeResponseDto })
+  @ApiResponse({ status: 401, description: 'Unauthorized', type: UnauthorizedErrorDto })
   getDefault(@Req() req) {
     return this.resumeService.getDefault(req.user.id);
   }
@@ -90,9 +119,16 @@ getPublicDefault(@Param('candidateId') candidateId: string) {
   @Patch('default/:resumeId')
   @Roles(UserRole.CANDIDATE)
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @ApiOperation({ summary: 'Set a resume as default' })
-  @ApiResponse({ status: 200, description: 'Resume set as default successfully.' })
-  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiOperation({ 
+    summary: 'Set a resume as default',
+    description: `
+    notes:
+        - set a specific resume as the default for the authenticated candidate user.
+        - This endpoint is accessible only to users with the CANDIDATE role.
+    `
+   })
+  @ApiResponse({ status: 200, description: 'Resume set as default successfully.', type: ResumeResponseDto })
+  @ApiResponse({ status: 401, description: 'Unauthorized', type: UnauthorizedErrorDto })
   setDefault(@Param('resumeId', ParseUUIDPipe) resumeId: string, @Req() req) {
     return this.resumeService.setDefault(resumeId, req.user.id);
   }
@@ -103,9 +139,16 @@ getPublicDefault(@Param('candidateId') candidateId: string) {
   @Delete(':id')
   @Roles(UserRole.CANDIDATE)
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @ApiOperation({ summary: 'Delete a resume' })
+  @ApiOperation({ 
+    summary: 'Delete a resume',
+    description: `
+    notes:
+        - delete a specific resume for the authenticated candidate user.
+        - This endpoint is accessible only to users with the CANDIDATE role.
+    `
+   })
   @ApiResponse({ status: 204, description: 'Resume deleted successfully.' })
-  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 401, description: 'Unauthorized', type: UnauthorizedErrorDto })
   delete(@Param('id') id: string, @Req() req) {
     return this.resumeService.deleteResume(id, req.user.id);
   }
