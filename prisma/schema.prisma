@@ -10,27 +10,28 @@ datasource db {
 }
 
 model User {
-  id                 String            @id @default(uuid()) @db.Uuid
-  email              String            @unique
-  phone              String?           @unique
+  id                 String             @id @default(uuid()) @db.Uuid
+  email              String             @unique
+  phone              String?            @unique
   password           String?
-  firstName          String            @map("first_name")
-  lastName           String            @map("last_name")
-  role               UserRole          @default(CANDIDATE)
-  status             UserStatus        @default(pending)
-  provider           AuthProvider      @default(local)
+  firstName          String             @map("first_name")
+  lastName           String             @map("last_name")
+  role               UserRole           @default(CANDIDATE)
+  status             UserStatus         @default(pending)
+  provider           AuthProvider       @default(local)
   avatar             String?
-  emailVerified      Boolean           @default(false) @map("email_verified")
-  phoneVerified      Boolean           @default(false) @map("phone_verified")
-  lastLogin          DateTime?         @map("last_login")
-  twoFactorEnabled   Boolean           @default(false) @map("two_factor_enabled")
-  createdAt          DateTime          @default(now()) @map("created_at")
-  updatedAt          DateTime          @updatedAt @map("updated_at")
-  deletedAt          DateTime?         @map("deleted_at")
+  emailVerified      Boolean            @default(false) @map("email_verified")
+  phoneVerified      Boolean            @default(false) @map("phone_verified")
+  lastLogin          DateTime?          @map("last_login")
+  twoFactorEnabled   Boolean            @default(false) @map("two_factor_enabled")
+  createdAt          DateTime           @default(now()) @map("created_at")
+  updatedAt          DateTime           @updatedAt @map("updated_at")
+  deletedAt          DateTime?          @map("deleted_at")
   refreshTokens      RefreshToken[]
   candidateProfile   CandidateProfile?
   companyMemberships CompanyMember[]
   auditLogs          AuditLog[]
+  applications       Application[]
 
   @@map("users")
 }
@@ -105,35 +106,40 @@ enum WorkType {
   hybrid
 }
 
+// candidate profile schema
+
 model CandidateProfile {
-  id                String            @id @default(uuid()) @db.Uuid
-  userId            String            @unique @map("user_id") @db.Uuid
-  user              User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id                String             @id @default(uuid()) @db.Uuid
+  userId            String             @unique @map("user_id") @db.Uuid
+  user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
   gender            String?
-  phone             Int?              @map("phone_number")
-  birthDate         DateTime?         @map("birth_date")
+  phone             Int?               @map("phone_number")
+  birthDate         DateTime?          @map("birth_date")
   headline          String?
   bio               String?
-  countryName       String?           @map("country_name")
-  cityName          String?           @map("city_name")
+  countryName       String?            @map("country_name")
+  cityName          String?            @map("city_name")
   address           String?
-  currentSalary     Decimal?          @map("current_salary") @db.Decimal(12, 2)
-  expectedSalary    Decimal?          @map("expected_salary") @db.Decimal(12, 2)
-  salaryCurrency    String?           @map("salary_currency")
-  yearsExperience   Int?              @map("years_experience")
-  linkedinUrl       String?           @map("linkedin_url")
-  githubUrl         String?           @map("github_url")
-  portfolioUrl      String?           @map("portfolio_url")
+  currentSalary     Decimal?           @map("current_salary") @db.Decimal(12, 2)
+  expectedSalary    Decimal?           @map("expected_salary") @db.Decimal(12, 2)
+  salaryCurrency    String?            @map("salary_currency")
+  yearsExperience   Int?               @map("years_experience")
+  linkedinUrl       String?            @map("linkedin_url")
+  githubUrl         String?            @map("github_url")
+  portfolioUrl      String?            @map("portfolio_url")
   availability      Availability?
-  workType          WorkType?         @map("work_type")
-  profileVisibility ProfileVisibility @default(public) @map("profile_visibility")
-  openToWork        Boolean           @default(true) @map("open_to_work")
-  createdAt         DateTime          @default(now()) @map("created_at")
-  updatedAt         DateTime          @updatedAt @map("updated_at")
+  workType          WorkType?          @map("work_type")
+  profileVisibility ProfileVisibility  @default(public) @map("profile_visibility")
+  openToWork        Boolean            @default(true) @map("open_to_work")
+  createdAt         DateTime           @default(now()) @map("created_at")
+  updatedAt         DateTime           @updatedAt @map("updated_at")
   resumes           Resume[]
+  candidate_educations CandidateEducation[]
 
   @@map("candidate_profiles")
 }
+
+// CandidateResume Schema
 
 model Resume {
   id          String           @id @default(uuid()) @db.Uuid
@@ -148,6 +154,8 @@ model Resume {
 
   @@map("resumes")
 }
+
+// Audit logs module schema
 
 model AuditLog {
   id        String   @id @default(uuid()) @db.Uuid
@@ -168,7 +176,7 @@ model AuditLog {
 }
 
 // ==========================================
-//               JOB MODULE
+//                JOB MODULE
 // ==========================================
 
 enum JobStatus {
@@ -197,31 +205,32 @@ enum JobCategory {
 }
 
 model Job {
-  id               String        @id @default(uuid()) @db.Uuid
-  companyId        String        @map("company_id")
-  company          Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  id               String         @id @default(uuid()) @db.Uuid
+  companyId        String         @map("company_id") @db.Uuid // <--- ADDED @db.Uuid HERE!
+  company          Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
   title            String
   employmentType   EmploymentType @map("employment_type")
-  jobLevel         JobLevel      @map("job_level")
+  jobLevel         JobLevel       @map("job_level")
   category         JobCategory
   location         String
-  salaryMin        Decimal?      @map("salary_min") @db.Decimal(12, 2)
-  salaryMax        Decimal?      @map("salary_max") @db.Decimal(12, 2)
-  salaryCurrency   String        @default("USD") @map("salary_currency")
-  description      String        @db.Text
-  responsibilities String        @db.Text
-  whoYouAre        String        @map("who_you_are") @db.Text
-  niceToHaves      String?       @map("nice_to_haves") @db.Text
-  capacity         Int           @default(10)
-  applicationsCount Int          @default(0) @map("applications_count")
-  status           JobStatus     @default(DRAFT)
-  applyBefore      DateTime?     @map("apply_before")
-  postedAt         DateTime?     @map("posted_at")
-  createdAt        DateTime      @default(now()) @map("created_at")
-  updatedAt        DateTime      @updatedAt @map("updated_at")
-  deletedAt        DateTime?     @map("deleted_at")
+  salaryMin        Decimal?       @map("salary_min") @db.Decimal(12, 2)
+  salaryMax        Decimal?       @map("salary_max") @db.Decimal(12, 2)
+  salaryCurrency   String         @default("USD") @map("salary_currency")
+  description      String         @db.Text
+  responsibilities String         @db.Text
+  whoYouAre        String         @map("who_you_are") @db.Text
+  niceToHaves      String?        @map("nice_to_haves") @db.Text
+  capacity         Int            @default(10)
+  applicationsCount Int           @default(0) @map("applications_count")
+  status           JobStatus      @default(DRAFT)
+  applyBefore      DateTime?      @map("apply_before")
+  postedAt         DateTime?      @map("posted_at")
+  createdAt        DateTime       @default(now()) @map("created_at")
+  updatedAt        DateTime       @updatedAt @map("updated_at")
+  deletedAt        DateTime?      @map("deleted_at")
   skills           JobSkill[]
   benefits         JobBenefit[]
+  applications     Application[]
 
   @@index([status])
   @@index([category])
@@ -251,11 +260,11 @@ model JobBenefit {
 }
 
 // ==========================================
-//               COMPANY MODULE
+//                COMPANY MODULE
 // ==========================================
 
 model Company {
-  id             String          @id @default(uuid())
+  id             String          @id @default(uuid()) @db.Uuid
   name           String
   slug           String?         @unique
   description    String?         @db.Text
@@ -275,19 +284,106 @@ model Company {
   updatedAt      DateTime        @updatedAt @map("updated_at")
   members        CompanyMember[]
   jobs           Job[]
+  applications   Application[]
+  interviews     Interview[]
 
   @@map("companies")
 }
 
+// camany member Schema
+
 model CompanyMember {
-  id        String   @id @default(uuid())
+  id        String   @id @default(uuid()) @db.Uuid
   role      String
   joinedAt  DateTime @default(now()) @map("joined_at")
   userId    String   @map("user_id") @db.Uuid
-  companyId String   @map("company_id")
+  companyId String   @map("company_id") @db.Uuid
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
 
   @@unique([userId, companyId])
   @@map("company_members")
+}
+
+model CandidateEducation {
+  id           String           @id @default(uuid()) @db.Uuid
+  candidateId  String           @map("candidate_id") @db.Uuid
+  candidate    CandidateProfile @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  schoolName   String           @map("school_name")
+  degree       String
+  fieldOfStudy String           @map("field_of_study")
+  startDate    DateTime         @map("start_date") @db.Date
+  endDate      DateTime?        @map("end_date") @db.Date
+  grade        String?
+  description  String?          @db.Text
+  createdAt    DateTime         @default(now()) @map("created_at")
+  updatedAt    DateTime         @updatedAt @map("updated_at")
+
+  @@index([candidateId])
+  @@map("candidate_educations")
+}
+
+// ==========================================
+//           APPLICATION MODULE
+// ==========================================
+
+enum ApplicationStatus {
+  APPLIED
+  REVIEWING
+  INTERVIEW
+  OFFER
+  REJECTED
+  WITHDRAWN
+}
+
+model Application {
+  id         String            @id @default(uuid()) @db.Uuid
+  jobId      String            @map("job_id") @db.Uuid
+  job        Job               @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  companyId  String            @map("company_id") @db.Uuid
+  company    Company           @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  userId     String            @map("user_id") @db.Uuid
+  user       User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fullName   String            @map("full_name")
+  status     ApplicationStatus @default(APPLIED)
+  createdAt  DateTime          @default(now()) @map("created_at")
+  updatedAt  DateTime          @updatedAt @map("updated_at")
+  interviews Interview[]
+
+  @@index([jobId])
+  @@index([companyId])
+  @@index([userId])
+  @@map("applications")
+}
+
+// ==========================================
+//           INTERVIEW MODULE
+// ==========================================
+
+enum InterviewStatus {
+  SCHEDULED
+  COMPLETED
+  CANCELLED
+}
+
+model Interview {
+  id              String          @id @default(uuid()) @db.Uuid
+  applicationId   String          @map("application_id") @db.Uuid
+  application     Application     @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  companyId       String          @map("company_id") @db.Uuid
+  company         Company         @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  title           String
+  interviewerName String?         @map("interviewer_name")
+  scheduledAt     DateTime        @map("scheduled_at")
+  endTime         DateTime        @map("end_time")
+  location        String?
+  status          InterviewStatus @default(SCHEDULED)
+  feedback        String?         @db.Text
+  createdAt       DateTime        @default(now()) @map("created_at")
+  updatedAt       DateTime        @updatedAt @map("updated_at")
+
+  @@index([applicationId])
+  @@index([companyId])
+  @@index([scheduledAt])
+  @@map("interviews")
 }
