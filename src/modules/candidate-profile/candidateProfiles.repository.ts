@@ -11,7 +11,22 @@ export class CandidateProfilesRepository {
     return this.prisma.user.findUnique({
       where: { id: userId },
       include: {
-        candidateProfile: true,
+        candidateProfile: {
+          include: {
+            // This is the crucial addition: deeply fetching the master skills
+            candidate_skills: {
+              select: {
+                skill: {
+                  select: { 
+                    id: true, 
+                    name: true, 
+                    category: true 
+                  }
+                }
+              }
+            }
+          }
+        }
       },
     });
   }
