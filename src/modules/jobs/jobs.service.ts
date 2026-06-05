@@ -60,7 +60,7 @@ export class JobsService {
     };
   }
 
-  // ... [Esther's findOne logic maintained] ...
+  // ... [Esther's findOne logic FIXED] ...
   async findOne(id: string) {
     const job = await this.prisma.job.findFirst({
       where: { id, deletedAt: null },
@@ -71,7 +71,18 @@ export class JobsService {
             location: true, website: true, coverImage: true,
           },
         },
-        skills: { select: { id: true, name: true } },
+        skills: { 
+          select: { 
+            id: true, 
+            skill: {
+              select: {
+                id: true,
+                name: true,
+                category: true
+              }
+            }
+          } 
+        },
         benefits: { select: { id: true, title: true, description: true } },
       },
     });
@@ -102,13 +113,42 @@ export class JobsService {
       throw new NotFoundException('You must be assigned to a company to post a job.');
     }
 
-    // 2. Creates the job and link it to their company
+    // 2. Extract skillIds so Prisma doesn't get validation errors, keeping the rest in jobData
+    const { skillIds, ...jobData } = createJobDto;
+
+    // 3. If skills were provided, fetch their names (schema requires name on JobSkill create)
+    let skillCreates: any[] | undefined;
+    if (skillIds && skillIds.length > 0) {
+      const skills = await (this.prisma as any).skill.findMany({
+        where: { id: { in: skillIds } },
+        select: { id: true, name: true },
+      });
+      skillCreates = skills.map((s: any) => ({
+        skill: { connect: { id: s.id } },
+        name: s.name,
+      }));
+    }
+
+    // 4. Create the job and link the skills in a single transaction
     const newJob = await this.prisma.job.create({
       data: {
-        ...createJobDto,
-        companyId: companyMember.companyId,
+        ...jobData,
+        company: { connect: { id: companyMember.companyId } },
         status: JobStatus.DRAFT, // Uses Prisma's native enum
+        ...(skillCreates && skillCreates.length > 0 && { skills: { create: skillCreates } }),
       },
+      // Instruct Prisma to return the newly linked skills so we can verify the transaction
+      include: {
+        // cast to any to avoid mismatched generated types in this environment
+        skills: {
+          include: {
+            skill: {
+              select: { id: true, name: true, category: true },
+            },
+          },
+        },
+        company: { select: { id: true, name: true } },
+      } as any,
     });
 
     return {
@@ -121,7 +161,6 @@ export class JobsService {
   // Charles : Get Company Jobs (Screen 3.9)
   // ==================================================
   async findMyCompanyJobs(userId: string, query: QueryJobDto) {
-    // 1. Find the logged-in user's company
     const companyMember = await this.prisma.companyMember.findFirst({
       where: { userId: userId },
     });
@@ -130,27 +169,23 @@ export class JobsService {
       throw new NotFoundException('You are not associated with any company.');
     }
 
-    // 2. Extract pagination and optional status filter
     const { page = 1, limit = 10 } = query;
     const skip = (page - 1) * limit;
 
-    // 3. We use 'any' here temporarily if your DTO doesn't expose status yet, 
-    // but the frontend will send ?status=LIVE or ?status=DRAFT
     const statusFilter = (query as any).status; 
 
     const where: Prisma.JobWhereInput = {
       companyId: companyMember.companyId,
-      deletedAt: null, // Don't show soft-deleted jobs
+      deletedAt: null, 
       ...(statusFilter && { status: statusFilter }), 
     };
 
-    // 4. Fetch the jobs and the total count for pagination
     const [data, totalItems] = await this.prisma.$transaction([
       this.prisma.job.findMany({
         where,
         skip,
         take: limit,
-        orderBy: { createdAt: 'desc' }, // Newest jobs at the top of the dashboard
+        orderBy: { createdAt: 'desc' }, 
         select: {
           id: true,
           title: true,
@@ -179,22 +214,18 @@ export class JobsService {
   // Charles : Update Job (Edit Draft / Publish to Live)
   // ==================================================
   async updateJob(jobId: string, userId: string, updateJobDto: UpdateJobDto) {
-    // 1. Get logged-in user's company
     const companyMember = await this.prisma.companyMember.findFirst({
       where: { userId: userId },
     });
     if (!companyMember) throw new NotFoundException('You are not associated with a company.');
 
-    // 2. Fetch the job to ensure it exists
     const job = await this.prisma.job.findUnique({ where: { id: jobId } });
     if (!job || job.deletedAt) throw new NotFoundException('Job not found.');
 
-    // 3. SECURITY CHECK: Does this job belong to their company?
     if (job.companyId !== companyMember.companyId) {
       throw new ForbiddenException('You do not have permission to edit this job.');
     }
 
-    // 4. Update the job
     const updatedJob = await this.prisma.job.update({
       where: { id: jobId },
       data: updateJobDto,
@@ -210,22 +241,18 @@ export class JobsService {
   // Charles : Delete Job (Soft Delete)
   // ==================================================
   async deleteJob(jobId: string, userId: string) {
-    // 1. Get logged-in user's company
     const companyMember = await this.prisma.companyMember.findFirst({
       where: { userId: userId },
     });
     if (!companyMember) throw new NotFoundException('You are not associated with a company.');
 
-    // 2. Fetch the job
     const job = await this.prisma.job.findUnique({ where: { id: jobId } });
     if (!job || job.deletedAt) throw new NotFoundException('Job not found.');
 
-    // 3. SECURITY CHECK: Does this job belong to their company?
     if (job.companyId !== companyMember.companyId) {
       throw new ForbiddenException('You do not have permission to delete this job.');
     }
 
-    // 4. Soft Delete: We don't erase it from the DB, we just set deletedAt and close it
     await this.prisma.job.update({
       where: { id: jobId },
       data: {
