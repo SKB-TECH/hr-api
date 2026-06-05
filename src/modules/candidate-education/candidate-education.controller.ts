@@ -12,6 +12,7 @@ import { UserRole } from '@prisma/client';
 import { Roles } from '@/common/decorators/roles.decorator';
 import { UnauthorizedErrorDto } from '@/common/response/unauthorized.response';
 import { CandidateEducationResponseDto } from './dto/candidate-education-response.dto';
+import { ParseUUIDPipe } from '@nestjs/common';
 
 @ApiTags('Candidate-Education')
 @ApiBearerAuth()
@@ -49,8 +50,14 @@ export class CandidateEducationController {
  })
 @ApiResponse({ status: 200, description: 'List of education records', type: [CandidateEducationResponseDto] })
 @ApiResponse({ status: 401, description: 'Unauthorized', type: UnauthorizedErrorDto })
+@ApiParam({ 
+  name: 'candidateId',
+  type: 'string', 
+  format: 'uuid', 
+  description: 'The unique identifier of the candidate whose education records are being retrieved',
+  example: '3a889af9-fd9f-4c56-86c8-47a05f3af95b' })
 @Roles(UserRole.COMPANY_OWNER, UserRole.RECRUITER, UserRole.ADMIN)
-findCandidateEducation(@Param('candidateId') candidateId: string) {
+findCandidateEducation(@Param('candidateId', ParseUUIDPipe) candidateId: string) {
   return this.service.getByCandidateId(candidateId);
 }
 
@@ -84,13 +91,24 @@ findCandidateEducation(@Param('candidateId') candidateId: string) {
         - If the record does not exist or the user is not authorized to update it, an appropriate error message will be returned.
     `
    })
-  @ApiParam({ name: 'id', description: 'Education ID' })
+  @ApiParam({ 
+    name: 'id',
+    type: 'string', 
+    format: 'uuid', 
+    description: 'The unique identifier of the candidate education record',
+    example: '3a889af9-fd9f-4c56-86c8-47a05f3af95b' })
   @ApiResponse({ status: 200, description: 'Education updated successfully', type: CandidateEducationResponseDto })
   @ApiResponse({ status: 401, description: 'Unauthorized', type: UnauthorizedErrorDto })
   @ApiBody({ type: CreateEducationDto })
+  @ApiParam({ 
+    name: 'id',
+    type: 'string', 
+    format: 'uuid', 
+    description: 'The unique identifier of the candidate education record',
+    example: '3a889af9-fd9f-4c56-86c8-47a05f3af95b' })
   update(
     @Req() req,
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: Partial<CreateEducationDto>,
   ) {
     return this.service.patch(req.user.id, id, dto);
@@ -112,7 +130,13 @@ findCandidateEducation(@Param('candidateId') candidateId: string) {
   @ApiParam({ name: 'id', description: 'Education ID' })
   @ApiResponse({ status: 200, description: 'Education deleted successfully' })
   @ApiResponse({ status: 401, description: 'Unauthorized', type: UnauthorizedErrorDto })
-  remove(@Req() req, @Param('id') id: string) {
+  @ApiParam({ 
+    name: 'id',
+    type: 'string',
+    format: 'uuid',
+    description: 'The unique identifier of the candidate education record',
+    example: '3a889af9-fd9f-4c56-86c8-47a05f3af95b' })
+  remove(@Req() req, @Param('id', ParseUUIDPipe) id: string) {
     return this.service.remove(req.user.id, id);
   }
 }

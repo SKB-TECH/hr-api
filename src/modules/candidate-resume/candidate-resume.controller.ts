@@ -86,10 +86,15 @@ import { ResumeResponseDto} from './dto/resume.response.dto';
       - This endpoint is accessible to all authenticated users.
   `
  })
-@ApiParam({ name: 'candidateId', description: 'Candidate ID' })
+@ApiParam({ 
+  name: 'candidateId',
+  type: 'string', 
+  format: 'uuid', 
+  description: 'The unique identifier of the candidate whose default resume is being retrieved',
+  example: '3a889af9-fd9f-4c56-86c8-47a05f3af95b' })
 @ApiResponse({ status: 200, description: 'Default resume retrieved successfully.', type: ResumeResponseDto })
 @ApiResponse({ status: 401, description: 'Unauthorized', type: UnauthorizedErrorDto })
-getPublicDefault(@Param('candidateId') candidateId: string) {
+getPublicDefault(@Param('candidateId', ParseUUIDPipe) candidateId: string) {
   return this.resumeService.getPublicDefault(candidateId);
 }
 
@@ -129,6 +134,12 @@ getPublicDefault(@Param('candidateId') candidateId: string) {
    })
   @ApiResponse({ status: 200, description: 'Resume set as default successfully.', type: ResumeResponseDto })
   @ApiResponse({ status: 401, description: 'Unauthorized', type: UnauthorizedErrorDto })
+  @ApiParam({ 
+    name: 'resumeId',
+    type: 'string',
+    format: 'uuid',
+    description: 'The unique identifier of the resume to be set as default',
+    example: '3a889af9-fd9f-4c56-86c8-47a05f3af95b' })
   setDefault(@Param('resumeId', ParseUUIDPipe) resumeId: string, @Req() req) {
     return this.resumeService.setDefault(resumeId, req.user.id);
   }
@@ -147,9 +158,15 @@ getPublicDefault(@Param('candidateId') candidateId: string) {
         - This endpoint is accessible only to users with the CANDIDATE role.
     `
    })
+  @ApiParam({ 
+    name: 'id',
+    type: 'string', 
+    format: 'uuid', 
+    description: 'The unique identifier of the resume to be deleted',
+    example: '3a889af9-fd9f-4c56-86c8-47a05f3af95b' })
   @ApiResponse({ status: 204, description: 'Resume deleted successfully.' })
   @ApiResponse({ status: 401, description: 'Unauthorized', type: UnauthorizedErrorDto })
-  delete(@Param('id') id: string, @Req() req) {
+  delete(@Param('id', ParseUUIDPipe) id: string, @Req() req) {
     return this.resumeService.deleteResume(id, req.user.id);
   }
 }

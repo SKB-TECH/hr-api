@@ -13,6 +13,7 @@ import { CandidateEducationModule } from './modules/candidate-education/candidat
 import { CompaniesModule } from './modules/companies/companies.module';
 import { AuditLogModule } from './modules/audit-logs/audit-log.module';
 import { JobsModule } from './modules/jobs/jobs.module';
+import { CandidateExperienceModule } from './modules/candidate-experience/candidate-experience.module';
 
 @Module({
   imports: [
@@ -31,6 +32,7 @@ import { JobsModule } from './modules/jobs/jobs.module';
     CompaniesModule,
     AuditLogModule,
     JobsModule,
+    CandidateExperienceModule,
   ],
   controllers: [],
   providers: [],

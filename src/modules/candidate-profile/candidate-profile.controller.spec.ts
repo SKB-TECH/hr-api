@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { CandidateProfilesController } from './candidate-profile.controller';
 import { CandidateProfilesService } from './candidate-profile.service';
-import { UserCandidateEntity } from './entities/candidate-profile.entity';
+import { UserCandidateDto } from './entities/candidate-profile.entity';
 import { UserRole } from '@prisma/client';
 
 describe('CandidateProfilesController', () => {
@@ -49,7 +49,7 @@ describe('CandidateProfilesController', () => {
 
       const result = await controller.getProfile(req);
 
-      expect(result).toBeInstanceOf(UserCandidateEntity);
+      expect(result).toBeInstanceOf(UserCandidateDto);
       expect(mockService.getCandidateProfile).toHaveBeenCalledWith('1');
     });
 

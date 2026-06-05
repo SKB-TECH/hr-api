@@ -51,4 +51,10 @@ async updateUserAccount(
       data,
     });
   }
+
+async findById(id: string) {
+  return this.prisma.candidateProfile.findUnique({
+    where: { id },
+  });
+}
 }
