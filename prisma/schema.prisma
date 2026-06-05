@@ -135,6 +135,7 @@ model CandidateProfile {
   resumes           Resume[]
   candidate_educations CandidateEducation[]
   candidateExperiences CandidateExperience[]
+  candidateCertifications CandidateCertification[]
 
   @@map("candidate_profiles")
 }
@@ -321,6 +322,7 @@ model CandidateEducation {
 }
 
 
+// candidate experience schema
 
 model CandidateExperience {
   id              String                     @id @default(uuid()) @db.Uuid
@@ -347,4 +349,23 @@ model CandidateExperience {
 
   @@index([candidateId])
   @@map("candidate_experiences")
+}
+
+
+// candidate certificate schema
+model CandidateCertification {
+  id             String           @id @default(uuid()) @db.Uuid
+  candidateId    String           @map("candidate_id") @db.Uuid
+  candidate      CandidateProfile @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  title          String
+  organization   String
+  issueDate      DateTime         @map("issue_date") @db.Date
+  expirationDate DateTime?        @map("expiration_date") @db.Date
+  credentialId   String?          @map("credential_id")
+  credentialUrl  String?          @map("credential_url") @db.Text
+  createdAt      DateTime         @default(now()) @map("created_at")
+  updatedAt      DateTime         @updatedAt @map("updated_at")
+
+  @@index([candidateId])
+  @@map("candidate_certifications")
 }
