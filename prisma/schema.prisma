@@ -47,8 +47,7 @@ model User {
   id            String         @id @default(uuid())
   email         String         @unique
   password      String?
-  firstName     String         @map("first_name")
-  lastName      String         @map("last_name")
+  fullName      String         @map("full_name")
   role          UserRole       @default(CANDIDATE)
   status        UserStatus     @default(pending)
   provider      AuthProvider   @default(local)
