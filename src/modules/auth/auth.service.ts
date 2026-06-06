@@ -29,8 +29,7 @@ export class AuthService {
     const user = await this.usersRepository.create({
       email: dto.email,
       password: hashed,
-      firstName: dto.firstName,
-      lastName: dto.lastName,
+      fullName: dto.fullName,
       role: dto.role,
       status: 'active',
     });
