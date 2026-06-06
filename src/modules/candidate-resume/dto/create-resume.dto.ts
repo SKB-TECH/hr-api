@@ -8,7 +8,8 @@ export class CreateResumeDto {
     description: 'Title of the resume',
     required: true,
   })
-  @IsString()
+  @IsString( { message: 'Title must be a string' })
+
   title: string;
 
   @ApiProperty({
@@ -18,7 +19,7 @@ export class CreateResumeDto {
     example:'https://res.cloudinary.com/dphzr2jab/raw/upload/v1780508838/resumes/ekcds0b6baysmnocawfw',
     required: true,
   })
-  @IsString()
+  @IsString({ message: 'File is required' })
   file: Express.Multer.File;
 
   @ApiPropertyOptional({

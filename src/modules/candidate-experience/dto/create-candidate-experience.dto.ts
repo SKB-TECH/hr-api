@@ -15,7 +15,7 @@ export class CreateCandidateExperienceDto {
     description:
       'Name of the company where the candidate worked',
   })
-  @IsString()
+  @IsString( { message: 'Company name must be a string' })
   companyName: string;
 
   @ApiProperty({
@@ -23,7 +23,7 @@ export class CreateCandidateExperienceDto {
     description:
       'Job title held by the candidate',
   })
-  @IsString()
+  @IsString( { message: 'Position must be a string' })
   position: string;
 
   @ApiProperty({
@@ -43,7 +43,7 @@ export class CreateCandidateExperienceDto {
     required: false,
   })
   @IsOptional()
-  @IsString()
+  @IsString({ message: 'Description must be a string' })
   description?: string;
 
   @ApiProperty({
