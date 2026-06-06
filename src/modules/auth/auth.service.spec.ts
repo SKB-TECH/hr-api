@@ -12,8 +12,7 @@ const mockUser = {
   id: 'uuid-user-1',
   email: 'john@example.com',
   password: 'hashed_password',
-  firstName: 'John',
-  lastName: 'Doe',
+  fullName: 'John Doe',
   role: 'CANDIDATE',
   status: 'active',
   provider: 'local',
@@ -80,8 +79,7 @@ describe('AuthService', () => {
       mockPrismaService.refreshToken.create.mockResolvedValue({});
 
       const result = await service.register({
-        firstName: 'John',
-        lastName: 'Doe',
+        fullName: 'John Doe',
         email: 'john@example.com',
         password: 'password123',
         role: 'CANDIDATE' as any,
@@ -99,8 +97,7 @@ describe('AuthService', () => {
 
       await expect(
         service.register({
-          firstName: 'John',
-          lastName: 'Doe',
+          fullName: 'John Doe',
           email: 'john@example.com',
           password: 'password123',
           role: 'CANDIDATE' as any,
@@ -114,8 +111,7 @@ describe('AuthService', () => {
       mockPrismaService.refreshToken.create.mockResolvedValue({});
 
       await service.register({
-        firstName: 'John',
-        lastName: 'Doe',
+        fullName: 'John Doe',
         email: 'john@example.com',
         password: 'password123',
         role: 'CANDIDATE' as any,
@@ -273,8 +269,7 @@ describe('AuthService', () => {
 
       const result = await service.googleLogin({
         email: 'john@example.com',
-        firstName: 'John',
-        lastName: 'Doe',
+        fullName: 'John Doe',
         avatar: 'https://avatar.url',
       });
 
@@ -290,8 +285,7 @@ describe('AuthService', () => {
 
       const result = await service.googleLogin({
         email: 'john@example.com',
-        firstName: 'John',
-        lastName: 'Doe',
+        fullName: 'John Doe',
         avatar: 'https://avatar.url',
       });
 
@@ -306,8 +300,7 @@ describe('AuthService', () => {
 
       await service.googleLogin({
         email: 'john@example.com',
-        firstName: 'John',
-        lastName: 'Doe',
+        fullName: 'John Doe',
         avatar: 'https://avatar.url',
       });
 
