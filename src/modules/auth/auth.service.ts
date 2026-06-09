@@ -31,8 +31,7 @@ export class AuthService {
     const user = await this.usersRepository.create({
       email: dto.email,
       password: hashed,
-      firstName: dto.firstName,
-      lastName: dto.lastName,
+      fullName: dto.fullName,
       role: dto.role,
       status: UserStatus.active,
     });
@@ -136,8 +135,7 @@ export class AuthService {
 
   async googleLogin(googleUser: {
     email: string;
-    firstName: string;
-    lastName: string;
+    fullName: string;
     avatar: string;
   }) {
     let user = await this.usersRepository.findByEmail(googleUser.email);
@@ -145,8 +143,7 @@ export class AuthService {
     if (!user) {
       user = await this.usersRepository.create({
         email: googleUser.email,
-        firstName: googleUser.firstName,
-        lastName: googleUser.lastName,
+        fullName: googleUser.fullName,
         avatar: googleUser.avatar,
         provider: AuthProvider.google,
         role: UserRole.CANDIDATE,

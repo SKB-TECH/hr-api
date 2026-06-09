@@ -13,8 +13,7 @@ const mockAuthService = {
 const mockUser = {
   id: 'uuid-user-1',
   email: 'john@example.com',
-  firstName: 'John',
-  lastName: 'Doe',
+  fullName: 'John Doe',
   role: 'CANDIDATE',
 };
 
@@ -44,8 +43,7 @@ describe('AuthController', () => {
       });
 
       const dto = {
-        firstName: 'John',
-        lastName: 'Doe',
+        fullName: 'John Doe',
         email: 'john@example.com',
         password: 'password123',
         role: 'CANDIDATE' as any,

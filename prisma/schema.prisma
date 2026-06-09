@@ -10,23 +10,22 @@ datasource db {
 }
 
 model User {
-  id                 String            @id @default(uuid()) @db.Uuid
-  email              String            @unique
-  phone              String?           @unique
+  id                 String                    @id @default(uuid()) @db.Uuid
+  email              String                    @unique
+  phone              String?                   @unique
   password           String?
-  firstName          String            @map("first_name")
-  lastName           String            @map("last_name")
-  role               UserRole          @default(CANDIDATE)
-  status             UserStatus        @default(pending)
-  provider           AuthProvider      @default(local)
+  fullName           String                    @map("full_name")
+  role               UserRole                  @default(CANDIDATE)
+  status             UserStatus                @default(pending)
+  provider           AuthProvider              @default(local)
   avatar             String?
-  emailVerified      Boolean           @default(false) @map("email_verified")
-  phoneVerified      Boolean           @default(false) @map("phone_verified")
-  lastLogin          DateTime?         @map("last_login")
-  twoFactorEnabled   Boolean           @default(false) @map("two_factor_enabled")
-  createdAt          DateTime          @default(now()) @map("created_at")
-  updatedAt          DateTime          @updatedAt @map("updated_at")
-  deletedAt          DateTime?         @map("deleted_at")
+  emailVerified      Boolean                   @default(false) @map("email_verified")
+  phoneVerified      Boolean                   @default(false) @map("phone_verified")
+  lastLogin          DateTime?                 @map("last_login")
+  twoFactorEnabled   Boolean                   @default(false) @map("two_factor_enabled")
+  createdAt          DateTime                  @default(now()) @map("created_at")
+  updatedAt          DateTime                  @updatedAt @map("updated_at")
+  deletedAt          DateTime?                 @map("deleted_at")
   refreshTokens      RefreshToken[]
   candidateProfile   CandidateProfile?
   companyMemberships CompanyMember[]
@@ -146,15 +145,15 @@ model CandidateProfile {
 // CandidateResume Schema
 
 model Resume {
-  id          String           @id @default(uuid()) @db.Uuid
-  candidateId String           @map("candidate_id") @db.Uuid
-  candidate   CandidateProfile @relation(fields: [candidateId], references: [id], onDelete: Cascade)
-  title       String
-  fileUrl     String           @map("file_url")
-  publicId    String           @map("public_id")
-  isDefault    Boolean       @default(false) @map("is_default")
-  parsed       Boolean       @default(false)
-  createdAt    DateTime      @default(now()) @map("created_at")
+  id           String           @id @default(uuid()) @db.Uuid
+  candidateId  String           @map("candidate_id") @db.Uuid
+  candidate    CandidateProfile @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  title        String
+  fileUrl      String           @map("file_url")
+  publicId     String           @map("public_id")
+  isDefault    Boolean          @default(false) @map("is_default")
+  parsed       Boolean          @default(false)
+  createdAt    DateTime         @default(now()) @map("created_at")
   applications Application[]
 
   @@map("resumes")
@@ -385,8 +384,6 @@ model Company {
   @@map("companies")
 }
 
-// camany member Schema
-
 model CompanyMember {
   id        String   @id @default(uuid()) @db.Uuid
   role      String
@@ -421,27 +418,20 @@ model CandidateEducation {
 // candidate experience schema
 
 model CandidateExperience {
-  id          String @id @default(uuid()) @db.Uuid
-  candidateId String @map("candidate_id") @db.Uuid
-
-  candidate CandidateProfile @relation(fields: [candidateId], references: [id], onDelete: Cascade)
-
-  companyName    String         @map("company_name")
+  id             String           @id @default(uuid()) @db.Uuid
+  candidateId    String           @map("candidate_id") @db.Uuid
+  candidate      CandidateProfile @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  companyName    String           @map("company_name")
   position       String
-  employmentType EmploymentType @map("employment_type")
-
-  description String? @db.Text
-
-  startDate DateTime  @map("start_date") @db.Date
-  endDate   DateTime? @map("end_date") @db.Date
-
-  isCurrent Boolean @default(false) @map("is_current")
-
-  countryName String? @map("country_name")
-  cityName    String? @map("city_name")
-
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  employmentType EmploymentType   @map("employment_type")
+  description    String?          @db.Text
+  startDate      DateTime         @map("start_date") @db.Date
+  endDate        DateTime?        @map("end_date") @db.Date
+  isCurrent      Boolean          @default(false) @map("is_current")
+  countryName    String?          @map("country_name")
+  cityName       String?          @map("city_name")
+  createdAt      DateTime         @default(now()) @map("created_at")
+  updatedAt      DateTime         @updatedAt @map("updated_at")
 
   @@index([candidateId])
   @@map("candidate_experiences")
