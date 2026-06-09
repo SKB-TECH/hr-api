@@ -14,6 +14,7 @@ import { InterviewsModule } from './modules/interviews/interviews.module';
 import { CandidateModule } from './modules/candidate/candidate.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { LocalizationModule } from './modules/localization/localization.module';
+import { PipelineStagesModule } from './modules/pipeline-stages/pipeline-stages.module';
 
 @Module({
   imports: [
@@ -35,6 +36,7 @@ import { LocalizationModule } from './modules/localization/localization.module';
     InterviewsModule,
     AnalyticsModule,
     LocalizationModule,
+    PipelineStagesModule,
   ],
   controllers: [],
   providers: [],

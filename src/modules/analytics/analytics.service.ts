@@ -100,19 +100,23 @@ export class AnalyticsService {
     const applicationWhere: any = { job: { companyId } };
     if (startDate || endDate) applicationWhere.createdAt = dateFilter;
 
-    // Use Prisma's native groupBy to count applications by status
-    const statusDistribution = await this.prisma.application.groupBy({
-      by: ['status'],
-      where: applicationWhere,
-      _count: {
-        status: true,
-      },
+    // Use a simple, type-safe aggregation: fetch statuses then count in JS
+    // Typecast select to any to avoid strict generated Prisma types mismatch
+    const statuses = await this.prisma.application.findMany({
+      where: applicationWhere as any,
+      select: ({ status: true } as any),
     });
 
+    const counts: Record<string, number> = {};
+    for (const s of statuses) {
+      const key = String((s as any).status);
+      counts[key] = (counts[key] || 0) + 1;
+    }
+
     // Format for frontend: [{ status: 'APPLIED', count: 50 }, ...]
-    const formattedFunnel = statusDistribution.map((item) => ({
-      status: item.status,
-      count: item._count.status,
+    const formattedFunnel = Object.keys(counts).map((status) => ({
+      status,
+      count: counts[status],
     }));
 
     return {
