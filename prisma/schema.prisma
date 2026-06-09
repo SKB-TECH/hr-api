@@ -113,7 +113,7 @@ model CandidateProfile {
   userId                  String                   @unique @map("user_id") @db.Uuid
   user                    User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
   gender                  String?
-  phone                   Int?                     @map("phone_number")
+  phoneNumber             String?                     @map("phone_number")
   birthDate               DateTime?                @map("birth_date")
   headline                String?
   bio                     String?
@@ -138,6 +138,7 @@ model CandidateProfile {
   candidateExperiences    CandidateExperience[]
   candidateCertifications CandidateCertification[]
   candidateSkills         CandidateSkill[]
+  candidatePortfolios     CandidatePortfolio[]
 
   @@map("candidate_profiles")
 }
@@ -497,4 +498,19 @@ model CandidateSkill {
   @@unique([candidateId, skillId])
   @@index([skillId])
   @@map("candidate_skills")
+}
+
+model CandidatePortfolio {
+  id           String           @id @default(uuid()) @db.Uuid
+  candidateId  String           @map("candidate_id") @db.Uuid
+  candidate    CandidateProfile @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  title        String
+  description  String?          @db.Text
+  thumbnailUrl String           @map("thumbnail_url")
+  projectUrl   String?          @map("project_url")
+  createdAt    DateTime         @default(now()) @map("created_at")
+  updatedAt    DateTime         @updatedAt @map("updated_at")
+
+  @@index([candidateId])
+  @@map("candidate_portfolios")
 }

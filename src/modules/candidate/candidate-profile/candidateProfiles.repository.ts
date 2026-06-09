@@ -17,13 +17,12 @@ export class CandidateProfilesRepository {
   }
 
   async updateCandidateProfile(userId: string, dto: UpdateUserCandidateProfileDto) {
-    const { firstName, lastName, avatar, birthDate, ...profileFields } = dto;
+    const { fullName, avatar, birthDate, ...profileFields } = dto;
 
     return this.prisma.user.update({
       where: { id: userId },
       data: {
-        firstName,
-        lastName,
+        fullName,        
         avatar,
         candidateProfile: {
           update: {

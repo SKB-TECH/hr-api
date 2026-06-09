@@ -6,6 +6,7 @@ import { CandidateEducationModule } from './candidate-education/candidate-educat
 import { CandidateExperienceModule } from './candidate-experience/candidate-experience.module';
 import { CandidateCertificationModule } from './candidate-certificate/candidate-certificate.module';
 import { CandidateSkillModule } from './candidate-skill/candidate-skill.module';
+import { CandidatePortfolioModule } from './candidate-portfolio/candidate-portfolio.module';
 
 @Module({
  imports: [CandidateProfileModule,
@@ -13,7 +14,8 @@ import { CandidateSkillModule } from './candidate-skill/candidate-skill.module';
             CandidateCertificationModule,
             CandidateExperienceModule,
             CandidateResumeModule,
-            CandidateSkillModule
+            CandidateSkillModule,
+            CandidatePortfolioModule
             
         ],
   controllers: [],

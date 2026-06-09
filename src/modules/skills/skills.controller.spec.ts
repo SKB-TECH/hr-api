@@ -12,7 +12,7 @@ describe('SkillsController', () => {
     controller = module.get<SkillsController>(SkillsController);
   });
 
-  it('should be defined', () => {
+  it('should be ', () => {
     expect(controller).toBeDefined();
   });
 });
