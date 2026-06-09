@@ -5,6 +5,7 @@ import { ConfigService } from '@nestjs/config';
 import { AuthService } from './auth.service';
 import { UsersRepository } from '../users/users.repository';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service';
+import { AuditLogService } from '../audit-logs/audit-log.service';
 import * as bcrypt from 'bcrypt';
 
 const mockUser = {
@@ -17,19 +18,19 @@ const mockUser = {
   provider: 'local',
   avatar: null,
   emailVerified: false,
+  phoneVerified: false,
+  lastLogin: null,
+  twoFactorEnabled: false,
   createdAt: new Date(),
   updatedAt: new Date(),
-};
-
-const mockTokens = {
-  accessToken: 'mock_access_token',
-  refreshToken: 'mock_refresh_token',
+  deletedAt: null,
 };
 
 const mockUsersRepository = {
   findByEmail: jest.fn(),
   findById: jest.fn(),
   create: jest.fn(),
+  update: jest.fn(),
 };
 
 const mockJwtService = {
@@ -48,6 +49,10 @@ const mockPrismaService = {
   },
 };
 
+const mockAuditLogService = {
+  log: jest.fn().mockResolvedValue(undefined),
+};
+
 describe('AuthService', () => {
   let service: AuthService;
 
@@ -59,6 +64,7 @@ describe('AuthService', () => {
         { provide: JwtService, useValue: mockJwtService },
         { provide: ConfigService, useValue: mockConfigService },
         { provide: PrismaService, useValue: mockPrismaService },
+        { provide: AuditLogService, useValue: mockAuditLogService },
       ],
     }).compile();
 
@@ -72,14 +78,12 @@ describe('AuthService', () => {
       mockUsersRepository.create.mockResolvedValue(mockUser);
       mockPrismaService.refreshToken.create.mockResolvedValue({});
 
-      const dto = {
+      const result = await service.register({
         fullName: 'John Doe',
         email: 'john@example.com',
         password: 'password123',
         role: 'CANDIDATE' as any,
-      };
-
-      const result = await service.register(dto);
+      });
 
       expect(result.user.email).toBe('john@example.com');
       expect(result.user).not.toHaveProperty('password');
@@ -100,12 +104,36 @@ describe('AuthService', () => {
         }),
       ).rejects.toThrow(ConflictException);
     });
+
+    it('should fire an audit log on successful registration', async () => {
+      mockUsersRepository.findByEmail.mockResolvedValue(null);
+      mockUsersRepository.create.mockResolvedValue(mockUser);
+      mockPrismaService.refreshToken.create.mockResolvedValue({});
+
+      await service.register({
+        fullName: 'John Doe',
+        email: 'john@example.com',
+        password: 'password123',
+        role: 'CANDIDATE' as any,
+      });
+
+      expect(mockAuditLogService.log).toHaveBeenCalledWith(
+        expect.objectContaining({ action: 'REGISTER', module: 'auth' }),
+      );
+    });
   });
 
   describe('login', () => {
     it('should login and return tokens', async () => {
       const hashed = await bcrypt.hash('password123', 10);
-      mockUsersRepository.findByEmail.mockResolvedValue({ ...mockUser, password: hashed });
+      mockUsersRepository.findByEmail.mockResolvedValue({
+        ...mockUser,
+        password: hashed,
+      });
+      mockUsersRepository.update.mockResolvedValue({
+        ...mockUser,
+        lastLogin: new Date(),
+      });
       mockPrismaService.refreshToken.create.mockResolvedValue({});
 
       const result = await service.login({
@@ -120,9 +148,51 @@ describe('AuthService', () => {
       expect(result.refreshToken).toBeDefined();
     });
 
+    it('should update lastLogin on successful login', async () => {
+      const hashed = await bcrypt.hash('password123', 10);
+      mockUsersRepository.findByEmail.mockResolvedValue({
+        ...mockUser,
+        password: hashed,
+      });
+      mockUsersRepository.update.mockResolvedValue(mockUser);
+      mockPrismaService.refreshToken.create.mockResolvedValue({});
+
+      await service.login({
+        email: 'john@example.com',
+        password: 'password123',
+      });
+
+      expect(mockUsersRepository.update).toHaveBeenCalledWith(
+        'uuid-user-1',
+        expect.objectContaining({ lastLogin: expect.any(Date) }),
+      );
+    });
+
+    it('should fire an audit log on successful login', async () => {
+      const hashed = await bcrypt.hash('password123', 10);
+      mockUsersRepository.findByEmail.mockResolvedValue({
+        ...mockUser,
+        password: hashed,
+      });
+      mockUsersRepository.update.mockResolvedValue(mockUser);
+      mockPrismaService.refreshToken.create.mockResolvedValue({});
+
+      await service.login({
+        email: 'john@example.com',
+        password: 'password123',
+      });
+
+      expect(mockAuditLogService.log).toHaveBeenCalledWith(
+        expect.objectContaining({ action: 'LOGIN', module: 'auth' }),
+      );
+    });
+
     it('should throw UnauthorizedException for wrong password', async () => {
       const hashed = await bcrypt.hash('correctpassword', 10);
-      mockUsersRepository.findByEmail.mockResolvedValue({ ...mockUser, password: hashed });
+      mockUsersRepository.findByEmail.mockResolvedValue({
+        ...mockUser,
+        password: hashed,
+      });
 
       await expect(
         service.login({ email: 'john@example.com', password: 'wrongpassword' }),
@@ -133,13 +203,20 @@ describe('AuthService', () => {
       mockUsersRepository.findByEmail.mockResolvedValue(null);
 
       await expect(
-        service.login({ email: 'unknown@example.com', password: 'password123' }),
+        service.login({
+          email: 'unknown@example.com',
+          password: 'password123',
+        }),
       ).rejects.toThrow(UnauthorizedException);
     });
 
     it('should issue 30-day refresh token when rememberMe is true', async () => {
       const hashed = await bcrypt.hash('password123', 10);
-      mockUsersRepository.findByEmail.mockResolvedValue({ ...mockUser, password: hashed });
+      mockUsersRepository.findByEmail.mockResolvedValue({
+        ...mockUser,
+        password: hashed,
+      });
+      mockUsersRepository.update.mockResolvedValue(mockUser);
       mockPrismaService.refreshToken.create.mockResolvedValue({});
 
       await service.login({
@@ -150,13 +227,18 @@ describe('AuthService', () => {
 
       const createCall = mockPrismaService.refreshToken.create.mock.calls[0][0];
       const expiresAt: Date = createCall.data.expiresAt;
-      const diffDays = (expiresAt.getTime() - Date.now()) / (1000 * 60 * 60 * 24);
+      const diffDays =
+        (expiresAt.getTime() - Date.now()) / (1000 * 60 * 60 * 24);
       expect(diffDays).toBeGreaterThan(25);
     });
   });
 
   describe('logout', () => {
     it('should delete the refresh token', async () => {
+      mockPrismaService.refreshToken.findUnique.mockResolvedValue({
+        userId: 'uuid-user-1',
+        token: 'mock_refresh_token',
+      });
       mockPrismaService.refreshToken.deleteMany.mockResolvedValue({ count: 1 });
 
       const result = await service.logout('mock_refresh_token');
@@ -165,6 +247,20 @@ describe('AuthService', () => {
       expect(mockPrismaService.refreshToken.deleteMany).toHaveBeenCalledWith({
         where: { token: 'mock_refresh_token' },
       });
+    });
+
+    it('should fire an audit log on logout', async () => {
+      mockPrismaService.refreshToken.findUnique.mockResolvedValue({
+        userId: 'uuid-user-1',
+        token: 'mock_refresh_token',
+      });
+      mockPrismaService.refreshToken.deleteMany.mockResolvedValue({ count: 1 });
+
+      await service.logout('mock_refresh_token');
+
+      expect(mockAuditLogService.log).toHaveBeenCalledWith(
+        expect.objectContaining({ action: 'LOGOUT', module: 'auth' }),
+      );
     });
   });
 
@@ -188,20 +284,28 @@ describe('AuthService', () => {
         user: mockUser,
       });
 
-      await expect(service.refresh('expired_token')).rejects.toThrow(UnauthorizedException);
+      await expect(service.refresh('expired_token')).rejects.toThrow(
+        UnauthorizedException,
+      );
     });
 
     it('should throw UnauthorizedException for unknown refresh token', async () => {
       mockPrismaService.refreshToken.findUnique.mockResolvedValue(null);
 
-      await expect(service.refresh('unknown_token')).rejects.toThrow(UnauthorizedException);
+      await expect(service.refresh('unknown_token')).rejects.toThrow(
+        UnauthorizedException,
+      );
     });
   });
 
   describe('googleLogin', () => {
     it('should create a new user and return tokens if user does not exist', async () => {
       mockUsersRepository.findByEmail.mockResolvedValue(null);
-      mockUsersRepository.create.mockResolvedValue({ ...mockUser, provider: 'google' });
+      mockUsersRepository.create.mockResolvedValue({
+        ...mockUser,
+        provider: 'google',
+      });
+      mockUsersRepository.update.mockResolvedValue(mockUser);
       mockPrismaService.refreshToken.create.mockResolvedValue({});
 
       const result = await service.googleLogin({
@@ -216,7 +320,11 @@ describe('AuthService', () => {
     });
 
     it('should return tokens for an existing Google user without creating a new one', async () => {
-      mockUsersRepository.findByEmail.mockResolvedValue({ ...mockUser, provider: 'google' });
+      mockUsersRepository.findByEmail.mockResolvedValue({
+        ...mockUser,
+        provider: 'google',
+      });
+      mockUsersRepository.update.mockResolvedValue(mockUser);
       mockPrismaService.refreshToken.create.mockResolvedValue({});
 
       const result = await service.googleLogin({
@@ -227,6 +335,26 @@ describe('AuthService', () => {
 
       expect(result.user.email).toBe('john@example.com');
       expect(mockUsersRepository.create).not.toHaveBeenCalled();
+    });
+
+    it('should update lastLogin on Google login', async () => {
+      mockUsersRepository.findByEmail.mockResolvedValue({
+        ...mockUser,
+        provider: 'google',
+      });
+      mockUsersRepository.update.mockResolvedValue(mockUser);
+      mockPrismaService.refreshToken.create.mockResolvedValue({});
+
+      await service.googleLogin({
+        email: 'john@example.com',
+        fullName: 'John Doe',
+        avatar: 'https://avatar.url',
+      });
+
+      expect(mockUsersRepository.update).toHaveBeenCalledWith(
+        'uuid-user-1',
+        expect.objectContaining({ lastLogin: expect.any(Date) }),
+      );
     });
   });
 });

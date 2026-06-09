@@ -1,10 +1,10 @@
 import { Module } from '@nestjs/common';
-import { JobsService } from './jobs.service'; // <-- Fixed this path!
-import { JobsController } from './controllers/jobs.controller';
-import { JobsRepository } from './repositories/jobs.repository';
+import { JobsController } from './jobs.controller';
+import { JobsService } from './jobs.service';
 
 @Module({
   controllers: [JobsController],
-  providers: [JobsService, JobsRepository],
+  providers: [JobsService],
+  exports: [JobsService],
 })
 export class JobsModule {}

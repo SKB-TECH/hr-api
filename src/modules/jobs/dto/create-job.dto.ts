@@ -1,82 +1,81 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import {
-  IsString,
+import { 
+  IsString, 
+  IsEnum, 
+  IsOptional, 
+  IsNumber, 
+  IsDateString, 
   IsNotEmpty,
-  IsOptional,
-  IsNumber,
-  IsEnum,
-  IsUrl,
-  IsBoolean,
-  IsDateString,
+  IsArray,
+  IsUUID
 } from 'class-validator';
-import { Type } from 'class-transformer';
-import { EmploymentType, ExperienceLevel } from '@prisma/client';
+import { ApiPropertyOptional } from '@nestjs/swagger';
+import { JobCategory, JobLevel, EmploymentType } from '@prisma/client';
 
 export class CreateJobDto {
-  @ApiProperty({ example: 'Senior Frontend Developer' })
-  @IsString()
+  // --- Step 1 Fields: Basics ---
+
   @IsNotEmpty()
+  @IsString()
   title: string;
 
-  @ApiProperty({ example: 'Kigali, Rwanda' })
-  @IsString()
   @IsNotEmpty()
-  location: string;
+  @IsEnum(JobCategory)
+  category: JobCategory;
 
-  @ApiPropertyOptional({ example: 50000 })
-  @IsOptional()
-  @IsNumber()
-  @Type(() => Number)
-  salaryMin?: number;
-
-  @ApiPropertyOptional({ example: 80000 })
-  @IsOptional()
-  @IsNumber()
-  @Type(() => Number)
-  salaryMax?: number;
-
-  @ApiProperty({ example: '<p>Job description here</p>' })
-  @IsString()
   @IsNotEmpty()
-  description: string;
+  @IsEnum(JobLevel)
+  jobLevel: JobLevel;
 
-  @ApiPropertyOptional({ example: 'Short description for card' })
-  @IsOptional()
-  @IsString()
-  shortDescription?: string;
-
-  @ApiProperty({ enum: EmploymentType, example: EmploymentType.FULL_TIME })
+  @IsNotEmpty()
   @IsEnum(EmploymentType)
-  @IsNotEmpty()
   employmentType: EmploymentType;
 
-  @ApiProperty({ enum: ExperienceLevel, example: ExperienceLevel.SENIOR })
-  @IsEnum(ExperienceLevel)
   @IsNotEmpty()
-  experienceLevel: ExperienceLevel;
-
-  @ApiProperty({ example: 'Infinity Tech Innovation' })
   @IsString()
-  @IsNotEmpty()
-  companyName: string;
+  location: string;
 
-  @ApiPropertyOptional({ example: true, default: true })
   @IsOptional()
-  @IsBoolean()
-  @Type(() => Boolean)
-  isPublished?: boolean;
+  @IsNumber()
+  salaryMin?: number;
 
-  @ApiPropertyOptional({ example: 'https://example.com/apply' })
   @IsOptional()
-  @IsUrl()
-  applicationUrl?: string;
+  @IsNumber()
+  salaryMax?: number;
 
-  @ApiPropertyOptional({ example: '2026-12-31T23:59:59Z' })
+  @IsOptional()
+  @IsString()
+  salaryCurrency?: string; // Default is usually handled in the database or service
+
   @IsOptional()
   @IsDateString()
-  deadline?: string;
-  
-  @ApiPropertyOptional({ type: 'string', format: 'binary', description: 'Hero Background Image' })
+  applyBefore?: string; // Stored as a date string from the frontend
+
+  // --- Step 2 Fields: Description ---
+
+  @IsNotEmpty()
+  @IsString()
+  description: string;
+
+  @IsNotEmpty()
+  @IsString()
+  responsibilities: string;
+
+  @IsNotEmpty()
+  @IsString()
+  whoYouAre: string;
+
   @IsOptional()
-  file?: any;
+  @IsString()
+  niceToHaves?: string;
+
+  // --- Step 3 Fields: Skills ---
+
+  @ApiPropertyOptional({
+    description: 'Array of Skill IDs to attach to this job posting',
+    example: ['d4654ab8-a094-4606-8600-420e8607ccf4'],
+  })
+  @IsOptional()
+  @IsArray()
+  @IsUUID('4', { each: true })
+  skillIds?: string[];
 }

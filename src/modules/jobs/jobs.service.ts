@@ -1,56 +1,268 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { JobsRepository } from './repositories/jobs.repository';
-import { CreateJobDto } from './dto/create-job.dto';
-import { CreateApplicationDto } from './dto/create-application.dto';
-import { Job, JobApplication, Prisma } from '@prisma/client';
+import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { Prisma, JobStatus } from '@prisma/client';
+import { PrismaService } from '../../infrastructure/prisma/prisma.service';
+import { QueryJobDto, JobSortOption } from './dto/query-job.dto';
+import { CreateJobDto } from './dto/create-job.dto'; 
+import { UpdateJobDto } from './dto/update-job.dto';
 
 @Injectable()
 export class JobsService {
-  constructor(private readonly jobsRepository: JobsRepository) {}
+  constructor(private readonly prisma: PrismaService) {}
 
-  async findAll(): Promise<[Job[], number]> {
-    return this.jobsRepository.findAll({
-      where: { isPublished: true },
-      orderBy: { createdAt: 'desc' },
-    });
+  // ... [Esther's findAll logic maintained] ...
+  async findAll(query: QueryJobDto = {}) {
+    const {
+      keyword, location, employmentType, category, jobLevel,
+      salaryMin, salaryMax, sort = JobSortOption.MOST_RELEVANT,
+      page = 1, limit = 10,
+    } = query;
+
+    const skip = (page - 1) * limit;
+
+    const where: Prisma.JobWhereInput = {
+      status: JobStatus.LIVE,
+      deletedAt: null,
+      ...(keyword && { title: { contains: keyword, mode: 'insensitive' } }),
+      ...(location && { location: { contains: location, mode: 'insensitive' } }),
+      ...(employmentType?.length && { employmentType: { in: employmentType } }),
+      ...(category?.length && { category: { in: category } }),
+      ...(jobLevel?.length && { jobLevel: { in: jobLevel } }),
+      ...((salaryMin !== undefined || salaryMax !== undefined) && {
+        salaryMin: { ...(salaryMin !== undefined && { gte: salaryMin }) },
+        ...(salaryMax !== undefined && { salaryMax: { lte: salaryMax } }),
+      }),
+    };
+
+    const orderBy = this.buildOrderBy(sort);
+
+    const [data, totalItems] = await this.prisma.$transaction([
+      this.prisma.job.findMany({
+        where, skip, take: limit, orderBy,
+        select: {
+          id: true, title: true, location: true, employmentType: true,
+          jobLevel: true, category: true, salaryMin: true, salaryMax: true,
+          salaryCurrency: true, applicationsCount: true, capacity: true,
+          applyBefore: true, postedAt: true,
+          company: { select: { id: true, name: true, logo: true, location: true } },
+        },
+      }),
+      this.prisma.job.count({ where }),
+    ]);
+
+    const totalPages = Math.ceil(totalItems / limit);
+
+    return {
+      data,
+      meta: {
+        totalItems, totalPages, currentPage: page,
+        hasNextPage: page < totalPages, hasPreviousPage: page > 1,
+      },
+    };
   }
 
-  async findOne(id: string): Promise<Job> {
-    const job = await this.jobsRepository.findOne({ id });
-    if (!job || !job.isPublished) {
-      throw new NotFoundException(`Job with ID ${id} not found`);
-    }
+  // ... [Esther's findOne logic FIXED] ...
+  async findOne(id: string) {
+    const job = await this.prisma.job.findFirst({
+      where: { id, deletedAt: null },
+      include: {
+        company: {
+          select: {
+            id: true, name: true, logo: true, description: true,
+            location: true, website: true, coverImage: true,
+          },
+        },
+        skills: { 
+          select: { 
+            id: true, 
+            skill: {
+              select: {
+                id: true,
+                name: true,
+                category: true
+              }
+            }
+          } 
+        },
+        benefits: { select: { id: true, title: true, description: true } },
+      },
+    });
+
+    if (!job) throw new NotFoundException('Job not found');
     return job;
   }
 
-  async create(dto: CreateJobDto): Promise<Job> {
-    return this.jobsRepository.create(dto as unknown as Prisma.JobCreateInput);
+  private buildOrderBy(sort: JobSortOption): Prisma.JobOrderByWithRelationInput {
+    switch (sort) {
+      case JobSortOption.NEWEST: return { postedAt: 'desc' };
+      case JobSortOption.SALARY_HIGH: return { salaryMax: 'desc' };
+      case JobSortOption.SALARY_LOW: return { salaryMin: 'asc' };
+      default: return { postedAt: 'desc' };
+    }
   }
 
-  async update(id: string, dto: Partial<CreateJobDto>): Promise<Job> {
-    await this.findOne(id);
-    return this.jobsRepository.update({
-      where: { id },
-      data: dto as Prisma.JobUpdateInput,
+  // ==================================================
+  // Charles : Create Job (Company Dashboard)
+  // ==================================================
+  async createJob(createJobDto: CreateJobDto, userId: string) {
+    // 1. Find the company the logged-in user belongs to
+    const companyMember = await this.prisma.companyMember.findFirst({
+      where: { userId: userId },
     });
+
+    if (!companyMember) {
+      throw new NotFoundException('You must be assigned to a company to post a job.');
+    }
+
+    // 2. Extract skillIds so Prisma doesn't get validation errors, keeping the rest in jobData
+    const { skillIds, ...jobData } = createJobDto;
+
+    // 3. If skills were provided, fetch their names (schema requires name on JobSkill create)
+    let skillCreates: any[] | undefined;
+    if (skillIds && skillIds.length > 0) {
+      const skills = await (this.prisma as any).skill.findMany({
+        where: { id: { in: skillIds } },
+        select: { id: true, name: true },
+      });
+      skillCreates = skills.map((s: any) => ({
+        skill: { connect: { id: s.id } },
+        name: s.name,
+      }));
+    }
+
+    // 4. Create the job and link the skills in a single transaction
+    const newJob = await this.prisma.job.create({
+      data: {
+        ...jobData,
+        company: { connect: { id: companyMember.companyId } },
+        status: JobStatus.DRAFT, // Uses Prisma's native enum
+        ...(skillCreates && skillCreates.length > 0 && { skills: { create: skillCreates } }),
+      },
+      // Instruct Prisma to return the newly linked skills so we can verify the transaction
+      include: {
+        // cast to any to avoid mismatched generated types in this environment
+        skills: {
+          include: {
+            skill: {
+              select: { id: true, name: true, category: true },
+            },
+          },
+        },
+        company: { select: { id: true, name: true } },
+      } as any,
+    });
+
+    return {
+      message: 'Job created successfully',
+      data: newJob,
+    };
   }
 
-  async remove(id: string): Promise<Job> {
-    await this.findOne(id);
-    return this.jobsRepository.update({
-      where: { id },
-      data: { isPublished: false },
+  // ==================================================
+  // Charles : Get Company Jobs (Screen 3.9)
+  // ==================================================
+  async findMyCompanyJobs(userId: string, query: QueryJobDto) {
+    const companyMember = await this.prisma.companyMember.findFirst({
+      where: { userId: userId },
     });
+
+    if (!companyMember) {
+      throw new NotFoundException('You are not associated with any company.');
+    }
+
+    const { page = 1, limit = 10 } = query;
+    const skip = (page - 1) * limit;
+
+    const statusFilter = (query as any).status; 
+
+    const where: Prisma.JobWhereInput = {
+      companyId: companyMember.companyId,
+      deletedAt: null, 
+      ...(statusFilter && { status: statusFilter }), 
+    };
+
+    const [data, totalItems] = await this.prisma.$transaction([
+      this.prisma.job.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { createdAt: 'desc' }, 
+        select: {
+          id: true,
+          title: true,
+          employmentType: true,
+          location: true,
+          status: true,
+          applicationsCount: true,
+          postedAt: true,
+          createdAt: true,
+        },
+      }),
+      this.prisma.job.count({ where }),
+    ]);
+
+    return {
+      data,
+      meta: {
+        totalItems,
+        totalPages: Math.ceil(totalItems / limit),
+        currentPage: page,
+      },
+    };
   }
 
-  async apply(jobId: string, dto: CreateApplicationDto): Promise<JobApplication> {
-    await this.findOne(jobId);
-    return this.jobsRepository.saveApplication({
-      jobId,
-      fullName: dto.fullName,
-      email: dto.email,
-      phone: dto.contactNumber,
-      coverLetter: dto.coverLetter,
+  // ==================================================
+  // Charles : Update Job (Edit Draft / Publish to Live)
+  // ==================================================
+  async updateJob(jobId: string, userId: string, updateJobDto: UpdateJobDto) {
+    const companyMember = await this.prisma.companyMember.findFirst({
+      where: { userId: userId },
     });
+    if (!companyMember) throw new NotFoundException('You are not associated with a company.');
+
+    const job = await this.prisma.job.findUnique({ where: { id: jobId } });
+    if (!job || job.deletedAt) throw new NotFoundException('Job not found.');
+
+    if (job.companyId !== companyMember.companyId) {
+      throw new ForbiddenException('You do not have permission to edit this job.');
+    }
+
+    const updatedJob = await this.prisma.job.update({
+      where: { id: jobId },
+      data: updateJobDto,
+    });
+
+    return {
+      message: 'Job updated successfully',
+      data: updatedJob,
+    };
+  }
+
+  // ==================================================
+  // Charles : Delete Job (Soft Delete)
+  // ==================================================
+  async deleteJob(jobId: string, userId: string) {
+    const companyMember = await this.prisma.companyMember.findFirst({
+      where: { userId: userId },
+    });
+    if (!companyMember) throw new NotFoundException('You are not associated with a company.');
+
+    const job = await this.prisma.job.findUnique({ where: { id: jobId } });
+    if (!job || job.deletedAt) throw new NotFoundException('Job not found.');
+
+    if (job.companyId !== companyMember.companyId) {
+      throw new ForbiddenException('You do not have permission to delete this job.');
+    }
+
+    await this.prisma.job.update({
+      where: { id: jobId },
+      data: {
+        status: JobStatus.CLOSED,
+        deletedAt: new Date(),
+      },
+    });
+
+    return {
+      message: 'Job successfully removed',
+    };
   }
 }
