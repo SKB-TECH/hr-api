@@ -1,5 +1,9 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
-import { v2 as cloudinary, UploadApiResponse, UploadApiErrorResponse } from 'cloudinary';
+import {
+  v2 as cloudinary,
+  UploadApiResponse,
+  UploadApiErrorResponse,
+} from 'cloudinary';
 import * as streamifier from 'streamifier';
 
 @Injectable()
@@ -18,7 +22,9 @@ export class CloudinaryService {
     const isPdf = file.mimetype === 'application/pdf';
 
     if (!isImage && !isPdf) {
-      throw new BadRequestException('Invalid file type. Only images (jpg, jpeg, png, gif, webp) and PDF files are allowed.');
+      throw new BadRequestException(
+        'Invalid file type. Only images (jpg, jpeg, png, gif, webp) and PDF files are allowed.',
+      );
     }
 
     return new Promise((resolve, reject) => {
@@ -27,7 +33,7 @@ export class CloudinaryService {
       };
 
       if (isPdf) {
-        uploadOptions.resource_type = 'raw'; 
+        uploadOptions.resource_type = 'raw';
       }
 
       const uploadStream = cloudinary.uploader.upload_stream(
@@ -53,7 +59,7 @@ export class CloudinaryService {
     return new Promise((resolve, reject) => {
       // Raw assets (PDFs) require the resource_type specified when running destroy()
       const options = isPdf ? { resource_type: 'raw' } : {};
-      
+
       cloudinary.uploader.destroy(publicId, options, (error, result) => {
         if (error) return reject(error);
         resolve(result);
@@ -66,7 +72,7 @@ export class CloudinaryService {
   }
 
   async replaceFile(
-    file:any,
+    file: any,
     oldPublicId: string,
     folder: string = 'infinity_job_assets',
   ): Promise<UploadApiResponse | UploadApiErrorResponse> {

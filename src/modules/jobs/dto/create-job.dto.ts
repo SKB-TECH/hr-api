@@ -4,8 +4,11 @@ import {
   IsOptional, 
   IsNumber, 
   IsDateString, 
-  IsNotEmpty 
+  IsNotEmpty,
+  IsArray,
+  IsUUID
 } from 'class-validator';
+import { ApiPropertyOptional } from '@nestjs/swagger';
 import { JobCategory, JobLevel, EmploymentType } from '@prisma/client';
 
 export class CreateJobDto {
@@ -64,4 +67,15 @@ export class CreateJobDto {
   @IsOptional()
   @IsString()
   niceToHaves?: string;
+
+  // --- Step 3 Fields: Skills ---
+
+  @ApiPropertyOptional({
+    description: 'Array of Skill IDs to attach to this job posting',
+    example: ['d4654ab8-a094-4606-8600-420e8607ccf4'],
+  })
+  @IsOptional()
+  @IsArray()
+  @IsUUID('4', { each: true })
+  skillIds?: string[];
 }

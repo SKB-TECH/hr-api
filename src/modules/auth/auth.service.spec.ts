@@ -12,8 +12,7 @@ const mockUser = {
   id: 'uuid-user-1',
   email: 'john@example.com',
   password: 'hashed_password',
-  firstName: 'John',
-  lastName: 'Doe',
+  fullName: 'John Doe',
   role: 'CANDIDATE',
   status: 'active',
   provider: 'local',
@@ -80,8 +79,7 @@ describe('AuthService', () => {
       mockPrismaService.refreshToken.create.mockResolvedValue({});
 
       const result = await service.register({
-        firstName: 'John',
-        lastName: 'Doe',
+        fullName: 'John Doe',
         email: 'john@example.com',
         password: 'password123',
         role: 'CANDIDATE' as any,
@@ -99,8 +97,7 @@ describe('AuthService', () => {
 
       await expect(
         service.register({
-          firstName: 'John',
-          lastName: 'Doe',
+          fullName: 'John Doe',
           email: 'john@example.com',
           password: 'password123',
           role: 'CANDIDATE' as any,
@@ -114,8 +111,7 @@ describe('AuthService', () => {
       mockPrismaService.refreshToken.create.mockResolvedValue({});
 
       await service.register({
-        firstName: 'John',
-        lastName: 'Doe',
+        fullName: 'John Doe',
         email: 'john@example.com',
         password: 'password123',
         role: 'CANDIDATE' as any,
@@ -130,8 +126,14 @@ describe('AuthService', () => {
   describe('login', () => {
     it('should login and return tokens', async () => {
       const hashed = await bcrypt.hash('password123', 10);
-      mockUsersRepository.findByEmail.mockResolvedValue({ ...mockUser, password: hashed });
-      mockUsersRepository.update.mockResolvedValue({ ...mockUser, lastLogin: new Date() });
+      mockUsersRepository.findByEmail.mockResolvedValue({
+        ...mockUser,
+        password: hashed,
+      });
+      mockUsersRepository.update.mockResolvedValue({
+        ...mockUser,
+        lastLogin: new Date(),
+      });
       mockPrismaService.refreshToken.create.mockResolvedValue({});
 
       const result = await service.login({
@@ -148,11 +150,17 @@ describe('AuthService', () => {
 
     it('should update lastLogin on successful login', async () => {
       const hashed = await bcrypt.hash('password123', 10);
-      mockUsersRepository.findByEmail.mockResolvedValue({ ...mockUser, password: hashed });
+      mockUsersRepository.findByEmail.mockResolvedValue({
+        ...mockUser,
+        password: hashed,
+      });
       mockUsersRepository.update.mockResolvedValue(mockUser);
       mockPrismaService.refreshToken.create.mockResolvedValue({});
 
-      await service.login({ email: 'john@example.com', password: 'password123' });
+      await service.login({
+        email: 'john@example.com',
+        password: 'password123',
+      });
 
       expect(mockUsersRepository.update).toHaveBeenCalledWith(
         'uuid-user-1',
@@ -162,11 +170,17 @@ describe('AuthService', () => {
 
     it('should fire an audit log on successful login', async () => {
       const hashed = await bcrypt.hash('password123', 10);
-      mockUsersRepository.findByEmail.mockResolvedValue({ ...mockUser, password: hashed });
+      mockUsersRepository.findByEmail.mockResolvedValue({
+        ...mockUser,
+        password: hashed,
+      });
       mockUsersRepository.update.mockResolvedValue(mockUser);
       mockPrismaService.refreshToken.create.mockResolvedValue({});
 
-      await service.login({ email: 'john@example.com', password: 'password123' });
+      await service.login({
+        email: 'john@example.com',
+        password: 'password123',
+      });
 
       expect(mockAuditLogService.log).toHaveBeenCalledWith(
         expect.objectContaining({ action: 'LOGIN', module: 'auth' }),
@@ -175,7 +189,10 @@ describe('AuthService', () => {
 
     it('should throw UnauthorizedException for wrong password', async () => {
       const hashed = await bcrypt.hash('correctpassword', 10);
-      mockUsersRepository.findByEmail.mockResolvedValue({ ...mockUser, password: hashed });
+      mockUsersRepository.findByEmail.mockResolvedValue({
+        ...mockUser,
+        password: hashed,
+      });
 
       await expect(
         service.login({ email: 'john@example.com', password: 'wrongpassword' }),
@@ -186,13 +203,19 @@ describe('AuthService', () => {
       mockUsersRepository.findByEmail.mockResolvedValue(null);
 
       await expect(
-        service.login({ email: 'unknown@example.com', password: 'password123' }),
+        service.login({
+          email: 'unknown@example.com',
+          password: 'password123',
+        }),
       ).rejects.toThrow(UnauthorizedException);
     });
 
     it('should issue 30-day refresh token when rememberMe is true', async () => {
       const hashed = await bcrypt.hash('password123', 10);
-      mockUsersRepository.findByEmail.mockResolvedValue({ ...mockUser, password: hashed });
+      mockUsersRepository.findByEmail.mockResolvedValue({
+        ...mockUser,
+        password: hashed,
+      });
       mockUsersRepository.update.mockResolvedValue(mockUser);
       mockPrismaService.refreshToken.create.mockResolvedValue({});
 
@@ -204,14 +227,18 @@ describe('AuthService', () => {
 
       const createCall = mockPrismaService.refreshToken.create.mock.calls[0][0];
       const expiresAt: Date = createCall.data.expiresAt;
-      const diffDays = (expiresAt.getTime() - Date.now()) / (1000 * 60 * 60 * 24);
+      const diffDays =
+        (expiresAt.getTime() - Date.now()) / (1000 * 60 * 60 * 24);
       expect(diffDays).toBeGreaterThan(25);
     });
   });
 
   describe('logout', () => {
     it('should delete the refresh token', async () => {
-      mockPrismaService.refreshToken.findUnique.mockResolvedValue({ userId: 'uuid-user-1', token: 'mock_refresh_token' });
+      mockPrismaService.refreshToken.findUnique.mockResolvedValue({
+        userId: 'uuid-user-1',
+        token: 'mock_refresh_token',
+      });
       mockPrismaService.refreshToken.deleteMany.mockResolvedValue({ count: 1 });
 
       const result = await service.logout('mock_refresh_token');
@@ -223,7 +250,10 @@ describe('AuthService', () => {
     });
 
     it('should fire an audit log on logout', async () => {
-      mockPrismaService.refreshToken.findUnique.mockResolvedValue({ userId: 'uuid-user-1', token: 'mock_refresh_token' });
+      mockPrismaService.refreshToken.findUnique.mockResolvedValue({
+        userId: 'uuid-user-1',
+        token: 'mock_refresh_token',
+      });
       mockPrismaService.refreshToken.deleteMany.mockResolvedValue({ count: 1 });
 
       await service.logout('mock_refresh_token');
@@ -254,27 +284,33 @@ describe('AuthService', () => {
         user: mockUser,
       });
 
-      await expect(service.refresh('expired_token')).rejects.toThrow(UnauthorizedException);
+      await expect(service.refresh('expired_token')).rejects.toThrow(
+        UnauthorizedException,
+      );
     });
 
     it('should throw UnauthorizedException for unknown refresh token', async () => {
       mockPrismaService.refreshToken.findUnique.mockResolvedValue(null);
 
-      await expect(service.refresh('unknown_token')).rejects.toThrow(UnauthorizedException);
+      await expect(service.refresh('unknown_token')).rejects.toThrow(
+        UnauthorizedException,
+      );
     });
   });
 
   describe('googleLogin', () => {
     it('should create a new user and return tokens if user does not exist', async () => {
       mockUsersRepository.findByEmail.mockResolvedValue(null);
-      mockUsersRepository.create.mockResolvedValue({ ...mockUser, provider: 'google' });
+      mockUsersRepository.create.mockResolvedValue({
+        ...mockUser,
+        provider: 'google',
+      });
       mockUsersRepository.update.mockResolvedValue(mockUser);
       mockPrismaService.refreshToken.create.mockResolvedValue({});
 
       const result = await service.googleLogin({
         email: 'john@example.com',
-        firstName: 'John',
-        lastName: 'Doe',
+        fullName: 'John Doe',
         avatar: 'https://avatar.url',
       });
 
@@ -284,14 +320,16 @@ describe('AuthService', () => {
     });
 
     it('should return tokens for an existing Google user without creating a new one', async () => {
-      mockUsersRepository.findByEmail.mockResolvedValue({ ...mockUser, provider: 'google' });
+      mockUsersRepository.findByEmail.mockResolvedValue({
+        ...mockUser,
+        provider: 'google',
+      });
       mockUsersRepository.update.mockResolvedValue(mockUser);
       mockPrismaService.refreshToken.create.mockResolvedValue({});
 
       const result = await service.googleLogin({
         email: 'john@example.com',
-        firstName: 'John',
-        lastName: 'Doe',
+        fullName: 'John Doe',
         avatar: 'https://avatar.url',
       });
 
@@ -300,14 +338,16 @@ describe('AuthService', () => {
     });
 
     it('should update lastLogin on Google login', async () => {
-      mockUsersRepository.findByEmail.mockResolvedValue({ ...mockUser, provider: 'google' });
+      mockUsersRepository.findByEmail.mockResolvedValue({
+        ...mockUser,
+        provider: 'google',
+      });
       mockUsersRepository.update.mockResolvedValue(mockUser);
       mockPrismaService.refreshToken.create.mockResolvedValue({});
 
       await service.googleLogin({
         email: 'john@example.com',
-        firstName: 'John',
-        lastName: 'Doe',
+        fullName: 'John Doe',
         avatar: 'https://avatar.url',
       });
 

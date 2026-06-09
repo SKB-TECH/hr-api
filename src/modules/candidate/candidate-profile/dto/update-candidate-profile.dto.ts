@@ -1,5 +1,16 @@
 // src/modules/candidate-profile/dto/update-candidate-profile.dto.ts
-import { IsString, IsOptional, IsEnum, IsInt, IsBoolean, IsNumber, Min, IsDateString } from 'class-validator';
+import { 
+  IsString, 
+  IsOptional, 
+  IsEnum, 
+  IsInt, 
+  IsBoolean, 
+  IsNumber, 
+  Min, 
+  IsDateString, 
+  IsArray, 
+  IsUUID 
+} from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Availability, WorkType, ProfileVisibility } from '@prisma/client';
 
@@ -112,4 +123,13 @@ export class UpdateUserCandidateProfileDto {
   @IsBoolean()
   @IsOptional()
   openToWork?: boolean;
+
+  @ApiPropertyOptional({
+    description: 'Array of Skill IDs to attach to the candidate profile',
+    example: ['d4654ab8-a094-4606-8600-420e8607ccf4'],
+  })
+  @IsArray()
+  @IsOptional()
+  @IsUUID('4', { each: true })
+  skillIds?: string[];
 }

@@ -7,20 +7,27 @@ import { UpdateUserCandidateProfileDto } from '@/modules/candidate/candidate-pro
 export class ParseProfileJsonPipe implements PipeTransform {
   async transform(value: any) {
     if (!value) {
-      throw new BadRequestException('The profile payload "data" field cannot be empty.');
+      throw new BadRequestException(
+        'The profile payload "data" field cannot be empty.',
+      );
     }
 
     try {
       const parsedObj = typeof value === 'string' ? JSON.parse(value) : value;
-      const objectInstance = plainToInstance(UpdateUserCandidateProfileDto, parsedObj);
-      
+      const objectInstance = plainToInstance(
+        UpdateUserCandidateProfileDto,
+        parsedObj,
+      );
+
       const errors = await validate(objectInstance, {
-        whitelist: true, 
+        whitelist: true,
         validationError: { target: false }, // Hides the raw values from error payloads for safety
       });
 
       if (errors.length > 0) {
-        const errorMessages = errors.map(err => Object.values(err.constraints || {})).flat();
+        const errorMessages = errors
+          .map((err) => Object.values(err.constraints || {}))
+          .flat();
         throw new BadRequestException({
           statusCode: 400,
           error: 'Bad Request',
@@ -28,7 +35,7 @@ export class ParseProfileJsonPipe implements PipeTransform {
           errors: errorMessages,
         });
       }
-      
+
       return objectInstance;
     } catch (error) {
       if (error instanceof BadRequestException) {
