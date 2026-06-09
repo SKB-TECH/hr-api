@@ -21,8 +21,6 @@ export class CandidateExperienceService {
   ) {}
 
 
-  // HELPER UTILITIES for profile validation, date checks, and ownership validation
-
   private async getProfileOrThrow(userId: string) {
     try {
       const result = await this.candidateProfileRepository.findProfileByUserId(userId);
@@ -47,7 +45,6 @@ export class CandidateExperienceService {
   }
 
 
-  // CREATE method with profile validation, date checks, and error handling
   private validateDates(startDate?: string | Date, endDate?: string | Date | null, isCurrent?: boolean) {
     if (!startDate) return;
 
@@ -82,8 +79,6 @@ export class CandidateExperienceService {
   }
 
 
-  // CREATE method with profile validation, date checks, and error handling
- 
   async create(userId: string, dto: CreateCandidateExperienceDto) {
     this.validateDates(dto.startDate, dto.endDate, dto.isCurrent);
 
@@ -111,8 +106,6 @@ export class CandidateExperienceService {
   }
 
 
-  // GET ALL experiences for authenticated candidate with profile validation and error handling
- 
   async findAll(userId: string) {
     const profile = await this.getProfileOrThrow(userId);
     
@@ -129,8 +122,6 @@ export class CandidateExperienceService {
   }
 
 
-  // GET ONE experience with ownership validation and error handling
-
   async findOne(id: string, userId: string) {
     const profile = await this.getProfileOrThrow(userId);
     const experience = await this.validateOwnership(id, profile.id);
@@ -141,8 +132,6 @@ export class CandidateExperienceService {
     };
   }
 
-
-  // UPDATE method with ownership validation, date checks, and error handling
 
   async update(id: string, userId: string, dto: Partial<CreateCandidateExperienceDto>) {
     const profile = await this.getProfileOrThrow(userId);
@@ -172,9 +161,6 @@ export class CandidateExperienceService {
     }
   }
 
-  
-  // DELETE method with ownership validation and error handling
-
   async remove(id: string, userId: string) {
     const profile = await this.getProfileOrThrow(userId);
     await this.validateOwnership(id, profile.id);
@@ -191,36 +177,23 @@ export class CandidateExperienceService {
     }
   }
 
-  
-
-  // PUBLIC VIEW of EXPERIENCES (for recruiters and visitors)
-
   async findPublicExperiences(idOrUserId: string) {
     let profile: any = null;
-
-    //  First try to fetch assuming the incoming parameter is a direct Profile ID
 
     const directProfile = await this.candidateProfileRepository.findById(idOrUserId);
 
     if (directProfile) {
       profile = directProfile;
     } else {
-
-      // If not found by Profile ID, fallback to searching by User ID
-
       const userWrapper = await this.candidateProfileRepository.findProfileByUserId(idOrUserId);
       if (userWrapper && userWrapper.candidateProfile) {
         profile = userWrapper.candidateProfile;
       }
     }
 
-    //  If neither strategy yields a valid profile, throw a clean 404
-
     if (!profile) {
       throw new ExperienceNotFoundException();
     }
-
-    // Enforce privacy controls on the resolved profile entity
 
     if (profile.profileVisibility === 'private') {
       throw new ForbiddenException('This profile is private');

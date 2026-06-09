@@ -11,36 +11,20 @@ export class CandidateProfilesRepository {
     return this.prisma.user.findUnique({
       where: { id: userId },
       include: {
-        candidateProfile: {
-          include: {
-            // This is the crucial addition: deeply fetching the master skills
-            candidateSkills: {
-              select: {
-                skill: {
-                  select: { 
-                    id: true, 
-                    name: true, 
-                    category: true 
-                  }
-                }
-              }
-            }
-          }
-        }
+        candidateProfile: true,
       },
     });
   }
 
   async updateCandidateProfile(userId: string, dto: UpdateUserCandidateProfileDto) {
-    // Extracted phoneNumber to prevent it from bleeding into the profileFields spread
-    const { fullName, avatar, birthDate, phoneNumber, ...profileFields } = dto;
+    const { firstName, lastName, avatar, birthDate, ...profileFields } = dto;
 
     return this.prisma.user.update({
       where: { id: userId },
       data: {
-        fullName,        
+        firstName,
+        lastName,
         avatar,
-        phone: phoneNumber, // Correctly mapped to the User table's phone column
         candidateProfile: {
           update: {
             ...profileFields,
@@ -53,14 +37,15 @@ export class CandidateProfilesRepository {
       },
     });
   }
-
   async findUserByEmail(email: string) {
-    return this.prisma.user.findUnique({
-      where: { email },
-    });
-  }
-
-  async updateUserAccount(userId: string, data: any) {
+  return this.prisma.user.findUnique({
+    where: { email },
+  });
+}
+async updateUserAccount(
+    userId: string,
+    data: any,
+  ) {
     return this.prisma.user.update({
       where: { id: userId },
       data,

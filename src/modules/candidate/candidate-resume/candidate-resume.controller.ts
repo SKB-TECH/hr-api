@@ -58,7 +58,6 @@ import { ResumeResponseDto} from './dto/resume.response.dto';
   }
 
 
-  //endpoint to get all resumes for a candidate
   @Get()
   @Roles(UserRole.CANDIDATE)
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -99,7 +98,6 @@ getPublicDefault(@Param('candidateId', ParseUUIDPipe) candidateId: string) {
 }
 
 
-  //end point to get the default resume for a candidate, accessible
   @Get('default')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.CANDIDATE)
@@ -120,7 +118,6 @@ getPublicDefault(@Param('candidateId', ParseUUIDPipe) candidateId: string) {
   
 
 
-  //endpoint to set a resume as default for a candidate
   @Patch('default/:resumeId')
   @Roles(UserRole.CANDIDATE)
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -146,7 +143,6 @@ getPublicDefault(@Param('candidateId', ParseUUIDPipe) candidateId: string) {
     
 
 
-  //endpoint to delete a resume
   @Delete(':id')
   @Roles(UserRole.CANDIDATE)
   @UseGuards(JwtAuthGuard, RolesGuard)

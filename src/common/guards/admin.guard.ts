@@ -15,7 +15,6 @@ export class AdminGuard implements CanActivate {
       throw new UnauthorizedException('Admin access required');
     }
 
-    // TODO: replace with real JWT verification
     return true;
   }
 }

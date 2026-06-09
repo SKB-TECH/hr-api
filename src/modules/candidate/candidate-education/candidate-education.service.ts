@@ -1,7 +1,5 @@
-// src/modules/candidate-education/candidate-education.service.ts
 import { Injectable, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { CandidateEducationRepository } from './candidate-education.repository';
-// import { CreateEducationDto } from './dto/create-candidate-education.dto';
 
 import { validate as isUuid } from 'uuid';
 

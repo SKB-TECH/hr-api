@@ -29,7 +29,6 @@ export class SkillManagementController {
   constructor(private readonly service: SkillManagementService) {}
 
 
-  // endpoint for admin and any company owner to creta ejob category
   @Post('admin/categories')
   @Roles(UserRole.ADMIN)
   @ApiOperation({ summary: 'Create a new skill category (Admin Only)' })
@@ -100,7 +99,6 @@ export class SkillManagementController {
   }
 
   @Get(':candidateId')
-  // @Roles(UserRole.COMPANY_OWNER, UserRole.RECRUITER, UserRole.ADMIN)
   @ApiOperation({ summary: 'Audit professional profile skills mapping by candidate ID' })
   @ApiParam({ name: 'candidateId', format: 'uuid' })
   @ApiResponse({ status: 200, type: [CandidateSkillResponseDto] })

@@ -5,7 +5,6 @@ import { PrismaService } from '@/infrastructure/prisma/prisma.service';
 export class CandidateProfilesRepository {
   constructor(private prisma: PrismaService) {}
 
-   // New Repository-like method
   async getCandidateProfileId(userId: string): Promise<string> {
     const profile = await this.prisma.candidateProfile.findUnique({
       where: { userId },

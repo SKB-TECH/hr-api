@@ -21,7 +21,6 @@ import { ParseUUIDPipe } from '@nestjs/common';
 export class CandidateEducationController {
   constructor(private readonly service: CandidateEducationService) {}
 
-  // CREATE
   @Post()
   @Roles(UserRole.CANDIDATE)
   @ApiOperation({ 
@@ -39,7 +38,6 @@ export class CandidateEducationController {
   create(@Req() req, @Body() dto: CreateEducationDto) {
     return this.service.add(req.user.id, dto);
   }
-// GET education records for a specific candidate (for company/recruiter/admin)
 @Get(':candidateId')
   @ApiOperation({ 
   summary: 'Get all candidate education records by candidate ID',
@@ -57,12 +55,10 @@ export class CandidateEducationController {
   format: 'uuid', 
   description: 'The unique identifier of the candidate whose education records are being retrieved',
   example: '3a889af9-fd9f-4c56-86c8-47a05f3af95b' })
-// @Roles(UserRole.COMPANY_OWNER, UserRole.RECRUITER, UserRole.ADMIN)
 findCandidateEducation(@Param('candidateId', ParseUUIDPipe) candidateId: string) {
   return this.service.getByCandidateId(candidateId);
 }
 
-  // GET ALL education records for the authenticated user
   @Get()
 
   @ApiOperation({ 
@@ -80,7 +76,6 @@ findCandidateEducation(@Param('candidateId', ParseUUIDPipe) candidateId: string)
     return this.service.getAll(req.user.id);
   }
 
-  // UPDATE education record by ID
   @Patch(':id')
   @Roles(UserRole.CANDIDATE)
   @ApiOperation({ 
@@ -115,7 +110,6 @@ findCandidateEducation(@Param('candidateId', ParseUUIDPipe) candidateId: string)
     return this.service.patch(req.user.id, id, dto);
   }
 
-  // DELETE education record by ID
   @Delete(':id')
   @Roles(UserRole.CANDIDATE)
   @ApiOperation({ 

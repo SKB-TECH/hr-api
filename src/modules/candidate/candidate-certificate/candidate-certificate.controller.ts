@@ -18,7 +18,6 @@ import { CandidateCertificationResponseDto } from './dto/certification-response.
 export class CandidateCertificationController {
   constructor(private readonly service: CandidateCertificationService) {}
 
-  //  CREATE
   @Post()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.CANDIDATE)
@@ -35,10 +34,8 @@ export class CandidateCertificationController {
     return this.service.add(req.user.id, dto);
   }
 
-  // PUBLIC / BACK-OFFICE ACCESS FOR OTHER ROLES
   @Get(':candidateId')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  // @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.RECRUITER, UserRole.HR_MANAGER, UserRole.COMPANY_OWNER)
   @ApiBearerAuth()
   @ApiOperation({
     summary: 'Get certificates by Candidate candidateprofile ID',
@@ -59,8 +56,6 @@ export class CandidateCertificationController {
     return this.service.getByCandidateId(candidateId);
   }
 
-  // GET ALL (SELF WORKPLACE ENGINE)
-
   @Get()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.CANDIDATE)
@@ -75,7 +70,6 @@ export class CandidateCertificationController {
     return this.service.getAllSelf(req.user.id);
   }
 
-  //  UPDATE (PARTIAL)
   @Patch(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.CANDIDATE)
@@ -104,7 +98,6 @@ export class CandidateCertificationController {
     return this.service.patch(req.user.id, id, dto);
   }
 
-  //  DELETE (SELF-OWNED RECORDS ONLY)
   @Delete(':id')
   @HttpCode(HttpStatus.OK)
   @UseGuards(JwtAuthGuard, RolesGuard)

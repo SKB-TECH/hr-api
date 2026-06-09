@@ -1,4 +1,3 @@
-// src/modules/candidate-education/candidate-education.repository.ts
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '@/infrastructure/prisma/prisma.service';
 import { CreateEducationDto } from './dto/create-candidate-education.dto';
@@ -10,7 +9,6 @@ import { BadRequestException } from '@nestjs/common';
 export class CandidateEducationRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  // get candidate profile by user ID
   async getProfileByUserId(userId: string) {
     if (!isUuid(userId)) {
       throw new BadRequestException('Invalid user ID format');
@@ -19,7 +17,6 @@ export class CandidateEducationRepository {
   }
 
 
-  // method to create a new education entry for a candidate
   async create(candidateId: string, data: any) {
     if (!isUuid(candidateId)) {
       throw new BadRequestException('Invalid candidate ID format');
@@ -34,7 +31,6 @@ export class CandidateEducationRepository {
     });
   }
 
-  // method to find all education entries for a candidate
   async findMany(candidateId: string) {
     if (!isUuid(candidateId)) {
       throw new BadRequestException('Invalid candidate ID format');

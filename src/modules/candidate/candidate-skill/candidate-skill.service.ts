@@ -7,8 +7,6 @@ import { CategoryResponseDto, SkillResponseDto, CandidateSkillResponseDto } from
 export class SkillManagementService {
   constructor(private readonly prisma: PrismaService) {}
 
-  // SKILL CATEGORY ACTIONS (ADMIN)
-
   async createCategory(dto: CreateCategoryDto): Promise<CategoryResponseDto> {
     const existing = await this.prisma.skillCategory.findFirst({
       where: { name: dto.name },
@@ -40,8 +38,6 @@ export class SkillManagementService {
   async findAllCategories(): Promise<CategoryResponseDto[]> {
     return this.prisma.skillCategory.findMany();
   }
-
-  // GLOBAL SKILLS DIRECTORY ACTIONS (ADMIN)
 
   async createSkill(dto: CreateSkillDto): Promise<SkillResponseDto> {
     const categoryExists = await this.prisma.skillCategory.findUnique({
@@ -88,11 +84,8 @@ export class SkillManagementService {
         category: true,
       },
     });
-    // Fixed: Using arrow function to keep 'this' safe
     return skills.map((item) => this.mapToSkillResponse(item));
   }
-
-  // CANDIDATE PROFILE SKILL SETS ACTIONS (CANDIDATE SELF-SERVICE)
 
   async assignSkillToCandidate(userId: string, dto: AssignSkillDto): Promise<CandidateSkillResponseDto> {
     const profile = await this.prisma.candidateProfile.findUnique({
@@ -161,12 +154,10 @@ export class SkillManagementService {
         },
       },
     });
-    // Fixed: Using arrow function to keep 'this' safe
     return records.map((node) => this.mapToCandidateSkillResponse(node));
   }
 
  async removeSkillFromCandidate(userId: string, candidateSkillId: string): Promise<void> {
-    // 1. Find the candidate profile first
     const profile = await this.prisma.candidateProfile.findUnique({
       where: { userId: userId },
     });
@@ -175,7 +166,6 @@ export class SkillManagementService {
       throw new NotFoundException('Candidate profile record not found.');
     }
 
-    // 2. Look for the exact bridge row using its own unique ID and make sure it belongs to this candidate
     const record = await this.prisma.candidateSkill.findFirst({
       where: { 
         id: candidateSkillId,
@@ -187,13 +177,11 @@ export class SkillManagementService {
       throw new NotFoundException('This skill mapping assignment was not found on your profile.');
     }
 
-    // 3. Delete the row cleanly
     await this.prisma.candidateSkill.delete({
       where: { id: record.id },
     });
   }
 
-  // Pure data converters
   private mapToSkillResponse(item: any): SkillResponseDto {
     return {
       id: item.id,
@@ -215,7 +203,7 @@ export class SkillManagementService {
 
   async getSkillsByCandidateProfileId(candidateId: string): Promise<CandidateSkillResponseDto[]> {
     const records = await this.prisma.candidateSkill.findMany({
-      where: { candidateId: candidateId }, // Queries directly by candidateId row value
+      where: { candidateId: candidateId },
       include: {
         skill: {
           include: {
