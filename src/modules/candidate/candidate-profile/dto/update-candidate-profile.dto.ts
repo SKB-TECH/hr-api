@@ -19,12 +19,9 @@ export class UpdateUserCandidateProfileDto {
   @ApiPropertyOptional({ example: 'Prince' })
   @IsString()
   @IsOptional()
-  firstName?: string;
+  fullName?: string;
 
-  @ApiPropertyOptional({ example: 'Manzi' })
-  @IsString()
-  @IsOptional()
-  lastName?: string;
+
 
   @ApiPropertyOptional({ example: '+250788123456' })
   @IsString()

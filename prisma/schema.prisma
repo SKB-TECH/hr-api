@@ -491,8 +491,8 @@ model CandidateSkill {
   candidate       CandidateProfile @relation(fields: [candidateId], references: [id], onDelete: Cascade)
   skillId         String           @map("skill_id") @db.Uuid
   skill           Skill            @relation(fields: [skillId], references: [id], onDelete: Cascade)
-  level           SkillLevel
-  yearsExperience Int              @map("years_experience")
+  level           SkillLevel?
+  yearsExperience Int?              @map("years_experience")
 
   @@unique([candidateId, skillId])
   @@index([skillId])

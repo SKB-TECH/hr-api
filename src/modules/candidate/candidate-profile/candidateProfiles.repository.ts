@@ -14,7 +14,7 @@ export class CandidateProfilesRepository {
         candidateProfile: {
           include: {
             // This is the crucial addition: deeply fetching the master skills
-            candidate_skills: {
+            candidateSkills: {
               select: {
                 skill: {
                   select: { 
@@ -33,13 +33,12 @@ export class CandidateProfilesRepository {
 
   async updateCandidateProfile(userId: string, dto: UpdateUserCandidateProfileDto) {
     // Extracted phoneNumber to prevent it from bleeding into the profileFields spread
-    const { firstName, lastName, avatar, birthDate, phoneNumber, ...profileFields } = dto;
+    const { fullName, avatar, birthDate, phoneNumber, ...profileFields } = dto;
 
     return this.prisma.user.update({
       where: { id: userId },
       data: {
-        firstName,
-        lastName,
+        fullName,        
         avatar,
         phone: phoneNumber, // Correctly mapped to the User table's phone column
         candidateProfile: {

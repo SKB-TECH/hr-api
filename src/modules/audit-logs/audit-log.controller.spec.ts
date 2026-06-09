@@ -17,8 +17,7 @@ const mockPaginatedResult = {
       user: {
         id: 'uuid-user-1',
         email: 'admin@example.com',
-        firstName: 'Admin',
-        lastName: 'User',
+        fullName: 'Admin',      
         role: 'ADMIN',
       },
     },
