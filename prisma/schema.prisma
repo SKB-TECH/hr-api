@@ -336,11 +336,13 @@ model Job {
 }
 
 model JobSkill {
-  id    String @id @default(uuid()) @db.Uuid
-  jobId String @map("job_id") @db.Uuid
-  job   Job    @relation(fields: [jobId], references: [id], onDelete: Cascade)
-  name  String
+  id      String @id @default(uuid()) @db.Uuid
+  jobId   String @map("job_id") @db.Uuid
+  skillId String @map("skill_id") @db.Uuid
+  job     Job    @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  skill   Skill  @relation(fields: [skillId], references: [id], onDelete: Cascade)
 
+  @@unique([jobId, skillId])
   @@map("job_skills")
 }
 
@@ -478,6 +480,7 @@ model Skill {
   categoryId      String           @map("category_id") @db.Uuid
   category        SkillCategory    @relation(fields: [categoryId], references: [id], onDelete: Cascade)
   candidateSkills CandidateSkill[]
+  jobSkills       JobSkill[]
 
   @@map("skills")
 }
