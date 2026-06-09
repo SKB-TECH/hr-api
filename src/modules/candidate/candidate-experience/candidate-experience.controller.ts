@@ -20,7 +20,7 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { JwtAuthGuard } from '@/modules/auth/guards/jwt-auth.guard';
 
 import { CandidateExperienceService } from './candidate-experience.service';
 import { CreateCandidateExperienceDto } from './dto/create-candidate-experience.dto';
@@ -30,8 +30,8 @@ import { RolesGuard } from '@/common/guards/roles.guard';
 import { UserRole } from '@prisma/client';
 import { Roles } from '@/common/decorators/roles.decorator';
 
-@ApiTags('Candidate Experience')
-@Controller('candidate-experience')
+@ApiTags('Candidate / Experience')
+@Controller('candidate/experience')
 export class CandidateExperienceController {
   constructor(private readonly service: CandidateExperienceService) {}
 

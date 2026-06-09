@@ -7,15 +7,11 @@ import { CloudinaryModule } from './infrastructure/cloudinary/cloudinary.module'
 
 import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
-import { CandidateProfileModule } from './modules/candidate-profile/candidate-profile.module';
-import { CandidateResumeModule } from './modules/candidate-resume/candidate-resume.module';
-import { CandidateEducationModule } from './modules/candidate-education/candidate-education.module';
 import { CompaniesModule } from './modules/companies/companies.module';
 import { AuditLogModule } from './modules/audit-logs/audit-log.module';
 import { JobsModule } from './modules/jobs/jobs.module';
-import { CandidateExperienceModule } from './modules/candidate-experience/candidate-experience.module';
-import { CandidateCertificationModule } from './modules/candidate-certificate/candidate-certificate.module';
-import { CandidateSkillModule } from './modules/candidate-skill/candidate-skill.module';
+import { CandidateModule } from './modules/candidate/candidate.module'
+
 
 @Module({
   imports: [
@@ -28,15 +24,11 @@ import { CandidateSkillModule } from './modules/candidate-skill/candidate-skill.
     CloudinaryModule,
     AuthModule,
     UsersModule,
-    CandidateProfileModule,
-    CandidateResumeModule,
-    CandidateEducationModule,
+    CandidateModule,
     CompaniesModule,
     AuditLogModule,
     JobsModule,
-    CandidateExperienceModule,
-    CandidateCertificationModule,
-    CandidateSkillModule,
+
   ],
   controllers: [],
   providers: [],

@@ -3,10 +3,10 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags, ApiConsumes,ApiExtraModels } from '@nestjs/swagger';
 import { CandidateProfilesService } from './candidate-profile.service';
 import { UserCandidateDto } from './entities/candidate-profile.entity';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { UpdateUserCandidateProfileDto } from './dto/update-candidate-profile.dto';
 import { CandidateProfileUploadDto } from './dto/candidate-profile-upload.dto'; 
-import { ParseProfileJsonPipe } from '../../common/pipes/parse-json.pipe'; 
+import { ParseProfileJsonPipe } from '@/common/pipes/parse-json.pipe'; 
 import { RolesGuard } from '@/common/guards/roles.guard';
 import { Roles } from '@/common/decorators/roles.decorator';
 import { UserRole } from '@prisma/client';
@@ -15,14 +15,14 @@ import { UnauthorizedErrorDto} from '@/common/response/unauthorized.response';
 
 
 
-@ApiTags('Candidate-Profiles')
+@ApiTags('Candidate / Profiles')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Controller('candidate')
+@Controller('candidate/profile')
 export class CandidateProfilesController {
   constructor(private readonly profilesService: CandidateProfilesService) {}
 
-  @Get('profile_info')
+  @Get('info')
   @Roles(UserRole.CANDIDATE)
   @ApiOperation({ 
     summary: 'Retrieve full candidate profile',
@@ -40,7 +40,7 @@ export class CandidateProfilesController {
     return new UserCandidateDto(userProfile);
   }
 
-  @Patch('update_profile') 
+  @Patch('update') 
   @Roles(UserRole.CANDIDATE)
   @ApiConsumes('multipart/form-data')
   @UseInterceptors(FileInterceptor('avatarFile'))
@@ -58,7 +58,7 @@ export class CandidateProfilesController {
   @ApiResponse({ status: 401, description: 'Unauthorized', type: UnauthorizedErrorDto })
   async updateCandidateProfile(
     @Req() req: any, 
-    // @Body() formPayload: CandidateProfileUploadDto, 
+    @Body() formPayload: CandidateProfileUploadDto, 
     @Body('data', ParseProfileJsonPipe) validatedDto: UpdateUserCandidateProfileDto, 
     @UploadedFile() file?: any,
   ): Promise<UserCandidateDto> {

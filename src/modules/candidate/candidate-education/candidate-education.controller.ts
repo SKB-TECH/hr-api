@@ -6,7 +6,7 @@ import {ApiTags,ApiBearerAuth,ApiOperation,ApiResponse,ApiParam,ApiBody,
 
 import { CandidateEducationService } from './candidate-education.service';
 import { CreateEducationDto } from './dto/create-candidate-education.dto';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { JwtAuthGuard } from '@/modules/auth/guards/jwt-auth.guard';
 import { RolesGuard } from '@/common/guards/roles.guard';
 import { UserRole } from '@prisma/client';
 import { Roles } from '@/common/decorators/roles.decorator';
@@ -14,10 +14,10 @@ import { UnauthorizedErrorDto } from '@/common/response/unauthorized.response';
 import { CandidateEducationResponseDto } from './dto/candidate-education-response.dto';
 import { ParseUUIDPipe } from '@nestjs/common';
 
-@ApiTags('Candidate-Education')
+@ApiTags('Candidate / Education')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Controller('candidate-education')
+@Controller('candidate/education')
 export class CandidateEducationController {
   constructor(private readonly service: CandidateEducationService) {}
 
@@ -40,7 +40,8 @@ export class CandidateEducationController {
     return this.service.add(req.user.id, dto);
   }
 // GET education records for a specific candidate (for company/recruiter/admin)
-@Get('candidates/:candidateId/education')  @ApiOperation({ 
+@Get(':candidateId')
+  @ApiOperation({ 
   summary: 'Get all candidate education records by candidate ID',
   description: `
     notes:
@@ -56,7 +57,7 @@ export class CandidateEducationController {
   format: 'uuid', 
   description: 'The unique identifier of the candidate whose education records are being retrieved',
   example: '3a889af9-fd9f-4c56-86c8-47a05f3af95b' })
-@Roles(UserRole.COMPANY_OWNER, UserRole.RECRUITER, UserRole.ADMIN)
+// @Roles(UserRole.COMPANY_OWNER, UserRole.RECRUITER, UserRole.ADMIN)
 findCandidateEducation(@Param('candidateId', ParseUUIDPipe) candidateId: string) {
   return this.service.getByCandidateId(candidateId);
 }

@@ -4,7 +4,7 @@ import {
 import { ApiTags, ApiBearerAuth, ApiOperation, ApiResponse, ApiParam, ApiBody } from '@nestjs/swagger';
 import { UserRole } from '@prisma/client';
 
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { JwtAuthGuard } from '@/modules/auth/guards/jwt-auth.guard';
 import { RolesGuard } from '@/common/guards/roles.guard';
 import { Roles } from '@/common/decorators/roles.decorator';
 import { UnauthorizedErrorDto } from '@/common/response/unauthorized.response';
@@ -13,8 +13,8 @@ import { CandidateCertificationService } from './candidate-certificate.service';
 import { CreateCandidateCertificationDto } from './dto/create-candidate-certificate.dto';
 import { CandidateCertificationResponseDto } from './dto/certification-response.dto';
 
-@ApiTags('Candidate Certifications')
-@Controller('candidate-certifications')
+@ApiTags('Candidate / Certifications')
+@Controller('candidate/certifications')
 export class CandidateCertificationController {
   constructor(private readonly service: CandidateCertificationService) {}
 
@@ -36,7 +36,7 @@ export class CandidateCertificationController {
   }
 
   // PUBLIC / BACK-OFFICE ACCESS FOR OTHER ROLES
-  @Get('candidates/:candidateId')
+  @Get(':candidateId')
   @UseGuards(JwtAuthGuard, RolesGuard)
   // @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.RECRUITER, UserRole.HR_MANAGER, UserRole.COMPANY_OWNER)
   @ApiBearerAuth()

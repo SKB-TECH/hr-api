@@ -9,7 +9,7 @@ import {
 import { CandidateExperienceRepository } from './candidate-experience.repository';
 import { CreateCandidateExperienceDto } from './dto/create-candidate-experience.dto';
 import { ExperienceNotFoundException } from './dto/experience-not-found.dto';
-import { CandidateProfilesRepository } from '@/modules/candidate-profile/candidateProfiles.repository';
+import { CandidateProfilesRepository } from '@/modules/candidate/candidate-profile/candidateProfiles.repository';
 
 @Injectable()
 export class CandidateExperienceService {

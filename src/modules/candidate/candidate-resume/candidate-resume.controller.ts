@@ -1,7 +1,7 @@
 import {Controller,Post,Get,Delete,Patch,Param,UploadedFile,UseInterceptors,Body, ParseUUIDPipe,} from '@nestjs/common';
 import { CandidateResumeService } from './candidate-resume.service';
 import { RolesGuard } from '@/common/guards/roles.guard';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { JwtAuthGuard } from '@/modules/auth/guards/jwt-auth.guard';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags, ApiConsumes, ApiBody,ApiParam} from '@nestjs/swagger';
 import {UseGuards,Req} from '@nestjs/common';
 import { ResumeFileInterceptor } from './interceptors/resume-upload.interceptor';
@@ -13,7 +13,7 @@ import { ResumeResponseDto} from './dto/resume.response.dto';
 
 
 
-@ApiTags('Candidate-Resumes')
+@ApiTags('Candidate / Resumes')
 @Controller('resumes')
 @ApiBearerAuth()
   export class CandidateResumeController {
