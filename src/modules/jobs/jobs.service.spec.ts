@@ -1,45 +1,66 @@
-/// <reference types="jest" />
 import { Test, TestingModule } from '@nestjs/testing';
 import { NotFoundException } from '@nestjs/common';
+import {
+  EmploymentType,
+  JobLevel,
+  JobCategory,
+  JobStatus,
+} from '@prisma/client';
 import { JobsService } from './jobs.service';
-import { JobsRepository } from './repositories/jobs.repository';
+import { PrismaService } from '../../infrastructure/prisma/prisma.service';
+import { JobSortOption } from './dto/query-job.dto';
+
+const mockCompany = {
+  id: 'uuid-company-1',
+  name: 'Stripe',
+  logo: 'https://cdn.example.com/stripe.png',
+  location: 'Paris, France',
+};
 
 const mockJob = {
   id: 'uuid-job-1',
-  title: 'Frontend Developer',
-  slug: 'frontend-developer',
-  location: 'Manchester, UK',
-  salaryMin: 45000,
-  salaryMax: 65000,
-  employmentType: 'FULL_TIME',
-  experienceLevel: 'MID',
-  companyName: 'Infinity Innovation',
-  description: 'UK Leading Ecommerce Firm...',
-  shortDescription: 'Great opportunity',
-  isPublished: true, 
+  title: 'Social Media Assistant',
+  location: 'Paris, France',
+  employmentType: EmploymentType.FULL_TIME,
+  jobLevel: JobLevel.ENTRY_LEVEL,
+  category: JobCategory.MARKETING,
+  salaryMin: 700,
+  salaryMax: 1000,
+  salaryCurrency: 'USD',
+  applicationsCount: 5,
+  capacity: 10,
+  applyBefore: new Date('2026-07-31'),
+  postedAt: new Date('2026-07-01'),
+  company: mockCompany,
+};
+
+const mockJobDetail = {
+  ...mockJob,
+  description: 'We are looking for a Social Media expert.',
+  responsibilities: 'Manage social channels.',
+  whoYouAre: 'You are passionate about social media.',
+  niceToHaves: 'Experience with analytics tools.',
+  status: JobStatus.LIVE,
+  deletedAt: null,
   createdAt: new Date(),
   updatedAt: new Date(),
+  skills: [{ id: 'uuid-skill-1', name: 'Copywriting' }],
+  benefits: [
+    {
+      id: 'uuid-benefit-1',
+      title: 'Full Healthcare',
+      description: 'We cover all healthcare.',
+    },
+  ],
 };
 
-const mockApplication = {
-  id: 'uuid-app-1',
-  jobId: 'uuid-job-1',
-  fullName: 'John Smith',
-  email: 'john@example.com',
-  phone: '+250788123456', 
-  coverLetter: 'I am very interested in this role.',
-  createdAt: new Date(),
-};
-
-// We provide all possible methods so the service never crashes
-const mockJobsRepository = {
-  findAll: jest.fn(),
-  findOne: jest.fn(), 
-  create: jest.fn(),
-  update: jest.fn(),
-  remove: jest.fn(),
-  delete: jest.fn(), 
-  saveApplication: jest.fn(),
+const mockPrismaService = {
+  job: {
+    findMany: jest.fn(),
+    findFirst: jest.fn(),
+    count: jest.fn(),
+  },
+  $transaction: jest.fn(),
 };
 
 describe('JobsService', () => {
@@ -49,7 +70,7 @@ describe('JobsService', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         JobsService,
-        { provide: JobsRepository, useValue: mockJobsRepository },
+        { provide: PrismaService, useValue: mockPrismaService },
       ],
     }).compile();
 
@@ -57,119 +78,191 @@ describe('JobsService', () => {
     jest.clearAllMocks();
   });
 
-  // ── JOBS ────────────────────────────────────────────────────────────────
-
   describe('findAll', () => {
-    it('should return array of jobs and total count', async () => {
-      mockJobsRepository.findAll.mockResolvedValue([[mockJob], 1]);
-      const [data, total] = await service.findAll();
-      
-      expect(data).toHaveLength(1);
-      expect(data[0].title).toBe('Frontend Developer');
-      expect(total).toBe(1);
+    it('should return paginated jobs with default page and limit', async () => {
+      mockPrismaService.$transaction.mockResolvedValue([[mockJob], 1]);
+
+      const result = await service.findAll({});
+
+      expect(result.data).toHaveLength(1);
+      expect(result.meta.totalItems).toBe(1);
+      expect(result.meta.currentPage).toBe(1);
+      expect(result.meta.totalPages).toBe(1);
+      expect(result.meta.hasNextPage).toBe(false);
+      expect(result.meta.hasPreviousPage).toBe(false);
     });
 
-    it('should return empty array when no jobs exist', async () => {
-      mockJobsRepository.findAll.mockResolvedValue([[], 0]);
-      const [data, total] = await service.findAll();
-      
-      expect(data).toEqual([]);
-      expect(total).toBe(0);
+    it('should filter by keyword in job title', async () => {
+      mockPrismaService.$transaction.mockResolvedValue([[mockJob], 1]);
+
+      const result = await service.findAll({ keyword: 'Social Media' });
+
+      expect(result.data).toHaveLength(1);
+      expect(mockPrismaService.$transaction).toHaveBeenCalledTimes(1);
+    });
+
+    it('should filter by location', async () => {
+      mockPrismaService.$transaction.mockResolvedValue([[mockJob], 1]);
+
+      const result = await service.findAll({ location: 'Paris' });
+
+      expect(result.data).toHaveLength(1);
+    });
+
+    it('should filter by employment type', async () => {
+      mockPrismaService.$transaction.mockResolvedValue([[mockJob], 1]);
+
+      const result = await service.findAll({
+        employmentType: [EmploymentType.FULL_TIME],
+      });
+
+      expect(result.data).toHaveLength(1);
+    });
+
+    it('should filter by multiple employment types', async () => {
+      mockPrismaService.$transaction.mockResolvedValue([[mockJob], 1]);
+
+      const result = await service.findAll({
+        employmentType: [EmploymentType.FULL_TIME, EmploymentType.REMOTE],
+      });
+
+      expect(result.data).toHaveLength(1);
+    });
+
+    it('should filter by category', async () => {
+      mockPrismaService.$transaction.mockResolvedValue([[mockJob], 1]);
+
+      const result = await service.findAll({
+        category: [JobCategory.MARKETING],
+      });
+
+      expect(result.data).toHaveLength(1);
+    });
+
+    it('should filter by job level', async () => {
+      mockPrismaService.$transaction.mockResolvedValue([[mockJob], 1]);
+
+      const result = await service.findAll({
+        jobLevel: [JobLevel.ENTRY_LEVEL],
+      });
+
+      expect(result.data).toHaveLength(1);
+    });
+
+    it('should filter by salary min', async () => {
+      mockPrismaService.$transaction.mockResolvedValue([[mockJob], 1]);
+
+      const result = await service.findAll({ salaryMin: 700 });
+
+      expect(result.data).toHaveLength(1);
+    });
+
+    it('should filter by salary max', async () => {
+      mockPrismaService.$transaction.mockResolvedValue([[mockJob], 1]);
+
+      const result = await service.findAll({ salaryMax: 3000 });
+
+      expect(result.data).toHaveLength(1);
+    });
+
+    it('should filter by salary range (min and max)', async () => {
+      mockPrismaService.$transaction.mockResolvedValue([[mockJob], 1]);
+
+      const result = await service.findAll({ salaryMin: 700, salaryMax: 3000 });
+
+      expect(result.data).toHaveLength(1);
+    });
+
+    it('should sort by newest', async () => {
+      mockPrismaService.$transaction.mockResolvedValue([[mockJob], 1]);
+
+      const result = await service.findAll({ sort: JobSortOption.NEWEST });
+
+      expect(result.data).toHaveLength(1);
+    });
+
+    it('should sort by salary high to low', async () => {
+      mockPrismaService.$transaction.mockResolvedValue([[mockJob], 1]);
+
+      const result = await service.findAll({ sort: JobSortOption.SALARY_HIGH });
+
+      expect(result.data).toHaveLength(1);
+    });
+
+    it('should sort by salary low to high', async () => {
+      mockPrismaService.$transaction.mockResolvedValue([[mockJob], 1]);
+
+      const result = await service.findAll({ sort: JobSortOption.SALARY_LOW });
+
+      expect(result.data).toHaveLength(1);
+    });
+
+    it('should return correct hasNextPage when more pages exist', async () => {
+      const jobs = Array.from({ length: 10 }, (_, i) => ({
+        ...mockJob,
+        id: `uuid-job-${i}`,
+      }));
+      mockPrismaService.$transaction.mockResolvedValue([jobs, 73]);
+
+      const result = await service.findAll({ page: 1, limit: 10 });
+
+      expect(result.meta.totalItems).toBe(73);
+      expect(result.meta.totalPages).toBe(8);
+      expect(result.meta.hasNextPage).toBe(true);
+      expect(result.meta.hasPreviousPage).toBe(false);
+    });
+
+    it('should return correct hasPreviousPage on page 2', async () => {
+      const jobs = Array.from({ length: 10 }, (_, i) => ({
+        ...mockJob,
+        id: `uuid-job-${i}`,
+      }));
+      mockPrismaService.$transaction.mockResolvedValue([jobs, 73]);
+
+      const result = await service.findAll({ page: 2, limit: 10 });
+
+      expect(result.meta.hasPreviousPage).toBe(true);
+      expect(result.meta.currentPage).toBe(2);
+    });
+
+    it('should return empty data when no jobs match filters', async () => {
+      mockPrismaService.$transaction.mockResolvedValue([[], 0]);
+
+      const result = await service.findAll({ keyword: 'nonexistent-job-xyz' });
+
+      expect(result.data).toHaveLength(0);
+      expect(result.meta.totalItems).toBe(0);
+      expect(result.meta.totalPages).toBe(0);
     });
   });
 
   describe('findOne', () => {
-    it('should return job when it exists', async () => {
-      mockJobsRepository.findOne.mockResolvedValue(mockJob); 
+    it('should return a job with company, skills and benefits', async () => {
+      mockPrismaService.job.findFirst.mockResolvedValue(mockJobDetail);
+
       const result = await service.findOne('uuid-job-1');
-      expect(result).toEqual(mockJob);
-      expect(mockJobsRepository.findOne).toHaveBeenCalledWith({ id: 'uuid-job-1' }); 
+
+      expect(result.id).toBe('uuid-job-1');
+      expect(result.title).toBe('Social Media Assistant');
+      expect(result.skills).toHaveLength(1);
+      expect(result.benefits).toHaveLength(1);
+      expect(result.company.name).toBe('Stripe');
     });
 
     it('should throw NotFoundException when job does not exist', async () => {
-      mockJobsRepository.findOne.mockResolvedValue(null); 
-      await expect(service.findOne('bad-id')).rejects.toThrow(NotFoundException);
-    });
-  });
+      mockPrismaService.job.findFirst.mockResolvedValue(null);
 
-  describe('create', () => {
-    it('should create and return a job', async () => {
-      const dto: any = { 
-        title: 'Frontend Developer',
-        location: 'Manchester, UK',
-        salaryMin: 45000,
-        salaryMax: 65000,
-        employmentType: 'FULL_TIME',
-        experienceLevel: 'MID',
-        companyName: 'Infinity Innovation',
-        description: 'UK Leading Ecommerce Firm...',
-      };
-      mockJobsRepository.create.mockResolvedValue(mockJob);
-      const result = await service.create(dto);
-      expect(result).toEqual(mockJob);
-      expect(mockJobsRepository.create).toHaveBeenCalledWith(dto);
-    });
-  });
-
-  describe('update', () => {
-    it('should update and return the job', async () => {
-      const dto: any = { salaryMin: 50000, salaryMax: 70000 };
-      mockJobsRepository.findOne.mockResolvedValue(mockJob); 
-      mockJobsRepository.update.mockResolvedValue({ ...mockJob, ...dto });
-      const result = await service.update('uuid-job-1', dto);
-      expect(result.salaryMin).toBe(50000);
-      
-      expect(mockJobsRepository.update).toHaveBeenCalledWith({
-        where: { id: 'uuid-job-1' },
-        data: dto,
-      });
-    });
-  });
-
-  describe('remove', () => {
-    it('should successfully process the removal without crashing', async () => {
-      // Set up our mocks to resolve successfully no matter which method the service uses
-      mockJobsRepository.findOne.mockResolvedValue(mockJob); 
-      mockJobsRepository.remove.mockResolvedValue(mockJob);
-      mockJobsRepository.delete.mockResolvedValue(mockJob);
-      mockJobsRepository.update.mockResolvedValue(mockJob);
-
-      // Execute the service. If this succeeds without throwing an error, 
-      // the test passes, elegantly handling both soft-deletes and hard-deletes.
-      const result = await service.remove('uuid-job-1');
-      
-      expect(result).toBeDefined();
-    });
-  });
-
-  // ── APPLICATIONS ────────────────────────────────────────────────────────
-
-  describe('apply', () => {
-    it('should save and return application when job exists', async () => {
-      const dto: any = {
-        fullName: 'John Smith',
-        email: 'john@example.com',
-        contactNumber: '+250788123456', 
-        coverLetter: 'I am very interested in this role.',
-      };
-      mockJobsRepository.findOne.mockResolvedValue(mockJob); 
-      mockJobsRepository.saveApplication.mockResolvedValue(mockApplication);
-      const result = await service.apply('uuid-job-1', dto);
-      expect(result).toEqual(mockApplication);
-      expect(mockJobsRepository.findOne).toHaveBeenCalledWith({ id: 'uuid-job-1' }); 
-      
-      expect(mockJobsRepository.saveApplication).toHaveBeenCalledWith({
-        fullName: 'John Smith',
-        email: 'john@example.com',
-        phone: '+250788123456',
-        coverLetter: 'I am very interested in this role.',
-        jobId: 'uuid-job-1'
-      });
+      await expect(service.findOne('bad-uuid')).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
-    it('should throw NotFoundException when job does not exist', async () => {
-      mockJobsRepository.findOne.mockResolvedValue(null); 
-      await expect(service.apply('bad-id', {} as any)).rejects.toThrow(NotFoundException);
+    it('should throw NotFoundException for a deleted job', async () => {
+      mockPrismaService.job.findFirst.mockResolvedValue(null);
+
+      await expect(service.findOne('uuid-deleted-job')).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 });

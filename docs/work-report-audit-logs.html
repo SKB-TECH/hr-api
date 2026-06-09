@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Work Report — Audit Logs Module</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Segoe UI', Arial, sans-serif; font-size: 13px; color: #1a1a2e; background: #fff; padding: 40px 60px; max-width: 900px; margin: auto; }
+
+    .header { border-bottom: 3px solid #1a1a2e; padding-bottom: 16px; margin-bottom: 28px; }
+    .header h1 { font-size: 22px; font-weight: 700; letter-spacing: 0.5px; }
+    .header .meta { margin-top: 10px; display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
+    .header .meta span { font-size: 12px; color: #444; }
+    .header .meta strong { color: #1a1a2e; }
+
+    h2 { font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #1a1a2e; border-left: 4px solid #1a1a2e; padding-left: 10px; margin: 28px 0 12px; }
+
+    p { line-height: 1.7; color: #333; margin-bottom: 10px; }
+
+    table { width: 100%; border-collapse: collapse; margin-bottom: 16px; font-size: 12px; }
+    thead tr { background: #1a1a2e; color: #fff; }
+    thead th { padding: 8px 12px; text-align: left; font-weight: 600; letter-spacing: 0.3px; }
+    tbody tr:nth-child(even) { background: #f4f6f9; }
+    tbody td { padding: 7px 12px; border-bottom: 1px solid #e0e0e0; color: #222; }
+
+    code { background: #f0f2f5; padding: 2px 6px; border-radius: 3px; font-size: 11px; font-family: 'Courier New', monospace; color: #c0392b; }
+
+    .badge { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 600; }
+    .badge.pass { background: #e8f5e9; color: #2e7d32; }
+    .badge.pushed { background: #e3f2fd; color: #1565c0; }
+
+    .summary-box { background: #f4f6f9; border-left: 4px solid #1a1a2e; padding: 14px 18px; margin-bottom: 20px; border-radius: 0 6px 6px 0; }
+    .summary-box p { margin: 0; line-height: 1.8; }
+
+    .total-row { background: #1a1a2e !important; color: #fff; font-weight: 700; }
+    .total-row td { color: #fff !important; }
+
+    .footer { margin-top: 40px; border-top: 1px solid #ccc; padding-top: 12px; font-size: 11px; color: #888; display: flex; justify-content: space-between; }
+
+    @media print {
+      body { padding: 20px 30px; }
+      .header { page-break-after: avoid; }
+      h2 { page-break-after: avoid; }
+      table { page-break-inside: avoid; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <h1>Work Report — Audit Logs Module</h1>
+    <div class="meta">
+      <span><strong>Project:</strong> JobHuntly HR Recruitment Platform</span>
+      <span><strong>Date:</strong> June 01, 2026</span>
+      <span><strong>Developer:</strong> Esther Ingabire</span>
+      <span><strong>Branch:</strong> <code>feature/audit-logs</code></span>
+    </div>
+  </div>
+
+  <!-- SUMMARY -->
+  <h2>Summary</h2>
+  <div class="summary-box">
+    <p>
+      Implemented the Audit Logs module which provides a tamper-evident trail of all sensitive actions
+      across the platform. Built as a global NestJS module so any service can log actions with a single
+      method call. The admin query endpoint supports full filtering and pagination.
+      Additionally, resolved correctness issues found in the Authentication and User Management modules:
+      Prisma enum usage, <code>lastLogin</code> stamping, soft-delete completion, and automatic audit
+      log entries on all sensitive user events.
+    </p>
+  </div>
+
+  <!-- BRANCH -->
+  <h2>Branch Delivered</h2>
+  <table>
+    <thead><tr><th>Branch</th><th>Purpose</th><th>Status</th></tr></thead>
+    <tbody>
+      <tr><td><code>feature/audit-logs</code></td><td>Audit log module + auth/users bug fixes</td><td><span class="badge pushed">Pushed</span></td></tr>
+      <tr><td><code>backend-devops</code></td><td>Merged feature/settings-login-details</td><td><span class="badge pushed">Pushed</span></td></tr>
+    </tbody>
+  </table>
+
+  <!-- SCHEMA -->
+  <h2>Schema Changes</h2>
+  <p><strong>User table — fields added from technical specification:</strong></p>
+  <table>
+    <thead><tr><th>Field</th><th>Type</th><th>Default</th><th>Purpose</th></tr></thead>
+    <tbody>
+      <tr><td><code>phone</code></td><td>VARCHAR UNIQUE</td><td>null</td><td>Optional phone number</td></tr>
+      <tr><td><code>phone_verified</code></td><td>BOOLEAN</td><td>false</td><td>Phone verification status</td></tr>
+      <tr><td><code>last_login</code></td><td>TIMESTAMP</td><td>null</td><td>Stamped on every successful login</td></tr>
+      <tr><td><code>two_factor_enabled</code></td><td>BOOLEAN</td><td>false</td><td>2FA toggle</td></tr>
+      <tr><td><code>deleted_at</code></td><td>TIMESTAMP</td><td>null</td><td>Soft delete timestamp</td></tr>
+    </tbody>
+  </table>
+
+  <p><strong>New table — AuditLog:</strong></p>
+  <table>
+    <thead><tr><th>Column</th><th>Type</th><th>Notes</th></tr></thead>
+    <tbody>
+      <tr><td><code>id</code></td><td>UUID PK</td><td>Auto-generated</td></tr>
+      <tr><td><code>user_id</code></td><td>UUID FK nullable</td><td>References users — SET NULL on delete so logs are never lost</td></tr>
+      <tr><td><code>action</code></td><td>VARCHAR</td><td>e.g. LOGIN, UPDATE_EMAIL</td></tr>
+      <tr><td><code>module</code></td><td>VARCHAR</td><td>e.g. auth, users</td></tr>
+      <tr><td><code>old_values</code></td><td>JSONB</td><td>State before the action</td></tr>
+      <tr><td><code>new_values</code></td><td>JSONB</td><td>State after the action</td></tr>
+      <tr><td><code>ip_address</code></td><td>VARCHAR</td><td>nullable</td></tr>
+      <tr><td><code>user_agent</code></td><td>TEXT</td><td>nullable</td></tr>
+      <tr><td><code>created_at</code></td><td>TIMESTAMP</td><td>Indexed for range queries</td></tr>
+    </tbody>
+  </table>
+
+  <!-- API ENDPOINTS -->
+  <h2>API Endpoint</h2>
+  <table>
+    <thead><tr><th>Method</th><th>Endpoint</th><th>Auth</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td><code>GET</code></td><td><code>/api/v1/admin/audit-logs</code></td><td>Bearer Token</td><td>Query paginated audit logs (ADMIN / SUPER_ADMIN only)</td></tr>
+    </tbody>
+  </table>
+
+  <p><strong>Supported query parameters:</strong>
+    <code>module</code>, <code>action</code>, <code>userId</code>, <code>from</code>, <code>to</code>, <code>page</code>, <code>limit</code>
+  </p>
+
+  <!-- ACTIONS LOGGED -->
+  <h2>Actions Logged Automatically</h2>
+  <table>
+    <thead><tr><th>Action</th><th>Module</th><th>Triggered By</th><th>Values Captured</th></tr></thead>
+    <tbody>
+      <tr><td><code>REGISTER</code></td><td>auth</td><td>POST /auth/register</td><td>email, role</td></tr>
+      <tr><td><code>LOGIN</code></td><td>auth</td><td>POST /auth/login</td><td>email</td></tr>
+      <tr><td><code>LOGOUT</code></td><td>auth</td><td>POST /auth/logout</td><td>userId</td></tr>
+      <tr><td><code>GOOGLE_LOGIN</code></td><td>auth</td><td>GET /auth/google/callback</td><td>email</td></tr>
+      <tr><td><code>UPDATE_EMAIL</code></td><td>users</td><td>PATCH /users/me/email</td><td>old email, new email</td></tr>
+      <tr><td><code>UPDATE_PASSWORD</code></td><td>users</td><td>PATCH /users/me/password</td><td>action only — no password values logged</td></tr>
+      <tr><td><code>CLOSE_ACCOUNT</code></td><td>users</td><td>DELETE /users/me</td><td>userId</td></tr>
+    </tbody>
+  </table>
+
+  <!-- BUG FIXES -->
+  <h2>Bug Fixes</h2>
+  <table>
+    <thead><tr><th>File</th><th>Issue</th><th>Fix</th></tr></thead>
+    <tbody>
+      <tr><td><code>auth.service.ts</code></td><td>Raw string literals used for enum values</td><td>Replaced with <code>UserStatus</code>, <code>UserRole</code>, <code>AuthProvider</code> Prisma enum constants</td></tr>
+      <tr><td><code>auth.service.ts</code></td><td><code>lastLogin</code> was always <code>null</code></td><td>Stamped on every successful login and Google OAuth login</td></tr>
+      <tr><td><code>users.service.ts</code></td><td>Soft delete did not stamp <code>deletedAt</code></td><td><code>closeAccount()</code> now sets both <code>status: deleted</code> and <code>deletedAt: new Date()</code></td></tr>
+    </tbody>
+  </table>
+
+  <!-- FILES -->
+  <h2>Files Added</h2>
+  <table>
+    <thead><tr><th>File</th><th>Purpose</th></tr></thead>
+    <tbody>
+      <tr><td><code>src/modules/audit-logs/audit-log.module.ts</code></td><td>Global NestJS module registration</td></tr>
+      <tr><td><code>src/modules/audit-logs/audit-log.controller.ts</code></td><td>GET /admin/audit-logs endpoint</td></tr>
+      <tr><td><code>src/modules/audit-logs/audit-log.service.ts</code></td><td>log() and findAll() business logic</td></tr>
+      <tr><td><code>src/modules/audit-logs/audit-log.repository.ts</code></td><td>Database queries with pagination</td></tr>
+      <tr><td><code>src/modules/audit-logs/dto/query-audit-log.dto.ts</code></td><td>Query parameter validation</td></tr>
+      <tr><td><code>src/modules/audit-logs/audit-log.service.spec.ts</code></td><td>Service unit tests</td></tr>
+      <tr><td><code>src/modules/audit-logs/audit-log.controller.spec.ts</code></td><td>Controller unit tests</td></tr>
+      <tr><td><code>src/common/guards/roles.guard.ts</code></td><td>Shared RBAC guard (moved to common)</td></tr>
+      <tr><td><code>src/common/decorators/roles.decorator.ts</code></td><td>Shared @Roles() decorator</td></tr>
+    </tbody>
+  </table>
+
+  <!-- SECURITY -->
+  <h2>Security</h2>
+  <table>
+    <thead><tr><th>Feature</th><th>Detail</th></tr></thead>
+    <tbody>
+      <tr><td>Endpoint access control</td><td>ADMIN and SUPER_ADMIN roles only — enforced by RolesGuard</td></tr>
+      <tr><td>Password never logged</td><td>UPDATE_PASSWORD audit entry captures action only — zero credential data</td></tr>
+      <tr><td>Log retention on user deletion</td><td>AuditLog.userId is SET NULL on cascade — logs are never lost when a user is deleted</td></tr>
+      <tr><td>Fire-and-forget logging</td><td>Logging failures never propagate to the API consumer</td></tr>
+      <tr><td>Soft delete completed</td><td>closeAccount() sets both status and deletedAt so deleted users are never hard-removed</td></tr>
+    </tbody>
+  </table>
+
+  <!-- TEST COVERAGE -->
+  <h2>Test Coverage</h2>
+  <table>
+    <thead><tr><th>Test File</th><th>Tests</th><th>Result</th></tr></thead>
+    <tbody>
+      <tr><td><code>audit-log.service.spec.ts</code></td><td>7</td><td><span class="badge pass">PASS</span></td></tr>
+      <tr><td><code>audit-log.controller.spec.ts</code></td><td>3</td><td><span class="badge pass">PASS</span></td></tr>
+      <tr><td><code>auth.service.spec.ts</code></td><td>15</td><td><span class="badge pass">PASS</span></td></tr>
+      <tr><td><code>users.service.spec.ts</code></td><td>11</td><td><span class="badge pass">PASS</span></td></tr>
+      <tr><td><code>users.controller.spec.ts</code></td><td>3</td><td><span class="badge pass">PASS</span></td></tr>
+      <tr><td><code>auth.controller.spec.ts</code></td><td>3</td><td><span class="badge pass">PASS</span></td></tr>
+      <tr><td><code>candidate-profile.service.spec.ts</code></td><td>5</td><td><span class="badge pass">PASS</span></td></tr>
+      <tr><td><code>candidate-profile.controller.spec.ts</code></td><td>3</td><td><span class="badge pass">PASS</span></td></tr>
+      <tr class="total-row"><td>Full Suite</td><td>50</td><td>PASS</td></tr>
+    </tbody>
+  </table>
+
+  <div class="footer">
+    <span>JobHuntly HR Recruitment Platform — Backend Team</span>
+    <span>June 01, 2026</span>
+  </div>
+
+</body>
+</html>

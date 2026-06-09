@@ -1,22 +1,19 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule, ConfigService } from '@nestjs/config';
-import { TypeOrmModule } from '@nestjs/typeorm';
+import { ConfigModule } from '@nestjs/config';
 import { ThrottlerModule } from '@nestjs/throttler';
 
-import { ContactModule } from './contact/contact.module';
-import { JobsModule as HomepageJobsModule } from './jobs/jobs.module';
-import { AuthModule } from './modules/auth/auth.module';
 import { PrismaModule } from './infrastructure/prisma/prisma.module';
 import { CloudinaryModule } from './infrastructure/cloudinary/cloudinary.module';
+
+import { AuthModule } from './modules/auth/auth.module';
+import { UsersModule } from './modules/users/users.module';
+import { CompaniesModule } from './modules/companies/companies.module';
+import { AuditLogModule } from './modules/audit-logs/audit-log.module';
 import { JobsModule } from './modules/jobs/jobs.module';
-import { HeroModule } from './modules/hero/hero.module';
-import { AboutModule } from './modules/about/about.module';
-import { MediaModule } from './modules/media/media.module';
-import { HeroSection } from './modules/about/entities/hero-section.entity';
-import { CeoSection } from './modules/about/entities/ceo-section.entity';
-import { TeamMember } from './modules/about/entities/team-member.entity';
-import { ContactSubmission } from './modules/about/entities/contact-submission.entity';
-import { Media } from './modules/media/entities/media.entity';
+import { SkillsModule } from './modules/skills/skills.module';
+import { ApplicationsModule } from './modules/applications/applications.module';
+import { InterviewsModule } from './modules/interviews/interviews.module';
+import { CandidateModule } from './modules/candidate/candidate.module';
 
 @Module({
   imports: [
@@ -25,30 +22,17 @@ import { Media } from './modules/media/entities/media.entity';
       envFilePath: ['.env.local', '.env'],
     }),
     ThrottlerModule.forRoot([{ ttl: 60000, limit: 10 }]),
-    TypeOrmModule.forRootAsync({
-      imports: [ConfigModule],
-      inject: [ConfigService],
-      useFactory: (config: ConfigService) => ({
-        type: 'postgres',
-        host: config.get<string>('DB_HOST', 'localhost'),
-        port: config.get<number>('DB_PORT', 5432),
-        username: config.get<string>('DB_USERNAME', 'postgres'),
-        password: config.get<string>('DB_PASSWORD', 'postgres'),
-        database: config.get<string>('DB_NAME', 'hr_api'),
-        entities: [HeroSection, CeoSection, TeamMember, ContactSubmission, Media],
-        synchronize: true,
-        logging: false,
-      }),
-    }),
     PrismaModule,
     CloudinaryModule,
-    ContactModule,
-    HomepageJobsModule,
-    JobsModule,
-    HeroModule,
-    AboutModule,
-    MediaModule,
     AuthModule,
+    UsersModule,
+    CandidateModule,
+    CompaniesModule,
+    AuditLogModule,
+    JobsModule,
+    SkillsModule,
+    ApplicationsModule,
+    InterviewsModule,
   ],
   controllers: [],
   providers: [],
