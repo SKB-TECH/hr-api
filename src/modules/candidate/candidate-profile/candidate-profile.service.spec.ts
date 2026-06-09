@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { CandidateProfilesService } from './candidate-profile.service';
 import { CandidateProfilesRepository } from './candidateProfiles.repository';
-import { CloudinaryService } from '../../infrastructure/cloudinary/cloudinary.service';
+import { CloudinaryService } from '@/infrastructure/cloudinary/cloudinary.service';
 import { NotFoundException } from '@nestjs/common';
 
 describe('CandidateProfilesService', () => {

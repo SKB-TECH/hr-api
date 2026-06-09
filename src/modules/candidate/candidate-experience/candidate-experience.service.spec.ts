@@ -2,7 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { BadRequestException, ForbiddenException, InternalServerErrorException } from '@nestjs/common';
 import { CandidateExperienceService } from './candidate-experience.service';
 import { CandidateExperienceRepository } from './candidate-experience.repository';
-import { CandidateProfilesRepository } from '@/modules/candidate-profile/candidateProfiles.repository';
+import { CandidateProfilesRepository } from '@/modules/candidate/candidate-profile/candidateProfiles.repository';
 import { ExperienceNotFoundException } from './dto/experience-not-found.dto';
 
 describe('CandidateExperienceService', () => {

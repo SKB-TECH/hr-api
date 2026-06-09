@@ -3,7 +3,7 @@ import { CandidateExperienceController } from './candidate-experience.controller
 import { CandidateExperienceService } from './candidate-experience.service';
 import { CreateCandidateExperienceDto } from './dto/create-candidate-experience.dto';
 import { CandidateExperienceRepository } from './candidate-experience.repository';
-import { CandidateProfilesRepository } from '@/modules/candidate-profile/candidateProfiles.repository';
+import { CandidateProfilesRepository } from '@/modules/candidate/candidate-profile/candidateProfiles.repository';
 
 describe('CandidateExperienceController', () => {
   let controller: CandidateExperienceController;
