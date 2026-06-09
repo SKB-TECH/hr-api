@@ -14,6 +14,7 @@ export class CandidateProfileUploadDto {
   @ApiProperty({
     type: 'object',
     description: 'Provide all profile parameters here as a single nested JSON object block',
+    additionalProperties: true,
     oneOf: [{ $ref: getSchemaPath(UpdateUserCandidateProfileDto) }], 
   })
   @IsNotEmpty()
