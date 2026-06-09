@@ -1,29 +1,22 @@
 import {
-  IsString, 
-  IsOptional, 
-  IsEnum, 
-  IsInt, 
-  IsBoolean, 
-  IsNumber, 
-  Min, 
-  IsDateString, 
-  IsArray, 
-  IsUUID 
+  IsString,
+  IsOptional,
+  IsEnum,
+  IsInt,
+  IsBoolean,
+  IsNumber,
+  Min,
+  IsDateString,
 } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Availability, WorkType, ProfileVisibility } from '@prisma/client';
 
 export class UpdateUserCandidateProfileDto {
-  
-  @ApiPropertyOptional({ example: 'Prince' })
-  @IsString()
-  @IsOptional()
-  firstName?: string;
 
-  @ApiPropertyOptional({ example: 'Manzi' })
+  @ApiPropertyOptional({ example: 'Prince Manzi' })
   @IsString()
   @IsOptional()
-  lastName?: string;
+  fullName?: string;
 
   @ApiPropertyOptional({ example: '+250788123456' })
   @IsString()
@@ -123,12 +116,4 @@ export class UpdateUserCandidateProfileDto {
   @IsOptional()
   openToWork?: boolean;
 
-  @ApiPropertyOptional({
-    description: 'Array of Skill IDs to attach to the candidate profile',
-    example: ['d4654ab8-a094-4606-8600-420e8607ccf4'],
-  })
-  @IsArray()
-  @IsOptional()
-  @IsUUID('4', { each: true })
-  skillIds?: string[];
 }

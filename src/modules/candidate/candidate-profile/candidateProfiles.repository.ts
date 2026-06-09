@@ -12,14 +12,10 @@ export class CandidateProfilesRepository {
       include: {
         candidateProfile: {
           include: {
-            candidate_skills: {
+            candidateSkills: {
               select: {
                 skill: {
-                  select: { 
-                    id: true, 
-                    name: true, 
-                    category: true 
-                  }
+                  select: { id: true, name: true, slug: true }
                 }
               }
             }
@@ -30,13 +26,12 @@ export class CandidateProfilesRepository {
   }
 
   async updateCandidateProfile(userId: string, dto: UpdateUserCandidateProfileDto) {
-    const { firstName, lastName, avatar, birthDate, phoneNumber, ...profileFields } = dto;
+    const { fullName, avatar, birthDate, phoneNumber, ...profileFields } = dto;
 
     return this.prisma.user.update({
       where: { id: userId },
       data: {
-        firstName,
-        lastName,
+        fullName,
         avatar,
         phone: phoneNumber,
         candidateProfile: {

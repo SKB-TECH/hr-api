@@ -3,14 +3,12 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { CandidateProfilesRepository } from './candidateProfiles.repository';
 import { UpdateUserCandidateProfileDto } from './dto/update-candidate-profile.dto';
 import { CloudinaryService } from '@/infrastructure/cloudinary/cloudinary.service';
-import { PrismaService } from '../../infrastructure/prisma/prisma.service'; 
 
 @Injectable()
 export class CandidateProfilesService {
   constructor(
     private readonly profilesRepository: CandidateProfilesRepository,
     private readonly cloudinaryService: CloudinaryService,
-    private readonly prisma: PrismaService, 
   ) {}
 
   async getCandidateProfile(userId: string) {
@@ -49,33 +47,8 @@ export class CandidateProfilesService {
     }
 
     delete (dto as any).avatarFile;
-    
-    const { skillIds, ...profileData } = dto;
-    const updatedUser = await this.profilesRepository.updateCandidateProfile(userId, profileData);
-    if (skillIds) {
-      await this.prisma.candidateSkill.deleteMany({
-        where: { candidateId: existingUser.candidateProfile.id },
-      });
 
-      if (skillIds.length > 0) {
-        await this.prisma.candidateSkill.createMany({
-          data: skillIds.map((id) => ({
-            candidateId: existingUser.candidateProfile.id,
-            skillId: id,
-          })),
-        });
-      }
-
-      const updatedSkills = await this.prisma.candidateSkill.findMany({
-        where: { candidateId: existingUser.candidateProfile.id },
-        select: {
-          skill: { select: { id: true, name: true, category: true } },
-        },
-      });
-      
-      (updatedUser as any).skills = updatedSkills.map(s => s.skill);
-    }
-
+    const updatedUser = await this.profilesRepository.updateCandidateProfile(userId, dto);
     const { password, ...sanitizedUser } = updatedUser;
     return sanitizedUser;
   }
