@@ -1,7 +1,7 @@
 import { PipeTransform, Injectable, BadRequestException } from '@nestjs/common';
 import { plainToInstance } from 'class-transformer';
 import { validate } from 'class-validator';
-import { UpdateUserCandidateProfileDto } from '../../modules/candidate-profile/dto/update-candidate-profile.dto';
+import { UpdateUserCandidateProfileDto } from '@/modules/candidate/candidate-profile/dto/update-candidate-profile.dto';
 
 @Injectable()
 export class ParseProfileJsonPipe implements PipeTransform {
