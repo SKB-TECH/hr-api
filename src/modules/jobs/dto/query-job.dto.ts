@@ -1,50 +1,109 @@
+import {
+  IsOptional,
+  IsString,
+  IsInt,
+  Min,
+  IsEnum,
+  IsNumber,
+  IsArray,
+} from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsOptional, IsString, IsInt, Min, IsEnum } from 'class-validator';
-import { Type } from 'class-transformer';
-import { EmploymentType, ExperienceLevel } from '@prisma/client';
+import { Type, Transform } from 'class-transformer';
+import { EmploymentType, JobLevel, JobCategory } from '@prisma/client';
+
+export enum JobSortOption {
+  MOST_RELEVANT = 'most_relevant',
+  NEWEST = 'newest',
+  SALARY_HIGH = 'salary_high',
+  SALARY_LOW = 'salary_low',
+}
 
 export class QueryJobDto {
-  @ApiPropertyOptional({ description: 'Search term for title or description', example: 'frontend' })
   @IsOptional()
   @IsString()
-  search?: string;
+  @ApiPropertyOptional({
+    example: 'Social Media',
+    description: 'Search by job title or keyword',
+  })
+  keyword?: string;
 
-  @ApiPropertyOptional({ description: 'Filter by location', example: 'kigali' })
   @IsOptional()
   @IsString()
+  @ApiPropertyOptional({
+    example: 'Paris, France',
+    description: 'Filter by location',
+  })
   location?: string;
 
-  @ApiPropertyOptional({ enum: EmploymentType, description: 'Filter by employment type' })
   @IsOptional()
-  @IsEnum(EmploymentType)
-  employmentType?: EmploymentType;
+  @Transform(({ value }) => (Array.isArray(value) ? value : [value]))
+  @IsArray()
+  @IsEnum(EmploymentType, { each: true })
+  @ApiPropertyOptional({
+    enum: EmploymentType,
+    isArray: true,
+    example: ['FULL_TIME', 'REMOTE'],
+    description: 'Filter by employment type',
+  })
+  employmentType?: EmploymentType[];
 
-  @ApiPropertyOptional({ enum: ExperienceLevel, description: 'Filter by experience level' })
   @IsOptional()
-  @IsEnum(ExperienceLevel)
-  experienceLevel?: ExperienceLevel;
+  @Transform(({ value }) => (Array.isArray(value) ? value : [value]))
+  @IsArray()
+  @IsEnum(JobCategory, { each: true })
+  @ApiPropertyOptional({
+    enum: JobCategory,
+    isArray: true,
+    example: ['DESIGN', 'MARKETING'],
+    description: 'Filter by category',
+  })
+  category?: JobCategory[];
 
-  @ApiPropertyOptional({ description: 'Field to sort by', example: 'createdAt', default: 'createdAt' })
   @IsOptional()
-  @IsString()
-  sortBy?: string;
+  @Transform(({ value }) => (Array.isArray(value) ? value : [value]))
+  @IsArray()
+  @IsEnum(JobLevel, { each: true })
+  @ApiPropertyOptional({
+    enum: JobLevel,
+    isArray: true,
+    example: ['ENTRY_LEVEL', 'MID_LEVEL'],
+    description: 'Filter by job level',
+  })
+  jobLevel?: JobLevel[];
 
-  @ApiPropertyOptional({ description: 'Sort order', enum: ['asc', 'desc'], default: 'desc' })
   @IsOptional()
-  @IsString()
-  sortOrder?: 'asc' | 'desc';
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  @ApiPropertyOptional({ example: 700, description: 'Minimum salary' })
+  salaryMin?: number;
 
-  @ApiPropertyOptional({ description: 'Page number', minimum: 1, default: 1 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  @ApiPropertyOptional({ example: 3000, description: 'Maximum salary' })
+  salaryMax?: number;
+
+  @IsOptional()
+  @IsEnum(JobSortOption)
+  @ApiPropertyOptional({
+    enum: JobSortOption,
+    default: JobSortOption.MOST_RELEVANT,
+  })
+  sort?: JobSortOption = JobSortOption.MOST_RELEVANT;
+
+  @IsOptional()
   @Type(() => Number)
   @IsInt()
   @Min(1)
-  @IsOptional()
+  @ApiPropertyOptional({ example: 1, default: 1 })
   page?: number = 1;
 
-  @ApiPropertyOptional({ description: 'Items per page', minimum: 1, default: 10 })
+  @IsOptional()
   @Type(() => Number)
   @IsInt()
   @Min(1)
-  @IsOptional()
+  @ApiPropertyOptional({ example: 10, default: 10 })
   limit?: number = 10;
 }
