@@ -9,6 +9,7 @@ import {
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
+  ApiBody,
   ApiOperation,
   ApiResponse,
   ApiTags,
@@ -18,6 +19,7 @@ import { UpdateEmailDto } from './dto/update-email.dto';
 import { UpdatePasswordDto } from './dto/update-password.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { UnauthorizedErrorDto } from '@/common/response/unauthorized.response';
 
 @ApiTags('Users')
 @ApiBearerAuth()
@@ -28,7 +30,9 @@ export class UsersController {
 
   @Patch('email')
   @ApiOperation({ summary: 'Update email address' })
+  @ApiBody({ type: UpdateEmailDto })
   @ApiResponse({ status: 200, description: 'Email updated successfully' })
+  @ApiResponse({ status: 401, description: 'Unauthorized', type: UnauthorizedErrorDto })
   @ApiResponse({ status: 409, description: 'Email already in use' })
   updateEmail(
     @CurrentUser() user: { id: string },
@@ -40,8 +44,9 @@ export class UsersController {
   @Patch('password')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Change password' })
+  @ApiBody({ type: UpdatePasswordDto })
   @ApiResponse({ status: 200, description: 'Password changed successfully' })
-  @ApiResponse({ status: 401, description: 'Old password is incorrect' })
+  @ApiResponse({ status: 401, description: 'Old password is incorrect or OAuth account', type: UnauthorizedErrorDto })
   updatePassword(
     @CurrentUser() user: { id: string },
     @Body() dto: UpdatePasswordDto,
@@ -53,6 +58,7 @@ export class UsersController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Close account (soft delete)' })
   @ApiResponse({ status: 200, description: 'Account closed successfully' })
+  @ApiResponse({ status: 401, description: 'Unauthorized', type: UnauthorizedErrorDto })
   closeAccount(@CurrentUser() user: { id: string }) {
     return this.usersService.closeAccount(user.id);
   }
