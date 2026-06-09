@@ -1,17 +1,8 @@
 import { IsEnum, IsInt, IsOptional, IsString, Min } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { ApplicationStatus } from '@prisma/client';
 
 export class QueryApplicationDto {
-  @IsOptional()
-  @IsEnum(ApplicationStatus)
-  @ApiPropertyOptional({
-    enum: ApplicationStatus,
-    description: 'Filter by application status',
-  })
-  status?: ApplicationStatus;
-
   @IsOptional()
   @IsString()
   @ApiPropertyOptional({

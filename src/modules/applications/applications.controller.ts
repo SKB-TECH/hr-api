@@ -18,12 +18,13 @@ import {
 import { ApplicationsService } from './applications.service';
 import { CreateApplicationDto } from './dto/create-application.dto';
 import { QueryApplicationDto } from './dto/query-application.dto';
-import {
-  UpdateApplicationScoreDto,
-  UpdateApplicationStageDto,
-} from './dto/update-application-stage.dto';
+import { UpdateApplicationStageDto } from './dto/update-application-stage.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
+
+interface UpdateApplicationScoreDto {
+  [key: string]: unknown;
+}
 
 @ApiTags('Applications')
 @ApiBearerAuth()

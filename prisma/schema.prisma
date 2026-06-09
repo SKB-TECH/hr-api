@@ -181,17 +181,21 @@ model AuditLog {
 }
 
 // ==========================================
-//           APPLICATION MODULE
+//            APPLICATION MODULE
 // ==========================================
 
-enum ApplicationStatus {
-  IN_REVIEW
-  SHORTLISTED
-  INTERVIEWING
-  ASSESSMENT
-  OFFERED
-  HIRED
-  DECLINED
+// NEW: Dynamic Pipeline Stage Model
+model PipelineStage {
+  id           String        @id @default(uuid()) @db.Uuid
+  name         String        // e.g., "Phone Screen", "Tech Challenge"
+  order        Int           // 1, 2, 3... for Kanban board ordering
+  companyId    String        @map("company_id") @db.Uuid
+  company      Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  
+  applications Application[]
+
+  @@unique([companyId, name])
+  @@map("pipeline_stages")
 }
 
 model Application {
@@ -202,6 +206,11 @@ model Application {
   candidate        User                      @relation(fields: [candidateId], references: [id], onDelete: Cascade)
   resumeId         String?                   @map("resume_id") @db.Uuid
   resume           Resume?                   @relation(fields: [resumeId], references: [id], onDelete: SetNull)
+  
+  // NEW: Replaced enum status with PipelineStage relation
+  stageId          String?                   @map("stage_id") @db.Uuid
+  stage            PipelineStage?            @relation(fields: [stageId], references: [id], onDelete: SetNull)
+  
   fullName         String                    @map("full_name")
   email            String
   phone            String?
@@ -209,7 +218,6 @@ model Application {
   linkedinUrl      String?                   @map("linkedin_url")
   portfolioUrl     String?                   @map("portfolio_url")
   coverLetter      String?                   @map("cover_letter") @db.Text
-  status           ApplicationStatus         @default(IN_REVIEW)
   score            Decimal?                  @db.Decimal(3, 2)
   appliedAt        DateTime                  @default(now()) @map("applied_at")
   createdAt        DateTime                  @default(now()) @map("created_at")
@@ -220,27 +228,30 @@ model Application {
   @@unique([jobId, candidateId])
   @@index([candidateId])
   @@index([jobId])
-  @@index([status])
+  @@index([stageId]) // Updated index to track stage lookups
   @@map("applications")
 }
 
 model ApplicationStageHistory {
-  id            String            @id @default(uuid()) @db.Uuid
-  applicationId String            @map("application_id") @db.Uuid
-  application   Application       @relation(fields: [applicationId], references: [id], onDelete: Cascade)
-  oldStatus     ApplicationStatus @map("old_status")
-  newStatus     ApplicationStatus @map("new_status")
-  changedById   String            @map("changed_by") @db.Uuid
-  changedBy     User              @relation(fields: [changedById], references: [id], onDelete: Cascade)
-  note          String?           @db.Text
-  createdAt     DateTime          @default(now()) @map("created_at")
+  id            String          @id @default(uuid()) @db.Uuid
+  applicationId String          @map("application_id") @db.Uuid
+  application   Application     @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  
+  // UPDATED: Now uses strings to preserve the stage name even if deleted
+  oldStageName  String          @map("old_stage_name")
+  newStageName  String          @map("new_stage_name")
+  
+  changedById   String          @map("changed_by") @db.Uuid
+  changedBy     User            @relation(fields: [changedById], references: [id], onDelete: Cascade)
+  note          String?         @db.Text
+  createdAt     DateTime        @default(now()) @map("created_at")
 
   @@index([applicationId])
   @@map("application_stage_history")
 }
 
 // ==========================================
-//           INTERVIEW MODULE
+//            INTERVIEW MODULE
 // ==========================================
 
 enum InterviewStatus {
@@ -301,32 +312,32 @@ enum JobCategory {
 }
 
 model Job {
-  id                String         @id @default(uuid()) @db.Uuid
-  companyId         String         @map("company_id") @db.Uuid
-  company           Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  title             String
-  employmentType    EmploymentType @map("employment_type")
-  jobLevel          JobLevel       @map("job_level")
-  category          JobCategory
-  location          String
-  salaryMin         Decimal?       @map("salary_min") @db.Decimal(12, 2)
-  salaryMax         Decimal?       @map("salary_max") @db.Decimal(12, 2)
-  salaryCurrency    String         @default("USD") @map("salary_currency")
-  description       String         @db.Text
-  responsibilities  String         @db.Text
-  whoYouAre         String         @map("who_you_are") @db.Text
-  niceToHaves       String?        @map("nice_to_haves") @db.Text
-  capacity          Int            @default(10)
-  applicationsCount Int            @default(0) @map("applications_count")
-  status            JobStatus      @default(DRAFT)
-  applyBefore       DateTime?      @map("apply_before")
-  postedAt          DateTime?      @map("posted_at")
-  createdAt         DateTime       @default(now()) @map("created_at")
-  updatedAt         DateTime       @updatedAt @map("updated_at")
-  deletedAt         DateTime?      @map("deleted_at")
-  skills            JobSkill[]
-  benefits          JobBenefit[]
-  applications      Application[]
+  id               String         @id @default(uuid()) @db.Uuid
+  companyId        String         @map("company_id") @db.Uuid
+  company          Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  title            String
+  employmentType   EmploymentType @map("employment_type")
+  jobLevel         JobLevel       @map("job_level")
+  category         JobCategory
+  location         String
+  salaryMin        Decimal?       @map("salary_min") @db.Decimal(12, 2)
+  salaryMax        Decimal?       @map("salary_max") @db.Decimal(12, 2)
+  salaryCurrency   String         @default("USD") @map("salary_currency")
+  description      String         @db.Text
+  responsibilities String         @db.Text
+  whoYouAre        String         @map("who_you_are") @db.Text
+  niceToHaves      String?        @map("nice_to_haves") @db.Text
+  capacity         Int            @default(10)
+  applicationsCount Int           @default(0) @map("applications_count")
+  status           JobStatus      @default(DRAFT)
+  applyBefore      DateTime?      @map("apply_before")
+  postedAt         DateTime?      @map("posted_at")
+  createdAt        DateTime       @default(now()) @map("created_at")
+  updatedAt        DateTime       @updatedAt @map("updated_at")
+  deletedAt        DateTime?      @map("deleted_at")
+  skills           JobSkill[]
+  benefits         JobBenefit[]
+  applications     Application[]
 
   @@index([status])
   @@index([category])
@@ -380,9 +391,11 @@ model Company {
   youtube        String?
   createdAt      DateTime        @default(now()) @map("created_at")
   updatedAt      DateTime        @updatedAt @map("updated_at")
+  
   members        CompanyMember[]
   jobs           Job[]
   interviews     Interview[]
+  pipelineStages PipelineStage[] // NEW: Added back-relation for custom pipelines
 
   @@map("companies")
 }
