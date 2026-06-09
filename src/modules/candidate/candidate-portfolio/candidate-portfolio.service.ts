@@ -93,4 +93,21 @@ export class PortfolioService {
     await this.prisma.candidatePortfolio.delete({ where: { id } });
     return { success: true, message: 'Portfolio item deleted successfully.' };
   }
+
+  async findPublicByCandidateId(candidateId: string): Promise<PortfolioResponseDto[]> {
+  const profile = await this.prisma.candidateProfile.findUnique({
+    where: { id: candidateId },
+    include: {
+      candidatePortfolios: {
+        orderBy: { createdAt: 'desc' },
+      },
+    },
+  });
+
+  if (!profile) {
+    throw new NotFoundException('Candidate not found.');
+  }
+
+  return this.serialize(profile.candidatePortfolios);
+}
 }

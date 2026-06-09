@@ -1,6 +1,6 @@
 import { 
   Controller, Get, Post, Patch, Delete, Body, Param, UseGuards, Req, 
-  ParseUUIDPipe, HttpCode, HttpStatus, UseInterceptors, UploadedFile 
+  ParseUUIDPipe, HttpCode, HttpStatus, UseInterceptors, UploadedFile , BadRequestException,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam, ApiConsumes, ApiBody } from '@nestjs/swagger';
@@ -21,21 +21,91 @@ import { UnauthorizedErrorDto} from '@/common/response/unauthorized.response';
 export class PortfolioController {
   constructor(private readonly portfolioService: PortfolioService) {}
 
-  @Post()
-  @HttpCode(HttpStatus.CREATED)
-  @ApiConsumes('multipart/form-data') // Informs OpenAPI to render a file selector option
-  @ApiOperation({ summary: 'Create portfolio project card with Cloudinary thumbnail upload' })
-  @ApiBody({ type: CreatePortfolioDto })
-  @ApiResponse({ status: HttpStatus.CREATED, type: PortfolioResponseDto })
-  @ApiResponse({ status: 401, description: 'Unauthorized', type: UnauthorizedErrorDto })
-  @UseInterceptors(FileInterceptor('thumbnail')) // Intercepts the binary 'thumbnail' stream parameter
-  create(
-    @Req() req: any, 
-    @Body() createPortfolioDto: CreatePortfolioDto,
-    @UploadedFile() file: Express.Multer.File
-  ): Promise<PortfolioResponseDto> {
-    return this.portfolioService.create(req.user.id, createPortfolioDto, file);
+@Post()
+@HttpCode(HttpStatus.CREATED)
+@ApiConsumes('multipart/form-data')
+@ApiOperation({
+  summary: 'Create portfolio project card with Cloudinary thumbnail upload',
+})
+@ApiBody({
+  schema: {
+    type: 'object',
+    properties: {
+      title: { type: 'string' },
+      description: { type: 'string' },
+      projectUrl: { type: 'string' },
+      thumbnail: {
+        type: 'string',
+        format: 'binary',
+      },
+    },
+    required: ['title', 'description', 'thumbnail'],
+  },
+})
+@ApiResponse({ status: HttpStatus.CREATED, type: PortfolioResponseDto })
+@ApiResponse({
+  status: 401,
+  description: 'Unauthorized',
+  type: UnauthorizedErrorDto,
+})
+@UseInterceptors(
+  FileInterceptor('thumbnail', {
+    limits: {
+      fileSize: 2 * 1024 * 1024, // 2MB
+    },
+    fileFilter: (req, file, callback) => {
+      const allowedMimeTypes = [
+        'image/jpeg',
+        'image/png',
+        'image/jpg',
+        'image/webp',
+      ];
+
+      if (!allowedMimeTypes.includes(file.mimetype)) {
+        return callback(
+          new BadRequestException('Only image files are allowed.'),
+          false,
+        );
+      }
+
+      callback(null, true);
+    },
+  }),
+)
+async create(
+  @Req() req: any,
+  @Body() createPortfolioDto: CreatePortfolioDto,
+  @UploadedFile() file: Express.Multer.File,
+): Promise<PortfolioResponseDto> {
+  if (!file) {
+    throw new BadRequestException('Thumbnail image is required.');
   }
+
+  return this.portfolioService.create(
+    req.user.id,
+    createPortfolioDto,
+    file,
+  );
+}
+
+@Get('public/:candidateId')
+@HttpCode(HttpStatus.OK)
+@ApiOperation({
+  summary: 'Public recruiter view of candidate portfolios by candidateId',
+})
+@ApiParam({
+  name: 'candidateId',
+  description: 'Candidate profile UUID',
+})
+@ApiResponse({
+  status: HttpStatus.OK,
+  type: [PortfolioResponseDto],
+})
+async findPublicByCandidateId(
+  @Param('candidateId', ParseUUIDPipe) candidateId: string,
+): Promise<PortfolioResponseDto[]> {
+  return this.portfolioService.findPublicByCandidateId(candidateId);
+}
 
   @Get()
   @HttpCode(HttpStatus.OK)
