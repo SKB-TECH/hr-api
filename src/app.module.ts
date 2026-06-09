@@ -14,7 +14,7 @@ import { SkillsModule } from './modules/skills/skills.module';
 import { ApplicationsModule } from './modules/applications/applications.module';
 import { InterviewsModule } from './modules/interviews/interviews.module';
 import { CandidateModule } from './modules/candidate/candidate.module';
-import { LocalizationModule } from './modules/localization/localization.module';
+import { AnalyticsModule } from './modules/analytics/analytics.module';
 
 @Module({
   imports: [
@@ -34,7 +34,7 @@ import { LocalizationModule } from './modules/localization/localization.module';
     SkillsModule,
     ApplicationsModule,
     InterviewsModule,
-    LocalizationModule,
+    AnalyticsModule,
   ],
   controllers: [],
   providers: [],
