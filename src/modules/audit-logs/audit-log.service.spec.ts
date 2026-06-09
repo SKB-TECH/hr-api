@@ -80,7 +80,10 @@ describe('AuditLogService', () => {
   describe('findAll', () => {
     it('should return paginated results', async () => {
       const logs = [mockAuditLog, { ...mockAuditLog, id: 'uuid-log-2' }];
-      mockAuditLogRepository.findAll.mockResolvedValue({ data: logs, totalItems: 2 });
+      mockAuditLogRepository.findAll.mockResolvedValue({
+        data: logs,
+        totalItems: 2,
+      });
 
       const result = await service.findAll({ page: 1, limit: 20 });
 
@@ -93,7 +96,10 @@ describe('AuditLogService', () => {
     });
 
     it('should pass all filters to the repository', async () => {
-      mockAuditLogRepository.findAll.mockResolvedValue({ data: [], totalItems: 0 });
+      mockAuditLogRepository.findAll.mockResolvedValue({
+        data: [],
+        totalItems: 0,
+      });
 
       const query = {
         module: 'users',
@@ -111,8 +117,14 @@ describe('AuditLogService', () => {
     });
 
     it('should calculate hasNextPage correctly when more pages exist', async () => {
-      const logs = Array.from({ length: 10 }, (_, i) => ({ ...mockAuditLog, id: `uuid-log-${i}` }));
-      mockAuditLogRepository.findAll.mockResolvedValue({ data: logs, totalItems: 35 });
+      const logs = Array.from({ length: 10 }, (_, i) => ({
+        ...mockAuditLog,
+        id: `uuid-log-${i}`,
+      }));
+      mockAuditLogRepository.findAll.mockResolvedValue({
+        data: logs,
+        totalItems: 35,
+      });
 
       const result = await service.findAll({ page: 1, limit: 10 });
 
@@ -122,7 +134,10 @@ describe('AuditLogService', () => {
     });
 
     it('should use default page=1 and limit=20 when not provided', async () => {
-      mockAuditLogRepository.findAll.mockResolvedValue({ data: [], totalItems: 0 });
+      mockAuditLogRepository.findAll.mockResolvedValue({
+        data: [],
+        totalItems: 0,
+      });
 
       const result = await service.findAll({});
 
@@ -131,7 +146,10 @@ describe('AuditLogService', () => {
     });
 
     it('should return hasPreviousPage true when on page 2+', async () => {
-      mockAuditLogRepository.findAll.mockResolvedValue({ data: [], totalItems: 50 });
+      mockAuditLogRepository.findAll.mockResolvedValue({
+        data: [],
+        totalItems: 50,
+      });
 
       const result = await service.findAll({ page: 3, limit: 10 });
 

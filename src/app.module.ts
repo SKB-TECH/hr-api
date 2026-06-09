@@ -10,8 +10,8 @@ import { UsersModule } from './modules/users/users.module';
 import { CompaniesModule } from './modules/companies/companies.module';
 import { AuditLogModule } from './modules/audit-logs/audit-log.module';
 import { JobsModule } from './modules/jobs/jobs.module';
-import { CandidateModule } from './modules/candidate/candidate.module'
-
+import { ApplicationsModule } from './modules/applications/applications.module';
+import { CandidateModule } from './modules/candidate/candidate.module';
 
 @Module({
   imports: [
@@ -28,7 +28,7 @@ import { CandidateModule } from './modules/candidate/candidate.module'
     CompaniesModule,
     AuditLogModule,
     JobsModule,
-
+    ApplicationsModule,
   ],
   controllers: [],
   providers: [],
