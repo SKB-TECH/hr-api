@@ -42,7 +42,15 @@ export class AuditLogRepository {
         take: limit,
         orderBy: { createdAt: 'desc' },
         include: {
-          user: { select: { id: true, email: true, firstName: true, lastName: true, role: true } },
+          user: {
+            select: {
+              id: true,
+              email: true,
+              firstName: true,
+              lastName: true,
+              role: true,
+            },
+          },
         },
       }),
       this.prisma.auditLog.count({ where }),

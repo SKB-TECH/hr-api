@@ -74,7 +74,9 @@ export class AuthController {
 
   @Get('google')
   @UseGuards(GoogleAuthGuard)
-  @ApiOperation({ summary: 'Redirect to Google login (Sign Up / Login with Google)' })
+  @ApiOperation({
+    summary: 'Redirect to Google login (Sign Up / Login with Google)',
+  })
   googleAuth() {}
 
   @Get('google/callback')

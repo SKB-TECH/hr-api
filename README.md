@@ -44,25 +44,31 @@ src/
 ├── common/                  # Shared resources across the application
 │   ├── exceptions/          # Global & Prisma-specific exception filters
 │   ├── interceptors/        # Global response formatting interceptors
-│   └── utils/               # Shared utilities (e.g., pagination.util.ts)
+│   ├──utils/                # Shared utilities (e.g., pagination.util.ts)
+|   ├──pipes                 # transform input data
+|   ├── response           
 │
 ├── infrastructure/          # External services and core infrastructure
 │   ├── cloudinary/          # Cloudinary providers and streaming services
 │   └── prisma/              # Prisma ORM setup, services, and modules
 │
 ├── modules/                 # Feature-specific bounded contexts
-│   ├── hero/                # Hero Image management feature
-│   │   ├── controllers/     # Route handlers for /hero
+│   ├── Auth/                # Hero Image management feature
+│   │   ├── decorators/      # Route handlers for /hero
 │   │   ├── dto/             # Data Transfer Objects
-│   │   ├── repositories/    # Database abstraction layer for Hero
-│   │   └── services/        # Business logic for Hero
+│   │   ├── guards/          # Database abstraction layer for Hero
+│   │   └── starategies/     # Business logic for Hero
+|   |   ├── 
 │   │
-│   └── jobs/                # Job Listings management feature
-│       ├── controllers/     # Route handlers for /jobs
-│       ├── dto/             # Data Transfer Objects
-│       ├── repositories/    # Database abstraction layer for Jobs
-│       └── services/        # Business logic for Jobs
-│
+│   └── candidate-section/                
+│   |    ├── dto/
+│   |    ├── controller.ts   
+         ├── module.ts           
+│   |    ├── repositories.ts    
+│   |    └── services.ts        
+│   ├──candidate-resume
+|        ├──dto
+|        ├── interceptors
 ├── app.module.ts            # Root application module
 └── main.ts                  # Application entry point (pipes, swagger, security setup)
 ```
@@ -119,81 +125,18 @@ Once the server is running, navigate to the auto-generated Swagger UI to explore
 
 **[http://localhost:3000/api/docs](http://localhost:3000/api/docs)**
 
-### Available Resources:
-- `GET /api/v1/jobs` - Fetch all jobs (supports `?page`, `?limit`, `?search`, `?location`, `?employmentType`, `?experienceLevel`)
-- `POST /api/v1/jobs` - Create a new job (supports `multipart/form-data` for image upload)
-- `GET /api/v1/jobs/:id` - Fetch job by ID
-- `GET /api/v1/jobs/slug/:slug` - Fetch job by unique slug
-- `PATCH /api/v1/jobs/:id` - Update job details and image
-- `DELETE /api/v1/jobs/:id` - Delete a job
-- `GET /api/v1/hero/active` - Fetch the current active hero image
-- `POST /api/v1/hero` - Upload a new hero image
-- `PATCH /api/v1/hero/:id` - Update/replace a hero image
-
----
 
 
-=======
+
 # Feature: Job Detail API
 
 This branch implements the job listings and applications functionality for the HR recruitment platform.
 
-## What's Included
 
-### Endpoints
 
-**Public:**
-- `GET /api/jobs/:id` - Get job details by ID
-- `POST /api/jobs/:id/apply` - Submit job application
 
-**Admin (requires `Authorization: Bearer <token>`):**
-- `POST /api/jobs` - Create a new job listing
-- `PUT /api/jobs/:id` - Update job listing
-- `DELETE /api/jobs/:id` - Delete job listing
 
-### Database Tables
 
-**jobs**
-- `id` (UUID, primary key)
-- `title` (varchar)
-- `location` (varchar)
-- `salary_min` (int)
-- `salary_max` (int)
-- `salary_extras` (varchar, nullable)
-- `job_type` (varchar)
-- `reference` (varchar)
-- `description` (text)
-- `banner_url` (varchar, nullable)
-- `is_active` (boolean, default true)
-- `created_at`, `updated_at` (timestamps)
-
-**job_applications**
-- `id` (UUID, primary key)
-- `job_id` (UUID, foreign key)
-- `name` (varchar)
-- `email` (varchar)
-- `phone` (varchar)
-- `resume_url` (varchar)
-- `cover_letter` (text, nullable)
-- `created_at` (timestamp)
-
-### Module Structure
-
-```
-src/modules/jobs/
-├── dto/
-│   ├── job.dto.ts              # CreateJobDto, UpdateJobDto
-│   └── apply-job.dto.ts        # ApplyJobDto
-├── entities/
-│   ├── job.entity.ts
-│   └── job-application.entity.ts
-├── repositories/
-│   └── jobs.repository.ts      # All database operations
-├── jobs.controller.ts
-├── jobs.service.ts
-├── jobs.service.spec.ts        # Unit tests
-└── jobs.module.ts
-```
 
 ### Tests
 
@@ -209,4 +152,4 @@ pnpm test jobs
 # Run E2E tests
 pnpm test:e2e
 ```
->>>>>>> ecf964ab8ae38837213177ef583ce5f2eb1614b7
+

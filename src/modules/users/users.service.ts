@@ -46,7 +46,7 @@ export class UsersService {
       newValues: { email: dto.email },
     });
 
-    const { password, ...safe } = user;
+    const { password: _password, ...safe } = user;
     return safe;
   }
 
@@ -54,7 +54,9 @@ export class UsersService {
     const user = await this.usersRepository.findById(userId);
     if (!user) throw new NotFoundException('User not found');
     if (!user.password)
-      throw new UnauthorizedException('Cannot change password for OAuth accounts');
+      throw new UnauthorizedException(
+        'Cannot change password for OAuth accounts',
+      );
 
     const valid = await bcrypt.compare(dto.oldPassword, user.password);
     if (!valid) throw new UnauthorizedException('Old password is incorrect');
