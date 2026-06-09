@@ -1,10 +1,8 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { ThrottlerModule } from '@nestjs/throttler';
-
 import { PrismaModule } from './infrastructure/prisma/prisma.module';
 import { CloudinaryModule } from './infrastructure/cloudinary/cloudinary.module';
-
 import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
 import { CompaniesModule } from './modules/companies/companies.module';
@@ -15,6 +13,7 @@ import { ApplicationsModule } from './modules/applications/applications.module';
 import { InterviewsModule } from './modules/interviews/interviews.module';
 import { CandidateModule } from './modules/candidate/candidate.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
+import { LocalizationModule } from './modules/localization/localization.module';
 
 @Module({
   imports: [
@@ -35,6 +34,7 @@ import { AnalyticsModule } from './modules/analytics/analytics.module';
     ApplicationsModule,
     InterviewsModule,
     AnalyticsModule,
+    LocalizationModule,
   ],
   controllers: [],
   providers: [],
