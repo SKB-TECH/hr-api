@@ -60,11 +60,12 @@ src/
 │   │   └── starategies/     # Business logic for Hero
 |   |   ├── 
 │   │
-│   └── candidate-profile/                # Job Listings management feature
-│   |    ├── controllers/     # Route handlers for /jobs
-│   |    ├── dto/             # Data Transfer Objects
-│   |    ├── repositories/    # Database abstraction layer for Jobs
-│   |    └── services/        # Business logic for Jobs
+│   └── candidate-section/                
+│   |    ├── dto/
+│   |    ├── controller.ts   
+         ├── module.ts           
+│   |    ├── repositories.ts    
+│   |    └── services.ts        
 │   ├──candidate-resume
 |        ├──dto
 |        ├── interceptors

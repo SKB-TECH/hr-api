@@ -6,9 +6,21 @@ export class CreateResumeDto {
   @ApiProperty({
     example: 'Software Engineer Resume',
     description: 'Title of the resume',
+    required: true,
   })
-  @IsString()
+  @IsString( { message: 'Title must be a string' })
+
   title: string;
+
+  @ApiProperty({
+    type: 'string',
+    format: 'binary',
+    description: 'The resume file to upload',
+    example:'https://res.cloudinary.com/dphzr2jab/raw/upload/v1780508838/resumes/ekcds0b6baysmnocawfw',
+    required: true,
+  })
+  @IsString({ message: 'File is required' })
+  file: Express.Multer.File;
 
   @ApiPropertyOptional({
     example: true,

@@ -10,23 +10,23 @@ datasource db {
 }
 
 model User {
-  id                 String             @id @default(uuid()) @db.Uuid
-  email              String             @unique
-  phone              String?            @unique
+  id                 String            @id @default(uuid()) @db.Uuid
+  email              String            @unique
+  phone              String?           @unique
   password           String?
-  firstName          String             @map("first_name")
-  lastName           String             @map("last_name")
-  role               UserRole           @default(CANDIDATE)
-  status             UserStatus         @default(pending)
-  provider           AuthProvider       @default(local)
+  firstName          String            @map("first_name")
+  lastName           String            @map("last_name")
+  role               UserRole          @default(CANDIDATE)
+  status             UserStatus        @default(pending)
+  provider           AuthProvider      @default(local)
   avatar             String?
-  emailVerified      Boolean            @default(false) @map("email_verified")
-  phoneVerified      Boolean            @default(false) @map("phone_verified")
-  lastLogin          DateTime?          @map("last_login")
-  twoFactorEnabled   Boolean            @default(false) @map("two_factor_enabled")
-  createdAt          DateTime           @default(now()) @map("created_at")
-  updatedAt          DateTime           @updatedAt @map("updated_at")
-  deletedAt          DateTime?          @map("deleted_at")
+  emailVerified      Boolean           @default(false) @map("email_verified")
+  phoneVerified      Boolean           @default(false) @map("phone_verified")
+  lastLogin          DateTime?         @map("last_login")
+  twoFactorEnabled   Boolean           @default(false) @map("two_factor_enabled")
+  createdAt          DateTime          @default(now()) @map("created_at")
+  updatedAt          DateTime          @updatedAt @map("updated_at")
+  deletedAt          DateTime?         @map("deleted_at")
   refreshTokens      RefreshToken[]
   candidateProfile   CandidateProfile?
   companyMemberships CompanyMember[]
@@ -108,32 +108,35 @@ enum WorkType {
 // candidate profile schema
 
 model CandidateProfile {
-  id                String             @id @default(uuid()) @db.Uuid
-  userId            String             @unique @map("user_id") @db.Uuid
-  user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
-  gender            String?
-  phone             Int?               @map("phone_number")
-  birthDate         DateTime?          @map("birth_date")
-  headline          String?
-  bio               String?
-  countryName       String?            @map("country_name")
-  cityName          String?            @map("city_name")
-  address           String?
-  currentSalary     Decimal?           @map("current_salary") @db.Decimal(12, 2)
-  expectedSalary    Decimal?           @map("expected_salary") @db.Decimal(12, 2)
-  salaryCurrency    String?            @map("salary_currency")
-  yearsExperience   Int?               @map("years_experience")
-  linkedinUrl       String?            @map("linkedin_url")
-  githubUrl         String?            @map("github_url")
-  portfolioUrl      String?            @map("portfolio_url")
-  availability      Availability?
-  workType          WorkType?          @map("work_type")
-  profileVisibility ProfileVisibility  @default(public) @map("profile_visibility")
-  openToWork        Boolean            @default(true) @map("open_to_work")
-  createdAt         DateTime           @default(now()) @map("created_at")
-  updatedAt         DateTime           @updatedAt @map("updated_at")
-  resumes           Resume[]
-  candidate_educations CandidateEducation[]
+  id                      String                   @id @default(uuid()) @db.Uuid
+  userId                  String                   @unique @map("user_id") @db.Uuid
+  user                    User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  gender                  String?
+  phone                   Int?                     @map("phone_number")
+  birthDate               DateTime?                @map("birth_date")
+  headline                String?
+  bio                     String?
+  countryName             String?                  @map("country_name")
+  cityName                String?                  @map("city_name")
+  address                 String?
+  currentSalary           Decimal?                 @map("current_salary") @db.Decimal(12, 2)
+  expectedSalary          Decimal?                 @map("expected_salary") @db.Decimal(12, 2)
+  salaryCurrency          String?                  @map("salary_currency")
+  yearsExperience         Int?                     @map("years_experience")
+  linkedinUrl             String?                  @map("linkedin_url")
+  githubUrl               String?                  @map("github_url")
+  portfolioUrl            String?                  @map("portfolio_url")
+  availability            Availability?
+  workType                WorkType?                @map("work_type")
+  profileVisibility       ProfileVisibility        @default(public) @map("profile_visibility")
+  openToWork              Boolean                  @default(true) @map("open_to_work")
+  createdAt               DateTime                 @default(now()) @map("created_at")
+  updatedAt               DateTime                 @updatedAt @map("updated_at")
+  resumes                 Resume[]
+  candidate_educations    CandidateEducation[]
+  candidateExperiences    CandidateExperience[]
+  candidateCertifications CandidateCertification[]
+  candidateSkills         CandidateSkill[]
 
   @@map("candidate_profiles")
 }
@@ -204,31 +207,31 @@ enum JobCategory {
 }
 
 model Job {
-  id               String         @id @default(uuid()) @db.Uuid
-  companyId        String         @map("company_id") @db.Uuid // <--- ADDED @db.Uuid HERE!
-  company          Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  title            String
-  employmentType   EmploymentType @map("employment_type")
-  jobLevel         JobLevel       @map("job_level")
-  category         JobCategory
-  location         String
-  salaryMin        Decimal?       @map("salary_min") @db.Decimal(12, 2)
-  salaryMax        Decimal?       @map("salary_max") @db.Decimal(12, 2)
-  salaryCurrency   String         @default("USD") @map("salary_currency")
-  description      String         @db.Text
-  responsibilities String         @db.Text
-  whoYouAre        String         @map("who_you_are") @db.Text
-  niceToHaves      String?        @map("nice_to_haves") @db.Text
-  capacity         Int            @default(10)
-  applicationsCount Int           @default(0) @map("applications_count")
-  status           JobStatus      @default(DRAFT)
-  applyBefore      DateTime?      @map("apply_before")
-  postedAt         DateTime?      @map("posted_at")
-  createdAt        DateTime       @default(now()) @map("created_at")
-  updatedAt        DateTime       @updatedAt @map("updated_at")
-  deletedAt        DateTime?      @map("deleted_at")
-  skills           JobSkill[]
-  benefits         JobBenefit[]
+  id                String         @id @default(uuid()) @db.Uuid
+  companyId         String         @map("company_id") @db.Uuid // <--- ADDED @db.Uuid HERE!
+  company           Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  title             String
+  employmentType    EmploymentType @map("employment_type")
+  jobLevel          JobLevel       @map("job_level")
+  category          JobCategory
+  location          String
+  salaryMin         Decimal?       @map("salary_min") @db.Decimal(12, 2)
+  salaryMax         Decimal?       @map("salary_max") @db.Decimal(12, 2)
+  salaryCurrency    String         @default("USD") @map("salary_currency")
+  description       String         @db.Text
+  responsibilities  String         @db.Text
+  whoYouAre         String         @map("who_you_are") @db.Text
+  niceToHaves       String?        @map("nice_to_haves") @db.Text
+  capacity          Int            @default(10)
+  applicationsCount Int            @default(0) @map("applications_count")
+  status            JobStatus      @default(DRAFT)
+  applyBefore       DateTime?      @map("apply_before")
+  postedAt          DateTime?      @map("posted_at")
+  createdAt         DateTime       @default(now()) @map("created_at")
+  updatedAt         DateTime       @updatedAt @map("updated_at")
+  deletedAt         DateTime?      @map("deleted_at")
+  skills            JobSkill[]
+  benefits          JobBenefit[]
 
   @@index([status])
   @@index([category])
@@ -317,4 +320,92 @@ model CandidateEducation {
 
   @@index([candidateId])
   @@map("candidate_educations")
+}
+
+// candidate experience schema
+
+model CandidateExperience {
+  id          String @id @default(uuid()) @db.Uuid
+  candidateId String @map("candidate_id") @db.Uuid
+
+  candidate CandidateProfile @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+
+  companyName    String         @map("company_name")
+  position       String
+  employmentType EmploymentType @map("employment_type")
+
+  description String? @db.Text
+
+  startDate DateTime  @map("start_date") @db.Date
+  endDate   DateTime? @map("end_date") @db.Date
+
+  isCurrent Boolean @default(false) @map("is_current")
+
+  countryName String? @map("country_name")
+  cityName    String? @map("city_name")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([candidateId])
+  @@map("candidate_experiences")
+}
+
+// candidate certificate schema
+
+model CandidateCertification {
+  id             String           @id @default(uuid()) @db.Uuid
+  candidateId    String           @map("candidate_id") @db.Uuid
+  candidate      CandidateProfile @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  title          String
+  organization   String
+  issueDate      DateTime         @map("issue_date") @db.Date
+  expirationDate DateTime?        @map("expiration_date") @db.Date
+  credentialId   String?          @map("credential_id")
+  credentialUrl  String?          @map("credential_url") @db.Text
+  createdAt      DateTime         @default(now()) @map("created_at")
+  updatedAt      DateTime         @updatedAt @map("updated_at")
+
+  @@index([candidateId])
+  @@map("candidate_certifications")
+}
+
+enum SkillLevel {
+  beginner
+  intermediate
+  advanced
+  expert
+}
+
+model SkillCategory {
+  id     String  @id @default(uuid()) @db.Uuid
+  name   String  @db.VarChar
+  skills Skill[]
+
+  @@map("skill_categories")
+}
+
+model Skill {
+  id              String           @id @default(uuid()) @db.Uuid
+  name            String           @unique @db.VarChar
+  slug            String           @unique @db.VarChar
+  categoryId      String           @map("category_id") @db.Uuid
+  category        SkillCategory    @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  candidateSkills CandidateSkill[]
+
+  @@map("skills")
+}
+
+model CandidateSkill {
+  id              String           @id @default(uuid()) @db.Uuid
+  candidateId     String           @map("candidate_id") @db.Uuid
+  candidate       CandidateProfile @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  skillId         String           @map("skill_id") @db.Uuid
+  skill           Skill            @relation(fields: [skillId], references: [id], onDelete: Cascade)
+  level           SkillLevel
+  yearsExperience Int              @map("years_experience")
+
+  @@unique([candidateId, skillId])
+  @@index([skillId])
+  @@map("candidate_skills")
 }
