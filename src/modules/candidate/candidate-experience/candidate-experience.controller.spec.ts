@@ -76,9 +76,7 @@ describe('CandidateExperienceController', () => {
     expect(controller).toBeDefined();
   });
 
-  // ---------------------------------------------------------------------------
   // 1. POST /candidate-experience
-  // ---------------------------------------------------------------------------
   describe('create', () => {
     it('should invoke service.create with request user id and payload', async () => {
       const dto: CreateCandidateExperienceDto = {
@@ -101,9 +99,7 @@ describe('CandidateExperienceController', () => {
     });
   });
 
-  // ---------------------------------------------------------------------------
   // 2. GET /candidate-experience
-  // ---------------------------------------------------------------------------
   describe('findAll', () => {
     it('should invoke service.findAll with request user id', async () => {
       const expectedResponse: any = { experiences: [mockExperienceData] };
@@ -116,9 +112,7 @@ describe('CandidateExperienceController', () => {
     });
   });
 
-  // ---------------------------------------------------------------------------
   // 3. GET /candidate-experience/public/:candidateId
-  // ---------------------------------------------------------------------------
   describe('findPublicExperiences', () => {
     it('should invoke service.findPublicExperiences with provided tracking parameter string', async () => {
       const targetParamId = 'any-valid-uuid-or-id';
@@ -132,9 +126,7 @@ describe('CandidateExperienceController', () => {
     });
   });
 
-  // ---------------------------------------------------------------------------
-  // 4. GET /candidate-experience/:id
-  // ---------------------------------------------------------------------------
+  //  GET /candidate-experience/:id
   describe('findOne', () => {
     it('should invoke service.findOne with route experience id and request user id', async () => {
       const expectedResponse: any = { success: true, data: mockExperienceData };
@@ -147,9 +139,7 @@ describe('CandidateExperienceController', () => {
     });
   });
 
-  // ---------------------------------------------------------------------------
   // 5. PATCH /candidate-experience/:id
-  // ---------------------------------------------------------------------------
   describe('update', () => {
     it('should invoke service.update with target id, request user id, and payload object data', async () => {
       const updateDto: Partial<CreateCandidateExperienceDto> = { position: 'Senior Backend Engineer' };
@@ -163,9 +153,7 @@ describe('CandidateExperienceController', () => {
     });
   });
 
-  // ---------------------------------------------------------------------------
   // 6. DELETE /candidate-experience/:id
-  // ---------------------------------------------------------------------------
   describe('remove', () => {
     it('should invoke service.remove with target id and request user id', async () => {
       const expectedResponse: any = { success: true, message: 'Experience deleted successfully' };
