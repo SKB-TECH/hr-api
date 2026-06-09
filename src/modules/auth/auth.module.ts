@@ -9,12 +9,7 @@ import { UsersModule } from '../users/users.module';
 import { PrismaModule } from '../../infrastructure/prisma/prisma.module';
 
 @Module({
-  imports: [
-    PassportModule,
-    JwtModule.register({}),
-    UsersModule,
-    PrismaModule,
-  ],
+  imports: [PassportModule, JwtModule.register({}), UsersModule, PrismaModule],
   controllers: [AuthController],
   providers: [AuthService, JwtStrategy, GoogleStrategy],
 })
