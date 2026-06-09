@@ -4,9 +4,9 @@ import { SkillsController } from './skills.controller';
 import { PrismaModule } from '../../infrastructure/prisma/prisma.module';
 
 @Module({
-  imports: [PrismaModule], // <-- Gives us access to the database!
+  imports: [PrismaModule],
   controllers: [SkillsController],
   providers: [SkillsService],
-  exports: [SkillsService], // Exported so the Jobs and Candidates modules can use it later
+  exports: [SkillsService],
 })
 export class SkillsModule {}

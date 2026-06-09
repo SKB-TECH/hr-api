@@ -21,7 +21,7 @@ export class ParseProfileJsonPipe implements PipeTransform {
 
       const errors = await validate(objectInstance, {
         whitelist: true,
-        validationError: { target: false }, // Hides the raw values from error payloads for safety
+        validationError: { target: false },
       });
 
       if (errors.length > 0) {

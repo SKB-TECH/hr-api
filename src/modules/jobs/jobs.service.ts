@@ -9,7 +9,6 @@ import { UpdateJobDto } from './dto/update-job.dto';
 export class JobsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  // ... [Esther's findAll logic maintained] ...
   async findAll(query: QueryJobDto = {}) {
     const {
       keyword, location, employmentType, category, jobLevel,
@@ -60,7 +59,6 @@ export class JobsService {
     };
   }
 
-  // ... [Esther's findOne logic FIXED] ...
   async findOne(id: string) {
     const job = await this.prisma.job.findFirst({
       where: { id, deletedAt: null },
@@ -100,11 +98,7 @@ export class JobsService {
     }
   }
 
-  // ==================================================
-  // Charles : Create Job (Company Dashboard)
-  // ==================================================
   async createJob(createJobDto: CreateJobDto, userId: string) {
-    // 1. Find the company the logged-in user belongs to
     const companyMember = await this.prisma.companyMember.findFirst({
       where: { userId: userId },
     });
@@ -113,37 +107,25 @@ export class JobsService {
       throw new NotFoundException('You must be assigned to a company to post a job.');
     }
 
-    // 2. Extract skillIds so Prisma doesn't get validation errors, keeping the rest in jobData
     const { skillIds, ...jobData } = createJobDto;
 
-    // 3. If skills were provided, fetch their names (schema requires name on JobSkill create)
     let skillCreates: any[] | undefined;
     if (skillIds && skillIds.length > 0) {
-      const skills = await (this.prisma as any).skill.findMany({
-        where: { id: { in: skillIds } },
-        select: { id: true, name: true },
-      });
-      skillCreates = skills.map((s: any) => ({
-        skill: { connect: { id: s.id } },
-        name: s.name,
-      }));
+      skillCreates = skillIds.map((id) => ({ skill: { connect: { id } } }));
     }
 
-    // 4. Create the job and link the skills in a single transaction
     const newJob = await this.prisma.job.create({
       data: {
         ...jobData,
         company: { connect: { id: companyMember.companyId } },
-        status: JobStatus.DRAFT, // Uses Prisma's native enum
+        status: JobStatus.DRAFT,
         ...(skillCreates && skillCreates.length > 0 && { skills: { create: skillCreates } }),
       },
-      // Instruct Prisma to return the newly linked skills so we can verify the transaction
       include: {
-        // cast to any to avoid mismatched generated types in this environment
         skills: {
           include: {
             skill: {
-              select: { id: true, name: true, category: true },
+              select: { id: true, name: true, slug: true },
             },
           },
         },
@@ -157,9 +139,6 @@ export class JobsService {
     };
   }
 
-  // ==================================================
-  // Charles : Get Company Jobs (Screen 3.9)
-  // ==================================================
   async findMyCompanyJobs(userId: string, query: QueryJobDto) {
     const companyMember = await this.prisma.companyMember.findFirst({
       where: { userId: userId },
@@ -210,9 +189,6 @@ export class JobsService {
     };
   }
 
-  // ==================================================
-  // Charles : Update Job (Edit Draft / Publish to Live)
-  // ==================================================
   async updateJob(jobId: string, userId: string, updateJobDto: UpdateJobDto) {
     const companyMember = await this.prisma.companyMember.findFirst({
       where: { userId: userId },
@@ -237,9 +213,6 @@ export class JobsService {
     };
   }
 
-  // ==================================================
-  // Charles : Delete Job (Soft Delete)
-  // ==================================================
   async deleteJob(jobId: string, userId: string) {
     const companyMember = await this.prisma.companyMember.findFirst({
       where: { userId: userId },

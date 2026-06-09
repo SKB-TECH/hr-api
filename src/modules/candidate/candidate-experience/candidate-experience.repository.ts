@@ -7,15 +7,10 @@ export class CandidateExperienceRepository {
   constructor(private readonly prisma: PrismaService) {}
 
 
-  // Basic CRUD operations for CandidateExperience entity
-
-
-  // creat method with Prisma create input
   async create(data: Prisma.CandidateExperienceCreateInput) {
     return this.prisma.candidateExperience.create({ data });
   }
 
-  // find all experiences for a candidate, ordered by start date descending
   async findAllByCandidate(candidateId: string) {
     return this.prisma.candidateExperience.findMany({
       where: { candidateId },
@@ -23,14 +18,12 @@ export class CandidateExperienceRepository {
     });
   }
 
-  // find experience by ID
   async findById(id: string) {
     return this.prisma.candidateExperience.findUnique({
       where: { id },
     });
   }
 
-  // find experience by ID and candidate ID for ownership validation
   async findByIdAndCandidate(id: string, candidateId: string) {
     return this.prisma.candidateExperience.findFirst({
       where: { id, candidateId },
@@ -38,7 +31,6 @@ export class CandidateExperienceRepository {
   }
 
 
-  // find public experiences for a candidate, ordered by start date descending
   async findPublicByCandidate(candidateId: string) {
     return this.prisma.candidateExperience.findMany({
       where: { candidateId },
@@ -47,7 +39,6 @@ export class CandidateExperienceRepository {
   }
 
 
-  // update experience by ID with provided data
   async update(id: string, data: Prisma.CandidateExperienceUpdateInput) {
     return this.prisma.candidateExperience.update({
       where: { id },
@@ -56,7 +47,6 @@ export class CandidateExperienceRepository {
   }
 
 
-  // delete experience by ID
   async delete(id: string) {
     return this.prisma.candidateExperience.delete({
       where: { id },

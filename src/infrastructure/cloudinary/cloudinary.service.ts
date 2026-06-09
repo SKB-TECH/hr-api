@@ -57,7 +57,6 @@ export class CloudinaryService {
 
   async deleteFile(publicId: string, isPdf: boolean = false): Promise<any> {
     return new Promise((resolve, reject) => {
-      // Raw assets (PDFs) require the resource_type specified when running destroy()
       const options = isPdf ? { resource_type: 'raw' } : {};
 
       cloudinary.uploader.destroy(publicId, options, (error, result) => {

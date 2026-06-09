@@ -1,7 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { UserRole, UserStatus, AuthProvider, Availability, WorkType, ProfileVisibility } from '@prisma/client';
 
-// This represents the structure of the Candidate Profile child object
 class CandidateProfileDto {
   @ApiProperty({ 
     example: '3a122f42-ed14-4252-9e2a-e0f4a2577320',
@@ -30,7 +29,7 @@ class CandidateProfileDto {
   address: string | null;
 
   @ApiPropertyOptional({ example: '2500.00', type: String, description: 'Current salary of the candidate' })
-  currentSalary: any | null; // Prisma Decimal returns as a string or object
+  currentSalary: any | null;
 
   @ApiPropertyOptional({ example: '4500.00', type: String, description: 'Expected salary of the candidate' })
   expectedSalary: any | null;

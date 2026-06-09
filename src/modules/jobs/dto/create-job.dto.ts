@@ -12,8 +12,6 @@ import { ApiPropertyOptional } from '@nestjs/swagger';
 import { JobCategory, JobLevel, EmploymentType } from '@prisma/client';
 
 export class CreateJobDto {
-  // --- Step 1 Fields: Basics ---
-
   @IsNotEmpty()
   @IsString()
   title: string;
@@ -44,13 +42,11 @@ export class CreateJobDto {
 
   @IsOptional()
   @IsString()
-  salaryCurrency?: string; // Default is usually handled in the database or service
+  salaryCurrency?: string;
 
   @IsOptional()
   @IsDateString()
-  applyBefore?: string; // Stored as a date string from the frontend
-
-  // --- Step 2 Fields: Description ---
+  applyBefore?: string;
 
   @IsNotEmpty()
   @IsString()
@@ -67,8 +63,6 @@ export class CreateJobDto {
   @IsOptional()
   @IsString()
   niceToHaves?: string;
-
-  // --- Step 3 Fields: Skills ---
 
   @ApiPropertyOptional({
     description: 'Array of Skill IDs to attach to this job posting',

@@ -15,11 +15,6 @@ export class CreateSkillDto {
   @IsNotEmpty()
   name: string;
 
-  // @ApiProperty({ description: 'Unique text identifier for URLs', example: 'figma' })
-  // @IsString()
-  // @IsNotEmpty()
-  // slug: string;
-
   @ApiProperty({ description: 'The UUID of the SkillCategory row', format: 'uuid', example: 'a6e35da1-9493-4903-bf68-80b18361bdf6' })
   @IsUUID()
   @IsNotEmpty()

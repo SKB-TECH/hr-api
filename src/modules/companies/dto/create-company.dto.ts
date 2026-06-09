@@ -46,7 +46,6 @@ export class CreateCompanyDto {
   @IsUrl({}, { message: 'Website must be a valid URL' })
   website?: string;
 
-  // --- Social Links ---
   @ApiPropertyOptional({ example: 'https://facebook.com/infinity' })
   @IsOptional() @IsUrl() facebook?: string;
 

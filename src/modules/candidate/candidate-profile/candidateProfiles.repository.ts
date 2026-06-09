@@ -1,4 +1,3 @@
-// src/modules/candidate-profile/candidateProfiles.repository.ts
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '@/infrastructure/prisma/prisma.service';
 import { UpdateUserCandidateProfileDto } from './dto/update-candidate-profile.dto';
@@ -13,7 +12,6 @@ export class CandidateProfilesRepository {
       include: {
         candidateProfile: {
           include: {
-            // This is the crucial addition: deeply fetching the master skills
             candidate_skills: {
               select: {
                 skill: {
@@ -32,7 +30,6 @@ export class CandidateProfilesRepository {
   }
 
   async updateCandidateProfile(userId: string, dto: UpdateUserCandidateProfileDto) {
-    // Extracted phoneNumber to prevent it from bleeding into the profileFields spread
     const { firstName, lastName, avatar, birthDate, phoneNumber, ...profileFields } = dto;
 
     return this.prisma.user.update({
@@ -41,7 +38,7 @@ export class CandidateProfilesRepository {
         firstName,
         lastName,
         avatar,
-        phone: phoneNumber, // Correctly mapped to the User table's phone column
+        phone: phoneNumber,
         candidateProfile: {
           update: {
             ...profileFields,

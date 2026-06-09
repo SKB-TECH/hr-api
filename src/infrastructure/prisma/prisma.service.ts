@@ -7,7 +7,6 @@ export class PrismaService
   implements OnModuleInit, OnModuleDestroy
 {
   constructor() {
-    // Explicitly pass the connection string to Prisma to bypass the .env file loading issue
     super({
       datasources: {
         db: {

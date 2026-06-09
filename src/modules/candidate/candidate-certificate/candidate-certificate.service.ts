@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException, BadRequestException, ForbiddenException, Logger } from '@nestjs/common';
-import { PrismaService } from '@/infrastructure/prisma/prisma.service'; // Adjust import path based on your setup
+import { PrismaService } from '@/infrastructure/prisma/prisma.service';
 import { CreateCandidateCertificationDto } from './dto/create-candidate-certificate.dto';
 
 @Injectable()
@@ -89,7 +89,6 @@ export class CandidateCertificationService {
       throw new ForbiddenException('You are not authorized to modify this certification record.');
     }
 
-    // Validate dates if either is changing
     const finalIssueDate = dto.issueDate || certification.issueDate.toISOString();
     const finalExpirationDate = dto.expirationDate !== undefined 
       ? dto.expirationDate 
