@@ -1,22 +1,16 @@
-import {
-  IsString,
-  IsOptional,
-  IsEnum,
-  IsInt,
-  IsBoolean,
-  IsNumber,
-  Min,
-  IsDateString,
-} from 'class-validator';
+// src/modules/candidate-profile/dto/update-candidate-profile.dto.ts
+import { IsString, IsOptional, IsEnum, IsInt, IsBoolean, IsNumber, Min, IsDateString } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Availability, WorkType, ProfileVisibility } from '@prisma/client';
 
 export class UpdateUserCandidateProfileDto {
-
-  @ApiPropertyOptional({ example: 'Prince Manzi' })
+  
+  @ApiPropertyOptional({ example: 'Prince ngenzi' })
   @IsString()
   @IsOptional()
   fullName?: string;
+
+
 
   @ApiPropertyOptional({ example: '+250788123456' })
   @IsString()
@@ -115,5 +109,4 @@ export class UpdateUserCandidateProfileDto {
   @IsBoolean()
   @IsOptional()
   openToWork?: boolean;
-
 }

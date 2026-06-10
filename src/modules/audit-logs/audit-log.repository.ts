@@ -46,6 +46,8 @@ export class AuditLogRepository {
             select: {
               id: true,
               email: true,
+              fullName: true,
+              // lastName: true,
               role: true,
               // Temporarily removed firstName and lastName to bypass your colleague's schema changes.
               // Add back whatever they renamed it to in the schema.prisma file (e.g., `name: true`).

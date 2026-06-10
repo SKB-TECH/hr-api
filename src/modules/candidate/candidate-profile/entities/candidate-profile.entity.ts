@@ -70,10 +70,8 @@ export class UserCandidateDto {
   email: string;
 
   @ApiProperty({ example: 'manzi', description: 'First name of the user' })
-  firstName: string;
+  fullName: string;
 
-  @ApiProperty({ example: 'prience', description: 'Last name of the user' })
-  lastName: string;
 
   @ApiPropertyOptional({ example: '+250788123456', description: 'Phone number of the user' })
   phoneNumber: string | null;
