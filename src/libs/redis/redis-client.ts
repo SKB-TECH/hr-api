@@ -27,29 +27,15 @@ export const pubClient: RedisClientType = createClient({
   socket: socketOptions,
 });
 
-export const subClient: RedisClientType = pubClient.duplicate();
-
 pubClient.on('error', (error) =>
-  logger.warn(`Redis PubClient error: ${error.message}`),
-);
-subClient.on('error', (error) =>
-  logger.warn(`Redis SubClient error: ${error.message}`),
+  logger.warn(`Redis client error: ${error.message}`),
 );
 
 if (redisUrl) {
   pubClient
     .connect()
-    .then(() => logger.log('Redis PubClient connected'))
-    .catch((error) =>
-      logger.warn(`PubClient connection failed: ${error.message}`),
-    );
-
-  subClient
-    .connect()
-    .then(() => logger.log('Redis SubClient connected'))
-    .catch((error) =>
-      logger.warn(`SubClient connection failed: ${error.message}`),
-    );
+    .then(() => logger.log('Redis client connected'))
+    .catch((error) => logger.warn(`Redis connection failed: ${error.message}`));
 } else {
-  logger.warn('APP_REDIS_URL not set — Redis clients will stay disconnected');
+  logger.warn('APP_REDIS_URL not set — Redis client will stay disconnected');
 }

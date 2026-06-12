@@ -11,8 +11,7 @@ import { AuditLogService } from '../audit-logs/audit-log.service';
 import { JwtTokenService } from '@/libs/jwt/jwt-token.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
-
-type ClientType = 'web' | 'mobile';
+import { ClientType } from './types/client-type.type';
 
 @Injectable()
 export class AuthService {

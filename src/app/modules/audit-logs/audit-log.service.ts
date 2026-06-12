@@ -10,16 +10,7 @@ import {
 import { AuditLog } from './entities/audit-log.entity';
 import { QueryAuditLogDto } from './dto/query-audit-log.dto';
 import { createPaginatedResult } from '../../../helpers/pagination/pagination.util';
-
-export interface CreateAuditLogData {
-  userId?: string;
-  action: string;
-  module: string;
-  oldValues?: Record<string, any>;
-  newValues?: Record<string, any>;
-  ipAddress?: string;
-  userAgent?: string;
-}
+import { CreateAuditLogData } from './interfaces/create-audit-log-data.interface';
 
 @Injectable()
 export class AuditLogService {
@@ -52,7 +43,7 @@ export class AuditLogService {
 
     const skip = (page - 1) * limit;
 
-    const [data, totalItems] = await Promise.all([
+    const [data, total] = await Promise.all([
       this.auditLogRepo.find({
         where,
         skip,
@@ -63,6 +54,6 @@ export class AuditLogService {
       this.auditLogRepo.count({ where }),
     ]);
 
-    return createPaginatedResult(data, totalItems, page, limit);
+    return createPaginatedResult(data, total, page, limit);
   }
 }

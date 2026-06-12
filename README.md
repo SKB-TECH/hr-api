@@ -1,155 +1,171 @@
-
 # HR API
 
-Backend REST API for the HR recruitment platform, built with NestJS, TypeORM, and PostgreSQL.
+Backend REST API for the HR recruitment platform, built with **NestJS**, **TypeORM**, and **PostgreSQL**.
 
 ## Tech Stack
 
 - **Framework:** NestJS (Node.js + TypeScript)
-- **Database:** PostgreSQL (via Docker)
-- **ORM:** TypeORM
-- **File Storage:** Local (`/uploads` folder, CDN-ready via StorageProvider interface)
-- **Package Manager:** pnpm
-<div align="center">
-  <img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" />
-  <h1>Infinity Tech Innovation API</h1>
-  <p>A professional, enterprise-grade Job Listing Backend built with <strong>NestJS</strong>, <strong>PostgreSQL</strong>, <strong>Prisma ORM</strong>, and <strong>Cloudinary</strong>.</p>
-</div>
-
-<hr />
-
-## Overview
-
-The **Infinity Tech Innovation API** powers a dynamic Job Listing platform. It follows a Clean Architecture approach to ensure scalability, maintainability, and security.
-
-### Key Features
-- **Clean Architecture:** Well-structured modules (`Jobs`, `Hero`), separated repositories, controllers, services, and shared utilities.
-- **Robust Database Layer:** PostgreSQL managed via Prisma (`@prisma/client@5`).
-- **Cloudinary Integration:** Dynamic image uploads configured for a specific `"infinity job image"` folder (stream-based upload with delete/replace functionality).
-- **Advanced Job Management:** Full CRUD operations for `Jobs` with dynamic search, pagination, and location/type/experience filters.
-- **Hero Image Management:** Dedicated CRUD endpoints for dynamically controlling the frontend's main hero section.
-- **Global Error Handling & Formatting:** Custom global exception filters and Prisma exception handling to provide clean, normalized JSON responses (`{ success, message, statusCode, timestamp, data, meta }`).
-- **Strict Validation:** Extensive request validation using `class-validator` and DTOs.
-- **Security & Optimization:** Protected with Helmet, CORS, Throttler (rate limiting), and HTTP response Compression.
-- **Swagger Documentation:** Auto-generated interactive API docs detailing schemas, parameters, and multi-part file uploads.
-
----
-
-## 📂 Folder Structure
-
-This project enforces a highly modular and professional folder structure:
-
-```text
-src/
-├── common/                  # Shared resources across the application
-│   ├── exceptions/          # Global & Prisma-specific exception filters
-│   ├── interceptors/        # Global response formatting interceptors
-│   ├──utils/                # Shared utilities (e.g., pagination.util.ts)
-|   ├──pipes                 # transform input data
-|   ├── response           
-│
-├── infrastructure/          # External services and core infrastructure
-│   ├── cloudinary/          # Cloudinary providers and streaming services
-│   └── prisma/              # Prisma ORM setup, services, and modules
-│
-├── modules/                 # Feature-specific bounded contexts
-│   ├── Auth/                # Hero Image management feature
-│   │   ├── decorators/      # Route handlers for /hero
-│   │   ├── dto/             # Data Transfer Objects
-│   │   ├── guards/          # Database abstraction layer for Hero
-│   │   └── starategies/     # Business logic for Hero
-|   |   ├── 
-│   │
-│   └── candidate-section/                
-│   |    ├── dto/
-│   |    ├── controller.ts   
-         ├── module.ts           
-│   |    ├── repositories.ts    
-│   |    └── services.ts        
-│   ├──candidate-resume
-|        ├──dto
-|        ├── interceptors
-├── app.module.ts            # Root application module
-└── main.ts                  # Application entry point (pipes, swagger, security setup)
-```
+- **ORM / DB:** TypeORM + PostgreSQL
+- **Auth:** JWT (access + refresh, secret rotation) with Passport; refresh tokens stored in Redis
+- **File storage:** Google Cloud Storage (async image compression via Pub/Sub worker)
+- **Messaging:** Google Cloud Pub/Sub (local emulator supported)
+- **Cache / sessions:** Redis
+- **Logging:** pino (`nestjs-pino`)
+- **Docs:** Swagger / OpenAPI
+- **Package manager:** pnpm
 
 ---
 
 ## Prerequisites
 
-- Node.js v18+
-- pnpm
-- Docker (for PostgreSQL)
+- **Node.js 22+**
+- **pnpm 10+** (via Corepack: `corepack enable`)
+- **PostgreSQL 14+** (local or via Docker)
+- **Redis** (optional locally — used for refresh tokens & Pub/Sub dedup)
+- **Docker** (optional — for the bundled Postgres and the Pub/Sub emulator)
 
-1. **Install dependencies:**
+---
+
+## Quick Start
+
 ```bash
+# 1. Install dependencies
+corepack enable
 pnpm install
+
+# 2. Configure environment
+cp .env.example .env.local        # then fill in the values (see below)
+
+# 3. Start PostgreSQL (option A — Docker, recommended)
+cp .env.example .env              # docker-compose reads .env; set POSTGRES_PORT=5432
+docker compose up -d postgres
+#    (option B) point POSTGRES_* in .env.local at your own Postgres instance
+
+# 4. Create the database schema
+pnpm build                        # compile entities + migrations into dist/
+NODE_ENV=local pnpm typeorm:local:migration:run
+
+# 5. Run the API
+pnpm start:dev
 ```
 
-2. **Environment Configuration:**
-Create `.env` and `.env.local` files based on the `.env.example` template. Ensure your database and Cloudinary keys are set.
-```env
-DATABASE_URL="postgresql://user:password@localhost:5432/infinity_tech_innovation?schema=public"
-CLOUDINARY_CLOUD_NAME="your_cloud_name"
-CLOUDINARY_API_KEY="your_api_key"
-CLOUDINARY_API_SECRET="your_api_secret"
-PORT=3000
-```
+API: <http://localhost:3000/api/v1> · Swagger: <http://localhost:3000/api/docs>
 
-3. **Database Initialization & Seeding:**
-Push the schema to your local PostgreSQL instance and seed the mock data:
+> `start:dev` already sets `NODE_ENV=local`, so the app loads `.env.local`.
+
+---
+
+## Environment Variables
+
+Copy `.env.example` → `.env.local` and fill it in. Key groups:
+
+| Group | Variables | Notes |
+| --- | --- | --- |
+| App | `NODE_ENV`, `APP_PORT` | `local` loads `.env.local`; otherwise `.env`. |
+| Database | `POSTGRES_HOST/PORT/USER/PASSWORD/DB`, `DATABASE_SSL_CONNECTION`, `DB_POOL_*` | Set `DATABASE_SSL_CONNECTION=false` for local. |
+| Redis | `APP_REDIS_URL`, `APP_REDIS_SSL_CONNECTION` | Leave `APP_REDIS_URL` empty to run without Redis (login/refresh need it). |
+| JWT | `JWT_SECRET`, `JWT_REFRESH_SECRET`, `JWT_EXPIRATION`, `JWT_REFRESH_EXPIRATION`, `JWT_*_SECRET_CURRENT/PREVIOUS` | `*_CURRENT/PREVIOUS` enable zero-downtime secret rotation. |
+| Storage (GCS) | `GCS_BUCKET`, `GCS_PROJECT_ID`, `GCS_KEY_FILE` | `GCS_KEY_FILE` = path to a service-account JSON (gitignored); omit to use Application Default Credentials. |
+| Pub/Sub | `PUBSUB_ENABLED`, `PUBSUB_PROJECT_ID`, `PUBSUB_KEY_FILE`, `PUBSUB_EMULATOR_HOST` | `PUBSUB_ENABLED=false` to disable in dev; defaults to the GCS project/key. |
+| Google OAuth | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_CALLBACK_URL` | For "Login with Google". |
+
+> **Secrets:** `.env`, `.env.local`, and `*-service-account*.json` / `hr-project-*.json` keys are gitignored — never commit them.
+
+---
+
+## Database & Migrations
+
+`synchronize` is **off** — the schema is managed exclusively through migrations. Because the datasource loads compiled files from `dist/`, always **build before generating/running** migrations.
+
 ```bash
-cp .env.example .env
+# Generate a migration from entity changes (needs a reachable DB to diff against)
+NODE_ENV=local pnpm typeorm:local:migration:generate src/database/local-migrations/<Name>
+
+pnpm build                                   # compile the new migration into dist/
+
+# Apply / inspect / revert
+NODE_ENV=local pnpm typeorm:local:migration:run
+NODE_ENV=local pnpm typeorm:local:migration:show
+NODE_ENV=local pnpm typeorm:local:migration:revert
+```
+
+`typeorm:*` (no env) and `typeorm:prod:*` variants exist for other environments.
+
+---
+
+## Optional Services
+
+### Redis
+Required for login/refresh (refresh tokens are stored in Redis) and Pub/Sub message dedup. Point `APP_REDIS_URL` at a running Redis, e.g. `redis://127.0.0.1:6379`. Leave it empty to boot without Redis (auth that needs it will fail at runtime).
+
+### Pub/Sub emulator (local)
+Used by the storage image-compression worker. Off by default in dev.
+
+```bash
+pnpm pubsub:emulator              # starts the emulator on localhost:8085 (docker compose)
+# then in .env.local:
+PUBSUB_ENABLED=true
+PUBSUB_EMULATOR_HOST=localhost:8085
+```
+
+The full compress pipeline also needs Redis and a valid `GCS_KEY_FILE`.
+
+---
+
+## Project Structure
+
+```text
+src/
+├── app/
+│   ├── app.module.ts        # root module (TypeORM, logger, throttler, global filter)
+│   └── modules/             # feature modules (auth, users, jobs, applications, candidate/…)
+├── database/
+│   ├── config/datasource.ts # TypeORM DataSource
+│   └── local-migrations/    # migrations (+ migrations/ for prod)
+├── libs/                    # cross-cutting integrations
+│   ├── env/                 # ConfigService + env loading
+│   ├── i18n/ jwt/ redis/    # i18n, token service, redis client/pub-sub
+│   └── pubsub/ storage/     # GCP Pub/Sub, GCS storage + image compressor + worker
+├── helpers/                 # filters, guards, decorators, pagination, message (sendResult)
+├── utils/                   # shared enums, transformers
+└── main.ts                  # bootstrap (pipes, cookies, CORS, Swagger, security)
 ```
 
 ---
 
-## Running the Application
+## Scripts
 
-```bash
-# development
-npm run start
-
-# watch mode (recommended)
-npm run start:dev
-
-# production mode
-npm run start:prod
-```
+| Command | Description |
+| --- | --- |
+| `pnpm start:dev` | Run in watch mode (`NODE_ENV=local`). |
+| `pnpm build` | Compile to `dist/`. |
+| `pnpm start:prod` | Run the compiled app (`node dist/main`). |
+| `pnpm test` / `pnpm test:cov` | Unit tests (Jest) / with coverage. |
+| `pnpm test:e2e` | End-to-end tests. |
+| `pnpm lint` / `pnpm format` | ESLint (fix) / Prettier. |
+| `pnpm typeorm:local:migration:*` | Generate / run / show / revert migrations (local). |
+| `pnpm pubsub:emulator` | Start the local Pub/Sub emulator. |
 
 ---
 
-## API Endpoints & Documentation
+## API & Responses
 
-Once the server is running, navigate to the auto-generated Swagger UI to explore and test all available endpoints:
+Interactive docs: **<http://localhost:3000/api/docs>** (global prefix `api/v1`).
 
-**[http://localhost:3000/api/docs](http://localhost:3000/api/docs)**
+All responses share a consistent envelope:
 
+- **Success:** `{ statusCode, message, data }`
+- **Paginated:** `{ statusCode, message, data: [...], meta: { totalItems, totalPages, currentPage, hasNextPage, hasPreviousPage } }`
+- **Error:** `{ statusCode, message, error }`
 
+Auth supports two delivery modes via the `x-client-type` header: `web` (default) sets httpOnly cookies, `mobile` returns tokens in the body.
 
-
-# Feature: Job Detail API
-
-This branch implements the job listings and applications functionality for the HR recruitment platform.
-
-
-
-
-
-
-
-### Tests
-
-- Unit tests: `src/modules/jobs/jobs.service.spec.ts`
-- E2E tests: `test/jobs.e2e-spec.ts`
+---
 
 ## Testing
 
 ```bash
-# Run unit tests
-pnpm test jobs
-
-# Run E2E tests
-pnpm test:e2e
+pnpm test            # all unit tests
+pnpm test interviews # filter by name
+pnpm test:e2e        # end-to-end
 ```
-

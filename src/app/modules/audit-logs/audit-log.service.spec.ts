@@ -83,11 +83,9 @@ describe('AuditLogService', () => {
       const result = await service.findAll({ page: 1, limit: 20 });
 
       expect(result.data).toHaveLength(2);
-      expect(result.meta.totalItems).toBe(2);
+      expect(result.meta.total).toBe(2);
       expect(result.meta.totalPages).toBe(1);
-      expect(result.meta.currentPage).toBe(1);
-      expect(result.meta.hasNextPage).toBe(false);
-      expect(result.meta.hasPreviousPage).toBe(false);
+      expect(result.meta.page).toBe(1);
     });
 
     it('should pass all filters to the repository', async () => {
@@ -116,7 +114,7 @@ describe('AuditLogService', () => {
       expect(findArgs.relations).toEqual({ user: true });
     });
 
-    it('should calculate hasNextPage correctly when more pages exist', async () => {
+    it('should calculate pagination meta correctly when more pages exist', async () => {
       const logs = Array.from({ length: 10 }, (_, i) => ({
         ...mockAuditLog,
         id: `uuid-log-${i}`,
@@ -126,9 +124,10 @@ describe('AuditLogService', () => {
 
       const result = await service.findAll({ page: 1, limit: 10 });
 
+      expect(result.meta.total).toBe(35);
       expect(result.meta.totalPages).toBe(4);
-      expect(result.meta.hasNextPage).toBe(true);
-      expect(result.meta.hasPreviousPage).toBe(false);
+      expect(result.meta.page).toBe(1);
+      expect(result.meta.limit).toBe(10);
     });
 
     it('should use default page=1 and limit=20 when not provided', async () => {
@@ -137,18 +136,19 @@ describe('AuditLogService', () => {
 
       const result = await service.findAll({});
 
-      expect(result.meta.currentPage).toBe(1);
+      expect(result.meta.page).toBe(1);
     });
 
-    it('should return hasPreviousPage true when on page 2+', async () => {
+    it('should return correct pagination meta when on page 2+', async () => {
       mockAuditLogRepo.find.mockResolvedValue([]);
       mockAuditLogRepo.count.mockResolvedValue(50);
 
       const result = await service.findAll({ page: 3, limit: 10 });
 
-      expect(result.meta.hasPreviousPage).toBe(true);
-      expect(result.meta.hasNextPage).toBe(true);
-      expect(result.meta.currentPage).toBe(3);
+      expect(result.meta.total).toBe(50);
+      expect(result.meta.totalPages).toBe(5);
+      expect(result.meta.page).toBe(3);
+      expect(result.meta.limit).toBe(10);
     });
   });
 });

@@ -118,11 +118,9 @@ describe('JobsService', () => {
       const result = await service.findAll({});
 
       expect(result.data).toHaveLength(1);
-      expect(result.meta.totalItems).toBe(1);
-      expect(result.meta.currentPage).toBe(1);
+      expect(result.meta.total).toBe(1);
+      expect(result.meta.page).toBe(1);
       expect(result.meta.totalPages).toBe(1);
-      expect(result.meta.hasNextPage).toBe(false);
-      expect(result.meta.hasPreviousPage).toBe(false);
     });
 
     it('should filter by keyword in job title', async () => {
@@ -244,7 +242,7 @@ describe('JobsService', () => {
       expect(qb.orderBy).toHaveBeenCalledWith('job.salaryMin', 'ASC');
     });
 
-    it('should return correct hasNextPage when more pages exist', async () => {
+    it('should return correct pagination meta when more pages exist', async () => {
       const jobs = Array.from({ length: 10 }, (_, i) => ({
         ...mockJob,
         id: `uuid-job-${i}`,
@@ -253,13 +251,13 @@ describe('JobsService', () => {
 
       const result = await service.findAll({ page: 1, limit: 10 });
 
-      expect(result.meta.totalItems).toBe(73);
+      expect(result.meta.total).toBe(73);
       expect(result.meta.totalPages).toBe(8);
-      expect(result.meta.hasNextPage).toBe(true);
-      expect(result.meta.hasPreviousPage).toBe(false);
+      expect(result.meta.page).toBe(1);
+      expect(result.meta.limit).toBe(10);
     });
 
-    it('should return correct hasPreviousPage on page 2', async () => {
+    it('should return correct pagination meta on page 2', async () => {
       const jobs = Array.from({ length: 10 }, (_, i) => ({
         ...mockJob,
         id: `uuid-job-${i}`,
@@ -268,8 +266,10 @@ describe('JobsService', () => {
 
       const result = await service.findAll({ page: 2, limit: 10 });
 
-      expect(result.meta.hasPreviousPage).toBe(true);
-      expect(result.meta.currentPage).toBe(2);
+      expect(result.meta.total).toBe(73);
+      expect(result.meta.totalPages).toBe(8);
+      expect(result.meta.page).toBe(2);
+      expect(result.meta.limit).toBe(10);
     });
 
     it('should return empty data when no jobs match filters', async () => {
@@ -278,7 +278,7 @@ describe('JobsService', () => {
       const result = await service.findAll({ keyword: 'nonexistent-job-xyz' });
 
       expect(result.data).toHaveLength(0);
-      expect(result.meta.totalItems).toBe(0);
+      expect(result.meta.total).toBe(0);
       expect(result.meta.totalPages).toBe(0);
     });
   });

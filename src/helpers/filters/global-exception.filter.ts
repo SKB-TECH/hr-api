@@ -3,33 +3,12 @@ import {
   Catch,
   ArgumentsHost,
   HttpException,
-  HttpStatus,
   Injectable,
   Logger,
 } from '@nestjs/common';
 import { Response } from 'express';
 import { I18nService } from '../../libs/i18n/i18n.service';
-
-const ERROR_MAP: Record<number, { error: string; key: string }> = {
-  [HttpStatus.UNAUTHORIZED]: {
-    error: 'UNAUTHORIZED',
-    key: 'auth.authentication_required',
-  },
-  [HttpStatus.FORBIDDEN]: {
-    error: 'FORBIDDEN',
-    key: 'auth.permission_denied',
-  },
-  [HttpStatus.NOT_FOUND]: { error: 'NOT_FOUND', key: 'common.not_found' },
-  [HttpStatus.TOO_MANY_REQUESTS]: {
-    error: 'TOO_MANY_REQUESTS',
-    key: 'common.too_many_requests',
-  },
-};
-
-const FORCE_TRANSLATE_STATUSES = new Set<number>([
-  HttpStatus.UNAUTHORIZED,
-  HttpStatus.FORBIDDEN,
-]);
+import { ERROR_MAP } from './error-map';
 
 @Injectable()
 @Catch()
@@ -47,7 +26,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       const exceptionResponse = exception.getResponse();
       const mapped = ERROR_MAP[status];
 
-      if (FORCE_TRANSLATE_STATUSES.has(status) && mapped) {
+      if (mapped?.forceTranslate) {
         response.status(status).json({
           statusCode: status,
           message: this.i18n.t(mapped.key),

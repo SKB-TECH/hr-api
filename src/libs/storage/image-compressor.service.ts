@@ -52,13 +52,4 @@ export class ImageCompressorService {
       size: buffer.length,
     };
   }
-
-  async thumbnail(input: Buffer, size: number = 200): Promise<CompressResult> {
-    return this.compress(input, {
-      maxWidth: size,
-      maxHeight: size,
-      quality: 70,
-      format: 'webp',
-    });
-  }
 }

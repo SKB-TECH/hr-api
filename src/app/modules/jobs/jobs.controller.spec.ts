@@ -30,11 +30,10 @@ const mockJobCard = {
 const mockPaginatedResult = {
   data: [mockJobCard],
   meta: {
-    totalItems: 1,
+    page: 1,
+    limit: 10,
+    total: 1,
     totalPages: 1,
-    currentPage: 1,
-    hasNextPage: false,
-    hasPreviousPage: false,
   },
 };
 
@@ -122,18 +121,17 @@ describe('JobsController', () => {
       mockJobsService.findAll.mockResolvedValue({
         data: [],
         meta: {
-          totalItems: 0,
+          page: 1,
+          limit: 10,
+          total: 0,
           totalPages: 0,
-          currentPage: 1,
-          hasNextPage: false,
-          hasPreviousPage: false,
         },
       });
 
       const result: any = await controller.findAll({ keyword: 'nonexistent' });
 
       expect(result.data).toHaveLength(0);
-      expect(result.meta.totalItems).toBe(0);
+      expect(result.meta.total).toBe(0);
     });
   });
 

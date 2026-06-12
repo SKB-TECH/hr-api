@@ -30,15 +30,6 @@ export class CandidateProfilesService {
     });
   }
 
-  async findUserByEmail(email: string) {
-    return this.userRepo.findOne({ where: { email } });
-  }
-
-  async updateUserAccount(userId: string, data: any) {
-    await this.userRepo.update(userId, data);
-    return this.userRepo.findOne({ where: { id: userId } });
-  }
-
   async findById(id: string) {
     return this.candidateProfileRepo.findOne({ where: { id } });
   }

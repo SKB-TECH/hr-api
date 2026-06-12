@@ -11,6 +11,11 @@ import { CompanyMember } from '../companies/entities/company-member.entity';
 import { QueryJobDto, JobSortOption } from './dto/query-job.dto';
 import { CreateJobDto } from './dto/create-job.dto';
 import { UpdateJobDto } from './dto/update-job.dto';
+import {
+  PaginationDto,
+  createPaginatedResult,
+  paginate,
+} from '../../../helpers/pagination';
 
 @Injectable()
 export class JobsService {
@@ -34,8 +39,6 @@ export class JobsService {
       page = 1,
       limit = 10,
     } = query;
-
-    const skip = (page - 1) * limit;
 
     const qb = this.jobRepo
       .createQueryBuilder('job')
@@ -62,21 +65,9 @@ export class JobsService {
       qb.andWhere('job.salaryMax <= :salaryMax', { salaryMax });
 
     const [orderField, orderDir] = this.buildOrderBy(sort);
-    qb.orderBy(`job.${orderField}`, orderDir).skip(skip).take(limit);
+    qb.orderBy(`job.${orderField}`, orderDir);
 
-    const [data, totalItems] = await qb.getManyAndCount();
-    const totalPages = Math.ceil(totalItems / limit);
-
-    return {
-      data,
-      meta: {
-        totalItems,
-        totalPages,
-        currentPage: page,
-        hasNextPage: page < totalPages,
-        hasPreviousPage: page > 1,
-      },
-    };
+    return paginate(qb, { page, limit } as PaginationDto);
   }
 
   async findOne(id: string) {
@@ -160,21 +151,14 @@ export class JobsService {
       ...(statusFilter && { status: statusFilter }),
     };
 
-    const [data, totalItems] = await this.jobRepo.findAndCount({
+    const [data, total] = await this.jobRepo.findAndCount({
       where,
       skip,
       take: limit,
       order: { createdAt: 'DESC' },
     });
 
-    return {
-      data,
-      meta: {
-        totalItems,
-        totalPages: Math.ceil(totalItems / limit),
-        currentPage: page,
-      },
-    };
+    return createPaginatedResult(data, total, page, limit);
   }
 
   async updateJob(jobId: string, userId: string, updateJobDto: UpdateJobDto) {

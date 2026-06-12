@@ -6,6 +6,7 @@ import { UpdateCompanyDto } from './dto/update-company.dto';
 import { QueryCompanyDto } from './dto/query-company.dto';
 import { Company } from './entities/company.entity';
 import { CompanyMember } from './entities/company-member.entity';
+import { PaginationDto, paginate } from '../../../helpers/pagination';
 
 @Injectable()
 export class CompaniesService {
@@ -47,7 +48,6 @@ export class CompaniesService {
       page = 1,
       limit = 12,
     } = query;
-    const skip = (page - 1) * limit;
 
     const qb = this.companyRepo.createQueryBuilder('company');
 
@@ -79,22 +79,9 @@ export class CompaniesService {
       qb.andWhere('company.companySize = :companySize', { companySize });
     }
 
-    qb.orderBy('company.createdAt', 'DESC').skip(skip).take(limit);
+    qb.orderBy('company.createdAt', 'DESC');
 
-    const [data, totalItems] = await qb.getManyAndCount();
-
-    const totalPages = Math.ceil(totalItems / limit);
-
-    return {
-      data,
-      meta: {
-        totalItems,
-        totalPages,
-        currentPage: page,
-        hasNextPage: page < totalPages,
-        hasPreviousPage: page > 1,
-      },
-    };
+    return paginate(qb, { page, limit } as PaginationDto);
   }
 
   async findOne(id: string) {

@@ -1,10 +1,5 @@
 import { ValidationError } from 'class-validator';
-
-export interface FirstConstraint {
-  key: string;
-  property: string;
-  fallback: string;
-}
+import { FirstConstraint } from './first-constraint.interface';
 
 export function findFirstConstraint(
   errors: ValidationError[],

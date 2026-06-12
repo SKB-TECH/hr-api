@@ -96,11 +96,9 @@ describe('CompaniesService', () => {
       const result = await service.findAll({});
 
       expect(result.data).toHaveLength(1);
-      expect(result.meta.totalItems).toBe(1);
-      expect(result.meta.currentPage).toBe(1);
+      expect(result.meta.total).toBe(1);
+      expect(result.meta.page).toBe(1);
       expect(result.meta.totalPages).toBe(1);
-      expect(result.meta.hasNextPage).toBe(false);
-      expect(result.meta.hasPreviousPage).toBe(false);
     });
 
     it('should filter by search keyword on name and description', async () => {
@@ -135,7 +133,7 @@ describe('CompaniesService', () => {
       );
     });
 
-    it('should calculate hasNextPage correctly', async () => {
+    it('should calculate pagination meta correctly', async () => {
       const companies = Array.from({ length: 12 }, (_, i) => ({
         ...mockCompany,
         id: `uuid-${i}`,
@@ -144,9 +142,10 @@ describe('CompaniesService', () => {
 
       const result = await service.findAll({ page: 1, limit: 12 });
 
+      expect(result.meta.total).toBe(30);
       expect(result.meta.totalPages).toBe(3);
-      expect(result.meta.hasNextPage).toBe(true);
-      expect(result.meta.hasPreviousPage).toBe(false);
+      expect(result.meta.page).toBe(1);
+      expect(result.meta.limit).toBe(12);
     });
 
     it('should return empty data when no companies match filters', async () => {
@@ -155,7 +154,7 @@ describe('CompaniesService', () => {
       const result = await service.findAll({ search: 'nonexistent' });
 
       expect(result.data).toHaveLength(0);
-      expect(result.meta.totalItems).toBe(0);
+      expect(result.meta.total).toBe(0);
       expect(result.meta.totalPages).toBe(0);
     });
   });

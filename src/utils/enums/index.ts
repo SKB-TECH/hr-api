@@ -2,7 +2,6 @@ export * from './user-role.enum';
 export * from './user-status.enum';
 export * from './auth-provider.enum';
 export * from './employment-type.enum';
-export * from './experience-level.enum';
 export * from './profile-visibility.enum';
 export * from './availability.enum';
 export * from './work-type.enum';

@@ -1,6 +1,6 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { In, Repository } from 'typeorm';
+import { Repository } from 'typeorm';
 import { Storage, Bucket } from '@google-cloud/storage';
 import { randomUUID } from 'crypto';
 import * as path from 'path';
@@ -12,12 +12,7 @@ import { FileStatus } from './enums/file-status.enum';
 import { UploadResult } from './interfaces/upload-result.interface';
 import { FileCleanupMessage } from '../pubsub/interfaces/file-cleanup-message.interface';
 import { ImageCompressorService } from './image-compressor.service';
-
-interface MulterLike {
-  buffer: Buffer;
-  originalname: string;
-  mimetype: string;
-}
+import { MulterLike } from './interfaces/multer-like.interface';
 
 @Injectable()
 export class StorageService implements OnModuleInit {
@@ -220,50 +215,6 @@ export class StorageService implements OnModuleInit {
       await this.fileRepo.save(file);
       throw error;
     }
-  }
-
-  async moveFile(fileId: string, newPath: string): Promise<FileEntity | null> {
-    const file = await this.fileRepo.findOne({ where: { id: fileId } });
-    if (!file) return null;
-
-    const oldBlob = this.bucket.file(file.path);
-    const newBlob = this.bucket.file(newPath);
-
-    const [exists] = await oldBlob.exists();
-    if (exists) {
-      await oldBlob.copy(newBlob);
-      await oldBlob.delete();
-    }
-
-    file.path = newPath;
-    file.url = this.getPublicUrl(newPath);
-    file.status = FileStatus.ACTIVE;
-    return this.fileRepo.save(file);
-  }
-
-  async findById(fileId: string): Promise<FileEntity | null> {
-    return this.fileRepo.findOne({ where: { id: fileId } });
-  }
-
-  async findByIds(fileIds: string[]): Promise<FileEntity[]> {
-    if (!fileIds.length) return [];
-    return this.fileRepo.find({ where: { id: In(fileIds) } });
-  }
-
-  getFileStream(destination: string): NodeJS.ReadableStream {
-    return this.bucket.file(destination).createReadStream();
-  }
-
-  async getSignedUrl(
-    destination: string,
-    expiresInMs: number = 15 * 60 * 1000,
-  ): Promise<string> {
-    const blob = this.bucket.file(destination);
-    const [url] = await blob.getSignedUrl({
-      action: 'read',
-      expires: Date.now() + expiresInMs,
-    });
-    return url;
   }
 
   getPublicUrl(destination: string): string {

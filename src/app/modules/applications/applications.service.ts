@@ -12,6 +12,11 @@ import { PipelineStage } from '../pipeline-stages/entities/pipeline-stage.entity
 import { CreateApplicationDto } from './dto/create-application.dto';
 import { QueryApplicationDto } from './dto/query-application.dto';
 import { UpdateApplicationStageDto } from './dto/update-application-stage.dto';
+import {
+  PaginationDto,
+  createPaginatedResult,
+  paginate,
+} from '../../../helpers/pagination';
 
 @Injectable()
 export class ApplicationsService {
@@ -68,7 +73,7 @@ export class ApplicationsService {
       ...(stageId && { stageId }),
     };
 
-    const [data, totalItems] = await this.applicationRepo.findAndCount({
+    const [data, total] = await this.applicationRepo.findAndCount({
       where,
       skip,
       take: limit,
@@ -76,18 +81,7 @@ export class ApplicationsService {
       relations: { stage: true, job: { company: true } },
     });
 
-    const totalPages = Math.ceil(totalItems / limit);
-
-    return {
-      data,
-      meta: {
-        totalItems,
-        totalPages,
-        currentPage: page,
-        hasNextPage: page < totalPages,
-        hasPreviousPage: page > 1,
-      },
-    };
+    return createPaginatedResult(data, total, page, limit);
   }
 
   async getMyStats(candidateId: string) {
@@ -139,7 +133,6 @@ export class ApplicationsService {
 
   async findByJob(jobId: string, query: QueryApplicationDto) {
     const { stageId, search, page = 1, limit = 10 } = query as any;
-    const skip = (page - 1) * limit;
 
     const qb = this.applicationRepo
       .createQueryBuilder('a')
@@ -153,26 +146,13 @@ export class ApplicationsService {
     if (search)
       qb.andWhere('a.fullName ILIKE :search', { search: `%${search}%` });
 
-    qb.orderBy('a.appliedAt', 'DESC').skip(skip).take(limit);
+    qb.orderBy('a.appliedAt', 'DESC');
 
-    const [data, totalItems] = await qb.getManyAndCount();
-    const totalPages = Math.ceil(totalItems / limit);
-
-    return {
-      data,
-      meta: {
-        totalItems,
-        totalPages,
-        currentPage: page,
-        hasNextPage: page < totalPages,
-        hasPreviousPage: page > 1,
-      },
-    };
+    return paginate(qb, { page, limit } as PaginationDto);
   }
 
   async findByCompany(companyId: string, query: QueryApplicationDto) {
     const { stageId, search, page = 1, limit = 10 } = query as any;
-    const skip = (page - 1) * limit;
 
     const qb = this.applicationRepo
       .createQueryBuilder('a')
@@ -184,21 +164,9 @@ export class ApplicationsService {
     if (search)
       qb.andWhere('a.fullName ILIKE :search', { search: `%${search}%` });
 
-    qb.orderBy('a.appliedAt', 'DESC').skip(skip).take(limit);
+    qb.orderBy('a.appliedAt', 'DESC');
 
-    const [data, totalItems] = await qb.getManyAndCount();
-    const totalPages = Math.ceil(totalItems / limit);
-
-    return {
-      data,
-      meta: {
-        totalItems,
-        totalPages,
-        currentPage: page,
-        hasNextPage: page < totalPages,
-        hasPreviousPage: page > 1,
-      },
-    };
+    return paginate(qb, { page, limit } as PaginationDto);
   }
 
   async findOne(id: string) {
