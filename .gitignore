@@ -11,7 +11,10 @@ pnpm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 lerna-debug.log*
-/prisma/migrations/
+
+# Local (dev-only) migrations — never deployed to prod
+/src/database/local-migrations/*
+!/src/database/local-migrations/.gitkeep
 
 
 
