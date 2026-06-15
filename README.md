@@ -42,7 +42,9 @@ docker compose up -d postgres
 #    (option B) point POSTGRES_* in .env.local at your own Postgres instance
 
 # 4. Create the database schema
-pnpm build                        # compile entities + migrations into dist/
+#    Local migrations aren't committed — generate your own from the entities first.
+NODE_ENV=local pnpm typeorm:local:migration:generate src/database/local-migrations/Init
+pnpm build                        # compile entities + the new migration into dist/
 NODE_ENV=local pnpm typeorm:local:migration:run
 
 # 5. Run the API
@@ -75,21 +77,47 @@ Copy `.env.example` → `.env.local` and fill it in. Key groups:
 
 ## Database & Migrations
 
-`synchronize` is **off** — the schema is managed exclusively through migrations. Because the datasource loads compiled files from `dist/`, always **build before generating/running** migrations.
+`synchronize` is **off** in every environment — the schema is managed exclusively through migrations, so a stray entity edit never silently alters the database (you catch it when you review the generated SQL). Because the datasource loads compiled files from `dist/`, always **build before generating/running** migrations.
+
+### Per-environment migration directories
+
+The datasource picks the migrations folder by `NODE_ENV`:
+
+| Environment | Directory | Git | Purpose |
+| --- | --- | --- | --- |
+| **Local (`NODE_ENV=local`)** | `src/database/local-migrations/` | **gitignored** | Each developer generates their **own** throwaway migrations to set up their local DB. Not committed. |
+| **Prod / staging (otherwise)** | `src/database/migrations/` | **committed** | The shared, reviewed migration history that actually ships. |
+
+> Local migrations are private and disposable; the **prod migrations are the source of truth**. On a fresh clone there are no local migrations — generate your own (below).
+
+### Dev workflow (your own local migrations — not committed)
 
 ```bash
-# Generate a migration from entity changes (needs a reachable DB to diff against)
+# 1. Generate from entity changes (needs a reachable DB to diff against)
 NODE_ENV=local pnpm typeorm:local:migration:generate src/database/local-migrations/<Name>
-
-pnpm build                                   # compile the new migration into dist/
-
-# Apply / inspect / revert
+# 2. Compile the new migration into dist/
+pnpm build
+# 3. Apply / inspect / revert
 NODE_ENV=local pnpm typeorm:local:migration:run
 NODE_ENV=local pnpm typeorm:local:migration:show
 NODE_ENV=local pnpm typeorm:local:migration:revert
 ```
 
-`typeorm:*` (no env) and `typeorm:prod:*` variants exist for other environments.
+### Prod workflow (committed, shared history)
+
+```bash
+# Generate against a CLEAN database so the migration reflects the full entity state
+NODE_ENV=production pnpm typeorm:prod:migration:generate src/database/migrations/<Name>
+pnpm build
+```
+
+Then **review the generated SQL** (watch for unexpected `DROP`s), commit `src/database/migrations/<Name>.ts`, and run it during deploy:
+
+```bash
+NODE_ENV=production pnpm typeorm:prod:migration:run
+```
+
+> `typeorm:*` (no env prefix) variants also exist and default to the `migrations/` directory.
 
 ---
 
