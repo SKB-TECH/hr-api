@@ -127,7 +127,7 @@ NODE_ENV=production pnpm typeorm:prod:migration:run
 Required for login/refresh (refresh tokens are stored in Redis) and Pub/Sub message dedup. Point `APP_REDIS_URL` at a running Redis, e.g. `redis://127.0.0.1:6379`. Leave it empty to boot without Redis (auth that needs it will fail at runtime).
 
 ### Pub/Sub emulator (local)
-Used by the storage image-compression worker. Off by default in dev.
+Backs the async workers — outbound **email** (OTP / password emails) and the storage **image-compression** pipeline. Off by default in dev.
 
 ```bash
 pnpm pubsub:emulator              # starts the emulator on localhost:8085 (docker compose)
@@ -136,7 +136,17 @@ PUBSUB_ENABLED=true
 PUBSUB_EMULATOR_HOST=localhost:8085
 ```
 
-The full compress pipeline also needs Redis and a valid `GCS_KEY_FILE`.
+The image-compression pipeline also needs Redis and a valid `GCS_KEY_FILE`.
+
+### Email (OTP & password flows)
+Email is sent asynchronously: a publisher enqueues a message on the `EMAIL_QUEUE` Pub/Sub topic, the `MailWorker` consumes it, and `MailService` renders a template and sends via **Resend**. With `RESEND_API_KEY` empty, emails (including OTP codes) are **logged** instead of sent — so dev works without a provider. This requires Pub/Sub to be on (above).
+
+```bash
+RESEND_API_KEY=                   # empty in dev → emails logged (read OTPs from the app log)
+RESEND_FROM_EMAIL=noreply@hr-api.local
+```
+
+> **Full architecture (Email · Pub/Sub · Redis), key reference, runbook & troubleshooting:** see **[`docs/email-pubsub-redis.md`](docs/email-pubsub-redis.md)**.
 
 ---
 
@@ -187,6 +197,8 @@ All responses share a consistent envelope:
 - **Error:** `{ statusCode, message, error }`
 
 Auth supports two delivery modes via the `x-client-type` header: `web` (default) sets httpOnly cookies, `mobile` returns tokens in the body.
+
+> **Custom headers** (`Authorization`, `x-client-type`, `x-refresh-token`, `x-reset-token`, `x-language-code`, `x-request-id`), auth cookies, and CORS: see **[`docs/http-headers.md`](docs/http-headers.md)**.
 
 ---
 

@@ -1,6 +1,11 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Resend } from 'resend';
 import { ConfigService } from '../env/config.service';
+import { EmailContent } from './templates/email-content.interface';
+import { otpTemplate } from './templates/otp.template';
+import { welcomeTemplate } from './templates/welcome.template';
+import { passwordResetTemplate } from './templates/password-reset.template';
+import { passwordChangedTemplate } from './templates/password-changed.template';
 
 @Injectable()
 export class MailService {
@@ -17,38 +22,22 @@ export class MailService {
   }
 
   async sendOtpEmail(to: string, otp: string) {
-    await this.send(
-      to,
-      'Your verification code',
-      `<p>Your verification code is <b>${otp}</b>. It expires in 10 minutes.</p>`,
-    );
+    await this.send(to, otpTemplate(otp));
   }
 
   async sendWelcomeEmail(to: string, fullName: string) {
-    await this.send(
-      to,
-      'Welcome',
-      `<p>Welcome, ${fullName}! Your account is ready.</p>`,
-    );
+    await this.send(to, welcomeTemplate(fullName));
   }
 
   async sendPasswordResetEmail(to: string, otp: string) {
-    await this.send(
-      to,
-      'Reset your password',
-      `<p>Your password reset code is <b>${otp}</b>. It expires in 10 minutes.</p>`,
-    );
+    await this.send(to, passwordResetTemplate(otp));
   }
 
   async sendPasswordChangedEmail(to: string, fullName: string) {
-    await this.send(
-      to,
-      'Your password was changed',
-      `<p>Hi ${fullName}, your account password was just changed. If this wasn't you, contact support.</p>`,
-    );
+    await this.send(to, passwordChangedTemplate(fullName));
   }
 
-  private async send(to: string, subject: string, html: string) {
+  private async send(to: string, { subject, html }: EmailContent) {
     if (!this.resend) {
       this.logger.log(`[MAIL:dev] to=${to} subject="${subject}"\n${html}`);
       return;
