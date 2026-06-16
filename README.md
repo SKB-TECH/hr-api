@@ -198,6 +198,8 @@ All responses share a consistent envelope:
 
 Auth supports two delivery modes via the `x-client-type` header: `web` (default) sets httpOnly cookies, `mobile` returns tokens in the body.
 
+> **Custom headers** (`Authorization`, `x-client-type`, `x-refresh-token`, `x-reset-token`, `x-language-code`, `x-request-id`), auth cookies, and CORS: see **[`docs/http-headers.md`](docs/http-headers.md)**.
+
 ---
 
 ## Testing
