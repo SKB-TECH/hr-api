@@ -12,6 +12,12 @@ yarn-debug.log*
 yarn-error.log*
 lerna-debug.log*
 
+# Local (dev-only) migrations — never deployed to prod
+/src/database/local-migrations/*
+!/src/database/local-migrations/.gitkeep
+
+
+
 # OS
 .DS_Store
 
@@ -54,3 +60,9 @@ pids
 
 # Diagnostic reports (https://nodejs.org/api/report.html)
 report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
+.claude
+
+# GCP service account keys
+hr-project-*.json
+*-service-account*.json
+gcs-key*.json
