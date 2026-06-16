@@ -54,10 +54,10 @@ Set by `setTokenCookies` on login / verify-otp / refresh / reset; cleared on log
 `enableCors` runs with `origin: true` (reflects the request origin) and `credentials: true` (cookies allowed cross-origin). Allowed request headers:
 
 ```
-Content-Type, Authorization, Accept, x-client-type, x-refresh-token
+Content-Type, Authorization, Accept, x-client-type, x-refresh-token, x-reset-token, x-language-code
 ```
 
-> **Gap to be aware of:** `x-reset-token` and `x-language-code` are **not** in the CORS `allowedHeaders` list (`src/main.ts`). Same-origin and non-browser clients are unaffected, but a **cross-origin browser** call that sends those headers (e.g. the web reset-password `PATCH`, or a localized request) will be blocked by the preflight. If the web app calls the API cross-origin, add them to `allowedHeaders`.
+All custom headers used by the API are included, so cross-origin browser calls (e.g. the web reset-password `PATCH` with `x-reset-token`, or a localized request with `x-language-code`) pass the preflight. When adding a new custom request header, remember to add it to `allowedHeaders` in `src/main.ts`.
 
 ---
 
