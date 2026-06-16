@@ -11,6 +11,7 @@ import { I18nModule } from '../libs/i18n/i18n.module';
 import { I18nMiddleware } from '../libs/i18n/i18n.middleware';
 import { RedisModule } from '../libs/redis/redis.module';
 import { PubSubModule } from '../libs/pubsub/pubsub.module';
+import { MailModule } from '../libs/mail/mail.module';
 import { StorageModule } from '../libs/storage/storage.module';
 import { connectionSource } from '../database/config/datasource';
 import { AuthModule } from './modules/auth/auth.module';
@@ -83,6 +84,7 @@ import { PipelineStagesModule } from './modules/pipeline-stages/pipeline-stages.
     I18nModule,
     RedisModule,
     PubSubModule,
+    MailModule,
     StorageModule,
     AuthModule,
     UsersModule,

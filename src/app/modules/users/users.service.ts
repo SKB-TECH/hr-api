@@ -56,6 +56,30 @@ export class UsersService {
     });
   }
 
+  async createPendingUser(data: {
+    fullName: string;
+    email: string;
+    role?: UserRole;
+  }): Promise<User> {
+    return this.create({
+      email: data.email,
+      fullName: data.fullName,
+      role: data.role ?? UserRole.CANDIDATE,
+      status: UserStatus.pending,
+      emailVerified: true,
+    });
+  }
+
+  async activateUser(userId: string, hashedPassword: string): Promise<User> {
+    await this.userRepo.update(userId, {
+      password: hashedPassword,
+      status: UserStatus.active,
+    });
+    const user = await this.userRepo.findOne({ where: { id: userId } });
+    if (!user) throw new NotFoundException('User not found');
+    return user;
+  }
+
   async update(id: string, data: Partial<User>): Promise<User> {
     await this.userRepo.update(id, data);
     const user = await this.userRepo.findOne({ where: { id } });

@@ -221,6 +221,53 @@ describe('UsersService', () => {
     });
   });
 
+  describe('createPendingUser', () => {
+    it('should create a pending, email-verified user', async () => {
+      const pending = { ...mockUser, status: 'pending', password: null };
+      mockDataSource.transaction.mockImplementation(async (cb) =>
+        cb({
+          getRepository: () => ({
+            create: (data: any) => data,
+            save: jest.fn().mockResolvedValue(pending),
+          }),
+        }),
+      );
+
+      const result = await service.createPendingUser({
+        fullName: 'Jake Gyll',
+        email: 'jake@example.com',
+      });
+
+      expect(result.status).toBe('pending');
+      expect(mockDataSource.transaction).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('activateUser', () => {
+    it('should set the password and activate the user', async () => {
+      mockUserRepo.findOne.mockResolvedValueOnce({
+        ...mockUser,
+        status: 'active',
+      });
+
+      const result = await service.activateUser('uuid-user-1', 'hashed_pw');
+
+      expect(mockUserRepo.update).toHaveBeenCalledWith('uuid-user-1', {
+        password: 'hashed_pw',
+        status: 'active',
+      });
+      expect(result.status).toBe('active');
+    });
+
+    it('should throw NotFoundException when the user is missing', async () => {
+      mockUserRepo.findOne.mockResolvedValueOnce(null);
+
+      await expect(
+        service.activateUser('bad-id', 'hashed_pw'),
+      ).rejects.toThrow(NotFoundException);
+    });
+  });
+
   describe('closeAccount', () => {
     it('should soft delete user and revoke refresh token', async () => {
       mockUserRepo.findOne.mockResolvedValueOnce({

@@ -19,7 +19,6 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
-import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { GoogleAuthGuard } from './guards/google-auth.guard';
@@ -41,26 +40,6 @@ import { sendResult } from '@/helpers/message/sendResult';
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
-
-  @Post('register')
-  @ApiOperation({ summary: 'Register a new user (Job Seeker or Company)' })
-  @ApiResponse({ status: 201, description: 'User registered successfully' })
-  @ApiResponse({ status: 409, description: 'Email already in use' })
-  async register(
-    @Req() req: Request,
-    @Res({ passthrough: true }) res: Response,
-    @Body() dto: RegisterDto,
-  ) {
-    const clientType = isWebClient(req) ? 'web' : 'mobile';
-    const result = await this.authService.register(dto, clientType);
-    return this.deliver(
-      res,
-      clientType,
-      result,
-      HttpStatus.CREATED,
-      'Registration successful',
-    );
-  }
 
   @Post('login')
   @HttpCode(HttpStatus.OK)

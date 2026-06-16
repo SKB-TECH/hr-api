@@ -3,7 +3,6 @@ import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 
 const mockAuthService = {
-  register: jest.fn(),
   login: jest.fn(),
   logout: jest.fn(),
   refresh: jest.fn(),
@@ -36,29 +35,6 @@ describe('AuthController', () => {
 
     controller = module.get<AuthController>(AuthController);
     jest.clearAllMocks();
-  });
-
-  describe('register', () => {
-    it('should register and return user with tokens (mobile)', async () => {
-      mockAuthService.register.mockResolvedValue({
-        user: mockUser,
-        ...mockTokens,
-      });
-
-      const dto = {
-        fullName: 'John Doe',
-        email: 'john@example.com',
-        password: 'password123',
-        role: 'CANDIDATE' as any,
-      };
-
-      const result: any = await controller.register(mobileReq, res, dto);
-
-      expect(result.statusCode).toBe(201);
-      expect(result.data.user.email).toBe('john@example.com');
-      expect(result.data.accessToken).toBeDefined();
-      expect(mockAuthService.register).toHaveBeenCalledWith(dto, 'mobile');
-    });
   });
 
   describe('login', () => {

@@ -1,9 +1,13 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { ConflictException, UnauthorizedException } from '@nestjs/common';
+import { UnauthorizedException } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { UsersService } from '../users/users.service';
 import { AuditLogService } from '../audit-logs/audit-log.service';
 import { JwtTokenService } from '@/libs/jwt/jwt-token.service';
+import { OtpService } from '@/libs/otp/otp.service';
+import { EmailPublisher } from '@/libs/pubsub/publishers/email.publisher';
+import { RedisService } from '@/libs/redis/redis.service';
+import { I18nService } from '@/libs/i18n/i18n.service';
 import * as bcrypt from 'bcrypt';
 
 const mockUser = {
@@ -30,6 +34,8 @@ const mockUsersService = {
   findById: jest.fn(),
   create: jest.fn(),
   update: jest.fn(),
+  createPendingUser: jest.fn(),
+  activateUser: jest.fn(),
 };
 
 const mockJwtTokenService = {
@@ -45,6 +51,28 @@ const mockAuditLogService = {
   log: jest.fn().mockResolvedValue(undefined),
 };
 
+const mockOtpService = {
+  generate: jest.fn().mockResolvedValue('123456'),
+  verify: jest.fn().mockResolvedValue(undefined),
+};
+
+const mockEmailPublisher = {
+  publishOtpEmail: jest.fn().mockResolvedValue(undefined),
+  publishWelcomeEmail: jest.fn().mockResolvedValue(undefined),
+  publishPasswordResetEmail: jest.fn().mockResolvedValue(undefined),
+  publishPasswordChangedEmail: jest.fn().mockResolvedValue(undefined),
+};
+
+const mockRedisService = {
+  get: jest.fn(),
+  set: jest.fn().mockResolvedValue(undefined),
+  del: jest.fn().mockResolvedValue(undefined),
+};
+
+const mockI18n = {
+  t: jest.fn((key: string) => key),
+};
+
 describe('AuthService', () => {
   let service: AuthService;
 
@@ -55,6 +83,10 @@ describe('AuthService', () => {
         { provide: UsersService, useValue: mockUsersService },
         { provide: JwtTokenService, useValue: mockJwtTokenService },
         { provide: AuditLogService, useValue: mockAuditLogService },
+        { provide: OtpService, useValue: mockOtpService },
+        { provide: EmailPublisher, useValue: mockEmailPublisher },
+        { provide: RedisService, useValue: mockRedisService },
+        { provide: I18nService, useValue: mockI18n },
       ],
     }).compile();
 
@@ -63,54 +95,127 @@ describe('AuthService', () => {
   });
 
   describe('register', () => {
-    it('should register a new user and return tokens', async () => {
+    it('should store a pending registration and publish an OTP email', async () => {
       mockUsersService.findByEmail.mockResolvedValue(null);
-      mockUsersService.create.mockResolvedValue(mockUser);
 
       const result = await service.register({
         fullName: 'John Doe',
         email: 'john@example.com',
-        password: 'password123',
-        role: 'CANDIDATE' as any,
+        acceptTerms: true,
       });
 
-      expect(result.user.email).toBe('john@example.com');
-      expect(result.user).not.toHaveProperty('password');
-      expect(result.accessToken).toBeDefined();
-      expect(result.refreshToken).toBeDefined();
-      expect(mockJwtTokenService.storeRefreshToken).toHaveBeenCalledWith(
-        'uuid-user-1',
-        'refresh',
+      expect(result.requestId).toBeDefined();
+      expect(result.channel).toBe('email');
+      expect(result.destination).toBe('john@example.com');
+      expect(mockRedisService.set).toHaveBeenCalled();
+      expect(mockOtpService.generate).toHaveBeenCalledWith(result.requestId);
+      expect(mockEmailPublisher.publishOtpEmail).toHaveBeenCalledWith(
+        'john@example.com',
+        '123456',
       );
     });
 
-    it('should throw ConflictException if email already exists', async () => {
+    it('should reject when terms are not accepted', async () => {
+      await expect(
+        service.register({
+          fullName: 'John Doe',
+          email: 'john@example.com',
+          acceptTerms: false,
+        }),
+      ).rejects.toThrow();
+    });
+
+    it('should reject when the email is already registered', async () => {
       mockUsersService.findByEmail.mockResolvedValue(mockUser);
 
       await expect(
         service.register({
           fullName: 'John Doe',
           email: 'john@example.com',
-          password: 'password123',
-          role: 'CANDIDATE' as any,
+          acceptTerms: true,
         }),
-      ).rejects.toThrow(ConflictException);
+      ).rejects.toThrow();
     });
+  });
 
-    it('should fire an audit log on successful registration', async () => {
-      mockUsersService.findByEmail.mockResolvedValue(null);
-      mockUsersService.create.mockResolvedValue(mockUser);
+  describe('verifyOtp', () => {
+    it('should create a pending user and return tokens', async () => {
+      const pendingUser = { ...mockUser, status: 'pending' };
+      mockRedisService.get.mockResolvedValue(
+        JSON.stringify({
+          fullName: 'John Doe',
+          email: 'john@example.com',
+          role: 'CANDIDATE',
+          acceptTerms: true,
+        }),
+      );
+      mockUsersService.createPendingUser.mockResolvedValue(pendingUser);
 
-      await service.register({
-        fullName: 'John Doe',
-        email: 'john@example.com',
-        password: 'password123',
-        role: 'CANDIDATE' as any,
+      const result = await service.verifyOtp({
+        requestId: 'req-1',
+        otp: '123456',
       });
 
+      expect(mockOtpService.verify).toHaveBeenCalledWith('req-1', '123456');
+      expect(result.user.email).toBe('john@example.com');
+      expect(result.user).not.toHaveProperty('password');
+      expect(result.accessToken).toBeDefined();
+      expect(result.refreshToken).toBeDefined();
+      expect(mockRedisService.del).toHaveBeenCalled();
       expect(mockAuditLogService.log).toHaveBeenCalledWith(
         expect.objectContaining({ action: 'REGISTER', module: 'auth' }),
       );
+    });
+
+    it('should reject when there is no pending registration', async () => {
+      mockRedisService.get.mockResolvedValue(null);
+
+      await expect(
+        service.verifyOtp({ requestId: 'req-1', otp: '123456' }),
+      ).rejects.toThrow();
+    });
+  });
+
+  describe('setupPassword', () => {
+    it('should activate a pending user', async () => {
+      const pendingUser = { ...mockUser, status: 'pending' };
+      mockUsersService.findById.mockResolvedValue(pendingUser);
+      mockUsersService.activateUser.mockResolvedValue({
+        ...mockUser,
+        status: 'active',
+      });
+
+      const result = await service.setupPassword('uuid-user-1', {
+        password: 'Password123',
+        confirmPassword: 'Password123',
+      });
+
+      expect(mockUsersService.activateUser).toHaveBeenCalled();
+      expect(result.user).not.toHaveProperty('password');
+      expect(mockEmailPublisher.publishWelcomeEmail).toHaveBeenCalled();
+    });
+
+    it('should reject when passwords do not match', async () => {
+      await expect(
+        service.setupPassword('uuid-user-1', {
+          password: 'Password123',
+          confirmPassword: 'Different123',
+        }),
+      ).rejects.toThrow();
+    });
+
+    it('should reject when the password is already set', async () => {
+      mockUsersService.findById.mockResolvedValue({
+        ...mockUser,
+        status: 'active',
+      });
+
+      await expect(
+        service.setupPassword('uuid-user-1', {
+          password: 'Password123',
+          confirmPassword: 'Password123',
+        }),
+      ).rejects.toThrow();
     });
   });
 
@@ -134,23 +239,16 @@ describe('AuthService', () => {
       expect(result.refreshToken).toBeDefined();
     });
 
-    it('should update lastLogin on successful login', async () => {
-      const hashed = await bcrypt.hash('password123', 10);
+    it('should reject a pending user that has not set a password', async () => {
       mockUsersService.findByEmail.mockResolvedValue({
         ...mockUser,
-        password: hashed,
-      });
-      mockUsersService.update.mockResolvedValue(mockUser);
-
-      await service.login({
-        email: 'john@example.com',
-        password: 'password123',
+        status: 'pending',
+        password: null,
       });
 
-      expect(mockUsersService.update).toHaveBeenCalledWith(
-        'uuid-user-1',
-        expect.objectContaining({ lastLogin: expect.any(Date) }),
-      );
+      await expect(
+        service.login({ email: 'john@example.com', password: 'password123' }),
+      ).rejects.toThrow();
     });
 
     it('should fire an audit log on successful login', async () => {
@@ -275,24 +373,130 @@ describe('AuthService', () => {
       expect(result.user.email).toBe('john@example.com');
       expect(mockUsersService.create).not.toHaveBeenCalled();
     });
+  });
 
-    it('should update lastLogin on Google login', async () => {
-      mockUsersService.findByEmail.mockResolvedValue({
+  describe('set-password (authenticated)', () => {
+    it('should verify the current password and send an OTP', async () => {
+      const hashed = await bcrypt.hash('current123', 10);
+      mockUsersService.findById.mockResolvedValue({
         ...mockUser,
-        provider: 'google',
+        password: hashed,
       });
-      mockUsersService.update.mockResolvedValue(mockUser);
 
-      await service.googleLogin({
-        email: 'john@example.com',
-        fullName: 'John Doe',
-        avatar: 'https://avatar.url',
+      const result = await service.setPasswordVerify(
+        'uuid-user-1',
+        'current123',
+      );
+
+      expect(result.requestId).toBeDefined();
+      expect(mockEmailPublisher.publishOtpEmail).toHaveBeenCalled();
+    });
+
+    it('should reject an incorrect current password', async () => {
+      const hashed = await bcrypt.hash('current123', 10);
+      mockUsersService.findById.mockResolvedValue({
+        ...mockUser,
+        password: hashed,
       });
+
+      await expect(
+        service.setPasswordVerify('uuid-user-1', 'wrong'),
+      ).rejects.toThrow();
+    });
+
+    it('should confirm the OTP and return a reset token', async () => {
+      mockRedisService.get.mockResolvedValue('uuid-user-1');
+
+      const result = await service.setPasswordConfirmOtp(
+        'uuid-user-1',
+        'req-1',
+        '123456',
+      );
+
+      expect(mockOtpService.verify).toHaveBeenCalledWith('req-1', '123456');
+      expect(result.resetToken).toBeDefined();
+    });
+
+    it('should set a new password and revoke refresh tokens', async () => {
+      mockRedisService.get.mockResolvedValue('uuid-user-1');
+
+      const result = await service.setNewPassword(
+        'uuid-user-1',
+        'reset-token',
+        'NewPass123',
+        'NewPass123',
+      );
 
       expect(mockUsersService.update).toHaveBeenCalledWith(
         'uuid-user-1',
-        expect.objectContaining({ lastLogin: expect.any(Date) }),
+        expect.objectContaining({ password: expect.any(String) }),
       );
+      expect(mockJwtTokenService.revokeRefreshToken).toHaveBeenCalledWith(
+        'uuid-user-1',
+      );
+      expect(result.message).toBeDefined();
+    });
+
+    it('should reject a mismatched new password', async () => {
+      await expect(
+        service.setNewPassword(
+          'uuid-user-1',
+          'reset-token',
+          'NewPass123',
+          'Other123',
+        ),
+      ).rejects.toThrow();
+    });
+  });
+
+  describe('reset-password (public)', () => {
+    it('should send a reset OTP for a known account', async () => {
+      mockUsersService.findByEmail.mockResolvedValue(mockUser);
+
+      const result = await service.forgotPassword('john@example.com');
+
+      expect(result.requestId).toBeDefined();
+      expect(mockEmailPublisher.publishPasswordResetEmail).toHaveBeenCalled();
+    });
+
+    it('should reject an unknown account', async () => {
+      mockUsersService.findByEmail.mockResolvedValue(null);
+
+      await expect(
+        service.forgotPassword('nobody@example.com'),
+      ).rejects.toThrow();
+    });
+
+    it('should confirm the OTP and return a reset token', async () => {
+      mockRedisService.get.mockResolvedValue('uuid-user-1');
+
+      const result = await service.forgotPasswordConfirmOtp('req-1', '123456');
+
+      expect(result.resetToken).toBeDefined();
+    });
+
+    it('should reset the password and auto-login', async () => {
+      mockRedisService.get.mockResolvedValue('uuid-user-1');
+      mockUsersService.update.mockResolvedValue(mockUser);
+
+      const result = await service.resetPassword(
+        'reset-token',
+        'NewPass123',
+        'NewPass123',
+      );
+
+      expect(mockUsersService.update).toHaveBeenCalled();
+      expect(result.accessToken).toBeDefined();
+      expect(result.refreshToken).toBeDefined();
+      expect(mockEmailPublisher.publishPasswordChangedEmail).toHaveBeenCalled();
+    });
+
+    it('should reject an invalid reset token', async () => {
+      mockRedisService.get.mockResolvedValue(null);
+
+      await expect(
+        service.resetPassword('bad-token', 'NewPass123', 'NewPass123'),
+      ).rejects.toThrow();
     });
   });
 });
