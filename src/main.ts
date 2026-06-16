@@ -35,6 +35,8 @@ async function bootstrap() {
       'Accept',
       'x-client-type',
       'x-refresh-token',
+      'x-reset-token',
+      'x-language-code',
     ],
   });
   app.use(compression());
