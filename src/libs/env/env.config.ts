@@ -1,8 +1,11 @@
 import * as dotenv from 'dotenv';
 import * as path from 'path';
 
-const envFile = process.env.NODE_ENV === 'local' ? '.env.local' : '.env';
-dotenv.config({ path: path.resolve(process.cwd(), envFile) });
+const envFiles =
+  process.env.NODE_ENV === 'local' ? ['.env.local', '.env'] : ['.env'];
+dotenv.config({
+  path: envFiles.map((envFile) => path.resolve(process.cwd(), envFile)),
+});
 
 export const config = {
   NODE_ENV: process.env.NODE_ENV,

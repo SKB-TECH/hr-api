@@ -3,8 +3,11 @@ import * as dotenv from 'dotenv';
 import * as path from 'path';
 import { ConfigService } from '../../libs/env/config.service';
 
-const envFile = process.env.NODE_ENV === 'local' ? '.env.local' : '.env';
-dotenv.config({ path: path.resolve(process.cwd(), envFile) });
+const envFiles =
+  process.env.NODE_ENV === 'local' ? ['.env.local', '.env'] : ['.env'];
+dotenv.config({
+  path: envFiles.map((envFile) => path.resolve(process.cwd(), envFile)),
+});
 const configService = new ConfigService();
 
 function getMigrationsPath(): string[] {
