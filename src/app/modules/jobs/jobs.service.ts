@@ -11,6 +11,9 @@ import { CompanyMember } from '../companies/entities/company-member.entity';
 import { QueryJobDto, JobSortOption } from './dto/query-job.dto';
 import { CreateJobDto } from './dto/create-job.dto';
 import { UpdateJobDto } from './dto/update-job.dto';
+import { JobSkillRequirement } from '../../../utils/enums';
+import { JobSkill } from './entities/job-skill.entity';
+import { JobRequirement } from './entities/job-requirement.entity';
 import {
   PaginationDto,
   createPaginatedResult,
@@ -77,6 +80,7 @@ export class JobsService {
         company: true,
         skills: { skill: { category: true } },
         benefits: true,
+        requirements: true,
       },
     });
 
@@ -108,14 +112,32 @@ export class JobsService {
       );
     }
 
-    const { skillIds, ...jobData } = createJobDto;
+    const {
+      skillIds,
+      requiredSkillIds,
+      niceToHaveSkillIds,
+      hardRequiredSkillIds,
+      ...jobData
+    } = createJobDto;
+
+    const skillRequirements = this.buildSkillRequirements(
+      skillIds,
+      requiredSkillIds,
+      niceToHaveSkillIds,
+      hardRequiredSkillIds,
+    );
 
     const job = this.jobRepo.create({
       ...jobData,
       companyId: companyMember.companyId,
       status: JobStatus.DRAFT,
-      ...(skillIds && skillIds.length > 0
-        ? { skills: skillIds.map((id) => ({ skillId: id })) }
+      ...(skillRequirements.size > 0
+        ? {
+            skills: [...skillRequirements].map(([skillId, requirement]) => ({
+              skillId,
+              ...requirement,
+            })),
+          }
         : {}),
     });
 
@@ -123,7 +145,11 @@ export class JobsService {
 
     const newJob = await this.jobRepo.findOne({
       where: { id: saved.id },
-      relations: { skills: { skill: true }, company: true },
+      relations: {
+        skills: { skill: true },
+        requirements: true,
+        company: true,
+      },
     });
 
     return {
@@ -177,8 +203,56 @@ export class JobsService {
       );
     }
 
-    await this.jobRepo.update(jobId, updateJobDto as any);
-    const updatedJob = await this.jobRepo.findOne({ where: { id: jobId } });
+    const {
+      skillIds,
+      requiredSkillIds,
+      niceToHaveSkillIds,
+      hardRequiredSkillIds,
+      requirements,
+      ...scalarData
+    } = updateJobDto;
+    const updatesSkills =
+      skillIds !== undefined ||
+      requiredSkillIds !== undefined ||
+      niceToHaveSkillIds !== undefined ||
+      hardRequiredSkillIds !== undefined;
+
+    await this.jobRepo.manager.transaction(async (manager) => {
+      if (Object.keys(scalarData).length)
+        await manager.getRepository(Job).update(jobId, scalarData as any);
+      if (updatesSkills) {
+        const repo = manager.getRepository(JobSkill);
+        await repo.delete({ jobId });
+        const values = [
+          ...this.buildSkillRequirements(
+            skillIds,
+            requiredSkillIds,
+            niceToHaveSkillIds,
+            hardRequiredSkillIds,
+          ),
+        ].map(([skillId, requirement]) =>
+          repo.create({ jobId, skillId, ...requirement }),
+        );
+        if (values.length) await repo.save(values);
+      }
+      if (requirements !== undefined) {
+        const repo = manager.getRepository(JobRequirement);
+        await repo.delete({ jobId });
+        if (requirements.length)
+          await repo.save(
+            requirements.map((requirement) =>
+              repo.create({ jobId, ...requirement }),
+            ),
+          );
+      }
+    });
+    const updatedJob = await this.jobRepo.findOne({
+      where: { id: jobId },
+      relations: {
+        skills: { skill: true },
+        requirements: true,
+      },
+    });
 
     return {
       message: 'Job updated successfully',
@@ -210,5 +284,33 @@ export class JobsService {
     return {
       message: 'Job successfully removed',
     };
+  }
+
+  private buildSkillRequirements(
+    legacy: string[] | undefined,
+    required: string[] | undefined,
+    optional: string[] | undefined,
+    hard: string[] | undefined,
+  ) {
+    const result = new Map<
+      string,
+      { requirementType: JobSkillRequirement; isHardRequirement: boolean }
+    >();
+    for (const id of optional ?? [])
+      result.set(id, {
+        requirementType: JobSkillRequirement.NICE_TO_HAVE,
+        isHardRequirement: false,
+      });
+    for (const id of [...(legacy ?? []), ...(required ?? [])])
+      result.set(id, {
+        requirementType: JobSkillRequirement.REQUIRED,
+        isHardRequirement: false,
+      });
+    for (const id of hard ?? [])
+      result.set(id, {
+        requirementType: JobSkillRequirement.REQUIRED,
+        isHardRequirement: true,
+      });
+    return result;
   }
 }

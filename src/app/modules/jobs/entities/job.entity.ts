@@ -21,6 +21,7 @@ import { Company } from '../../companies/entities/company.entity';
 import { JobSkill } from './job-skill.entity';
 import { JobBenefit } from './job-benefit.entity';
 import { Application } from '../../applications/entities/application.entity';
+import { JobRequirement } from './job-requirement.entity';
 
 @Entity({ name: 'jobs' })
 export class Job {
@@ -121,4 +122,9 @@ export class Job {
 
   @OneToMany(() => Application, (application) => application.job)
   applications: Application[];
+
+  @OneToMany(() => JobRequirement, (requirement) => requirement.job, {
+    cascade: true,
+  })
+  requirements: JobRequirement[];
 }

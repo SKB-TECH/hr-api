@@ -27,7 +27,6 @@ import { UseGuards, Req } from '@nestjs/common';
 import { ResumeFileInterceptor } from './interceptors/resume-upload.interceptor';
 import { Roles } from '@/helpers/decorators/roles.decorator';
 import { UserRole } from '../../../../utils/enums';
-import { CreateResumeDto } from './dto/create-resume.dto';
 import { UnauthorizedErrorDto } from '@/helpers/message/unauthorized.response';
 import { ResumeResponseDto } from './dto/resume.response.dto';
 import { sendResult } from '@/helpers/message/sendResult';

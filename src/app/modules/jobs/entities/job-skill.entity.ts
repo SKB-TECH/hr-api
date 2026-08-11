@@ -8,6 +8,7 @@ import {
 } from 'typeorm';
 import { Job } from './job.entity';
 import { Skill } from '../../candidate/candidate-skill/entities/skill.entity';
+import { JobSkillRequirement } from '../../../../utils/enums';
 
 @Entity({ name: 'job_skills' })
 @Unique(['jobId', 'skillId'])
@@ -28,4 +29,14 @@ export class JobSkill {
   @ManyToOne(() => Skill, (skill) => skill.jobSkills, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'skill_id' })
   skill: Skill;
+
+  @Column({
+    name: 'requirement_type',
+    type: 'varchar',
+    default: JobSkillRequirement.REQUIRED,
+  })
+  requirementType: JobSkillRequirement;
+
+  @Column({ name: 'is_hard_requirement', type: 'boolean', default: false })
+  isHardRequirement: boolean;
 }

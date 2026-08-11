@@ -11,6 +11,8 @@ import { JobsService } from './jobs.service';
 import { Job } from './entities/job.entity';
 import { CompanyMember } from '../companies/entities/company-member.entity';
 import { JobSortOption } from './dto/query-job.dto';
+import { JobSkill } from './entities/job-skill.entity';
+import { JobRequirement } from './entities/job-requirement.entity';
 
 const mockCompany = {
   id: 'uuid-company-1',
@@ -109,6 +111,57 @@ describe('JobsService', () => {
 
     qb = createQueryBuilderMock();
     mockJobRepo.createQueryBuilder.mockReturnValue(qb);
+  });
+
+  it('replaces structured skill and hard requirements transactionally', async () => {
+    const skillRepo = {
+      delete: jest.fn().mockResolvedValue(undefined),
+      create: jest.fn((value) => value),
+      save: jest.fn().mockResolvedValue(undefined),
+    };
+    const requirementRepo = {
+      delete: jest.fn().mockResolvedValue(undefined),
+      create: jest.fn((value) => value),
+      save: jest.fn().mockResolvedValue(undefined),
+    };
+    const entityManager = {
+      getRepository: jest.fn((entity) => {
+        if (entity === Job) return { update: jest.fn() };
+        if (entity === JobSkill) return skillRepo;
+        if (entity === JobRequirement) return requirementRepo;
+      }),
+    };
+    const repo = {
+      findOne: jest
+        .fn()
+        .mockResolvedValueOnce({ id: 'job', companyId: 'company' })
+        .mockResolvedValueOnce({ id: 'job', companyId: 'company' }),
+      manager: {
+        transaction: jest.fn((callback) => callback(entityManager)),
+      },
+    } as any;
+    const service = new JobsService(repo, {
+      findOne: jest.fn().mockResolvedValue({ companyId: 'company' }),
+    } as any);
+
+    await service.updateJob('job', 'user', {
+      hardRequiredSkillIds: ['skill'],
+      requirements: [
+        {
+          type: 'license' as any,
+          value: 'Medical license',
+          isRequired: true,
+          isHardRequirement: true,
+        },
+      ],
+    });
+
+    expect(skillRepo.save).toHaveBeenCalledWith([
+      expect.objectContaining({ skillId: 'skill', isHardRequirement: true }),
+    ]);
+    expect(requirementRepo.save).toHaveBeenCalledWith([
+      expect.objectContaining({ value: 'Medical license' }),
+    ]);
   });
 
   describe('findAll', () => {

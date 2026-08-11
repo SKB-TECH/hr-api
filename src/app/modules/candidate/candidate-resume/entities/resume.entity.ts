@@ -9,6 +9,7 @@ import {
 } from 'typeorm';
 import { CandidateProfile } from '../../candidate-profile/entities/candidate-profile.entity';
 import { Application } from '../../../applications/entities/application.entity';
+import { ResumeParsingStatus } from '../../../../../utils/enums';
 
 @Entity({ name: 'resumes' })
 export class Resume {
@@ -38,6 +39,19 @@ export class Resume {
 
   @Column({ type: 'boolean', default: false })
   parsed: boolean;
+
+  @Column({
+    name: 'parsing_status',
+    type: 'varchar',
+    default: ResumeParsingStatus.PENDING,
+  })
+  parsingStatus: ResumeParsingStatus;
+
+  @Column({ name: 'parsing_error', type: 'varchar', nullable: true })
+  parsingError: string | null;
+
+  @Column({ name: 'parsed_at', type: 'timestamptz', nullable: true })
+  parsedAt: Date | null;
 
   @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
   createdAt: Date;

@@ -83,6 +83,10 @@ async function bootstrap() {
     .setDescription('Recruitment Platform Backend API')
     .setVersion('1.0')
     .addBearerAuth()
+    .addApiKey(
+      { type: 'apiKey', name: 'x-service-token', in: 'header' },
+      'ai-service-token',
+    )
     .build();
 
   SwaggerModule.setup(

@@ -61,15 +61,16 @@ API: <http://localhost:3000/api/v1> · Swagger: <http://localhost:3000/api/docs>
 
 Copy `.env.example` → `.env.local` and fill it in. Key groups:
 
-| Group | Variables | Notes |
-| --- | --- | --- |
-| App | `NODE_ENV`, `APP_PORT` | `local` loads `.env.local`; otherwise `.env`. |
-| Database | `POSTGRES_HOST/PORT/USER/PASSWORD/DB`, `DATABASE_SSL_CONNECTION`, `DB_POOL_*` | Set `DATABASE_SSL_CONNECTION=false` for local. |
-| Redis | `APP_REDIS_URL`, `APP_REDIS_SSL_CONNECTION` | Leave `APP_REDIS_URL` empty to run without Redis (login/refresh need it). |
-| JWT | `JWT_SECRET`, `JWT_REFRESH_SECRET`, `JWT_EXPIRATION`, `JWT_REFRESH_EXPIRATION`, `JWT_*_SECRET_CURRENT/PREVIOUS` | `*_CURRENT/PREVIOUS` enable zero-downtime secret rotation. |
-| Storage (GCS) | `GCS_BUCKET`, `GCS_PROJECT_ID`, `GCS_KEY_FILE` | `GCS_KEY_FILE` = path to a service-account JSON (gitignored); omit to use Application Default Credentials. |
-| Pub/Sub | `PUBSUB_ENABLED`, `PUBSUB_PROJECT_ID`, `PUBSUB_KEY_FILE`, `PUBSUB_EMULATOR_HOST` | `PUBSUB_ENABLED=false` to disable in dev; defaults to the GCS project/key. |
-| Google OAuth | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_CALLBACK_URL` | For "Login with Google". |
+| Group         | Variables                                                                                                       | Notes                                                                                                      |
+| ------------- | --------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| App           | `NODE_ENV`, `APP_PORT`                                                                                          | `local` loads `.env.local`; otherwise `.env`.                                                              |
+| Database      | `POSTGRES_HOST/PORT/USER/PASSWORD/DB`, `DATABASE_SSL_CONNECTION`, `DB_POOL_*`                                   | Set `DATABASE_SSL_CONNECTION=false` for local.                                                             |
+| Redis         | `APP_REDIS_URL`, `APP_REDIS_SSL_CONNECTION`                                                                     | Leave `APP_REDIS_URL` empty to run without Redis (login/refresh need it).                                  |
+| JWT           | `JWT_SECRET`, `JWT_REFRESH_SECRET`, `JWT_EXPIRATION`, `JWT_REFRESH_EXPIRATION`, `JWT_*_SECRET_CURRENT/PREVIOUS` | `*_CURRENT/PREVIOUS` enable zero-downtime secret rotation.                                                 |
+| Storage (GCS) | `GCS_BUCKET`, `GCS_PROJECT_ID`, `GCS_KEY_FILE`                                                                  | `GCS_KEY_FILE` = path to a service-account JSON (gitignored); omit to use Application Default Credentials. |
+| Pub/Sub       | `PUBSUB_ENABLED`, `PUBSUB_PROJECT_ID`, `PUBSUB_KEY_FILE`, `PUBSUB_EMULATOR_HOST`                                | `PUBSUB_ENABLED=false` to disable in dev; defaults to the GCS project/key.                                 |
+| Google OAuth  | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_CALLBACK_URL`                                               | For "Login with Google".                                                                                   |
+| AI service    | `HR_AI_BASE_URL`, `HR_AI_SERVICE_TOKEN`, `HR_AI_SERVICE_TOKEN_CURRENT/PREVIOUS`, `HR_AI_REQUEST_TIMEOUT_MS`     | Private server-to-server connection to `hr-ia`, with optional zero-downtime token rotation.                |
 
 > **Secrets:** `.env`, `.env.local`, and `*-service-account*.json` / `hr-project-*.json` keys are gitignored — never commit them.
 
@@ -83,10 +84,10 @@ Copy `.env.example` → `.env.local` and fill it in. Key groups:
 
 The datasource picks the migrations folder by `NODE_ENV`:
 
-| Environment | Directory | Git | Purpose |
-| --- | --- | --- | --- |
-| **Local (`NODE_ENV=local`)** | `src/database/local-migrations/` | **gitignored** | Each developer generates their **own** throwaway migrations to set up their local DB. Not committed. |
-| **Prod / staging (otherwise)** | `src/database/migrations/` | **committed** | The shared, reviewed migration history that actually ships. |
+| Environment                    | Directory                        | Git            | Purpose                                                                                              |
+| ------------------------------ | -------------------------------- | -------------- | ---------------------------------------------------------------------------------------------------- |
+| **Local (`NODE_ENV=local`)**   | `src/database/local-migrations/` | **gitignored** | Each developer generates their **own** throwaway migrations to set up their local DB. Not committed. |
+| **Prod / staging (otherwise)** | `src/database/migrations/`       | **committed**  | The shared, reviewed migration history that actually ships.                                          |
 
 > Local migrations are private and disposable; the **prod migrations are the source of truth**. On a fresh clone there are no local migrations — generate your own (below).
 
@@ -124,9 +125,11 @@ NODE_ENV=production pnpm typeorm:prod:migration:run
 ## Optional Services
 
 ### Redis
+
 Required for login/refresh (refresh tokens are stored in Redis) and Pub/Sub message dedup. Point `APP_REDIS_URL` at a running Redis, e.g. `redis://127.0.0.1:6379`. Leave it empty to boot without Redis (auth that needs it will fail at runtime).
 
 ### Pub/Sub emulator (local)
+
 Backs the async workers — outbound **email** (OTP / password emails) and the storage **image-compression** pipeline. Off by default in dev.
 
 ```bash
@@ -139,6 +142,7 @@ PUBSUB_EMULATOR_HOST=localhost:8085
 The image-compression pipeline also needs Redis and a valid `GCS_KEY_FILE`.
 
 ### Email (OTP & password flows)
+
 Email is sent asynchronously: a publisher enqueues a message on the `EMAIL_QUEUE` Pub/Sub topic, the `MailWorker` consumes it, and `MailService` renders a template and sends via **Resend**. With `RESEND_API_KEY` empty, emails (including OTP codes) are **logged** instead of sent — so dev works without a provider. This requires Pub/Sub to be on (above).
 
 ```bash
@@ -173,16 +177,16 @@ src/
 
 ## Scripts
 
-| Command | Description |
-| --- | --- |
-| `pnpm start:dev` | Run in watch mode (`NODE_ENV=local`). |
-| `pnpm build` | Compile to `dist/`. |
-| `pnpm start:prod` | Run the compiled app (`node dist/main`). |
-| `pnpm test` / `pnpm test:cov` | Unit tests (Jest) / with coverage. |
-| `pnpm test:e2e` | End-to-end tests. |
-| `pnpm lint` / `pnpm format` | ESLint (fix) / Prettier. |
+| Command                          | Description                                        |
+| -------------------------------- | -------------------------------------------------- |
+| `pnpm start:dev`                 | Run in watch mode (`NODE_ENV=local`).              |
+| `pnpm build`                     | Compile to `dist/`.                                |
+| `pnpm start:prod`                | Run the compiled app (`node dist/main`).           |
+| `pnpm test` / `pnpm test:cov`    | Unit tests (Jest) / with coverage.                 |
+| `pnpm test:e2e`                  | End-to-end tests.                                  |
+| `pnpm lint` / `pnpm format`      | ESLint (fix) / Prettier.                           |
 | `pnpm typeorm:local:migration:*` | Generate / run / show / revert migrations (local). |
-| `pnpm pubsub:emulator` | Start the local Pub/Sub emulator. |
+| `pnpm pubsub:emulator`           | Start the local Pub/Sub emulator.                  |
 
 ---
 
@@ -197,6 +201,22 @@ All responses share a consistent envelope:
 - **Error:** `{ statusCode, message, error }`
 
 Auth supports two delivery modes via the `x-client-type` header: `web` (default) sets httpOnly cookies, `mobile` returns tokens in the body.
+
+### Internal AI integration
+
+Swagger documents the `Internal AI Integration` tag. These routes are not user-facing: they require `x-service-token` and a valid `x-company-id`. Job access is checked against that company before any candidate context is returned.
+
+- `GET /api/v1/internal/ai/jobs/:jobId` returns a minimized job context;
+- `GET /api/v1/internal/ai/jobs/:jobId/candidates` returns only applicants for that job;
+- `POST /api/v1/internal/ai/jobs/:jobId/search-candidates` filters recruiter-visible, open-to-work profiles using structured criteria.
+- `GET /api/v1/internal/ai/resumes/:resumeId/content` streams CV bytes with `no-store` caching to the trusted AI service;
+- `PATCH /api/v1/internal/ai/resumes/:resumeId/parsing-status` records the pending/processing/completed/failed lifecycle.
+
+The search endpoint performs SQL filtering; it does not send the candidate database to an LLM. Private profiles, passwords, tokens, salaries, addresses, birth dates and contact details are excluded from its response.
+
+Job skills and other job requirements are structured. Required, nice-to-have and hard requirements remain distinct so the deterministic engine can report ineligibility separately from its numerical score.
+
+Recruiter applications call `POST /api/v1/ai/recruiter/jobs/:jobId/workflows` or `/search` with their normal JWT and a fresh UUID v4 in `idempotency-key`. `hr-api` verifies company membership, rate-limits the operation and prevents duplicate OpenAI work through Redis before calling `hr-ia` privately. The browser never receives or sends `HR_AI_SERVICE_TOKEN`.
 
 > **Custom headers** (`Authorization`, `x-client-type`, `x-refresh-token`, `x-reset-token`, `x-language-code`, `x-request-id`), auth cookies, and CORS: see **[`docs/http-headers.md`](docs/http-headers.md)**.
 

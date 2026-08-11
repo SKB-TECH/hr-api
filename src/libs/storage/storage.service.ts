@@ -145,6 +145,23 @@ export class StorageService implements OnModuleInit {
     await this.fileRepo.softRemove(file);
   }
 
+  async downloadFile(fileId: string): Promise<{
+    buffer: Buffer;
+    mimeType: string;
+    originalName: string;
+  }> {
+    const file = await this.fileRepo.findOne({
+      where: { id: fileId, status: FileStatus.ACTIVE },
+    });
+    if (!file) throw new Error('Stored file not found or unavailable');
+    const [buffer] = await this.bucket.file(file.path).download();
+    return {
+      buffer,
+      mimeType: file.mimeType,
+      originalName: file.originalName,
+    };
+  }
+
   async deleteByUrl(url: string): Promise<void> {
     if (!url) return;
     const prefix = `https://storage.googleapis.com/${this.bucketName}/`;

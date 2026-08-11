@@ -1,5 +1,6 @@
 import {
   ConflictException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -12,6 +13,8 @@ import { PipelineStage } from '../pipeline-stages/entities/pipeline-stage.entity
 import { CreateApplicationDto } from './dto/create-application.dto';
 import { QueryApplicationDto } from './dto/query-application.dto';
 import { UpdateApplicationStageDto } from './dto/update-application-stage.dto';
+import { UpdateApplicationScoreDto } from './dto/update-application-score.dto';
+import { CompanyMember } from '../companies/entities/company-member.entity';
 import {
   PaginationDto,
   createPaginatedResult,
@@ -29,6 +32,8 @@ export class ApplicationsService {
     private readonly jobRepo: Repository<Job>,
     @InjectRepository(PipelineStage)
     private readonly pipelineStageRepo: Repository<PipelineStage>,
+    @InjectRepository(CompanyMember)
+    private readonly companyMemberRepo: Repository<CompanyMember>,
     private readonly dataSource: DataSource,
   ) {}
 
@@ -131,7 +136,12 @@ export class ApplicationsService {
     };
   }
 
-  async findByJob(jobId: string, query: QueryApplicationDto) {
+  async findByJob(
+    jobId: string,
+    query: QueryApplicationDto,
+    recruiterId: string,
+  ) {
+    await this.assertJobAccess(jobId, recruiterId);
     const { stageId, search, page = 1, limit = 10 } = query as any;
 
     const qb = this.applicationRepo
@@ -151,7 +161,12 @@ export class ApplicationsService {
     return paginate(qb, { page, limit } as PaginationDto);
   }
 
-  async findByCompany(companyId: string, query: QueryApplicationDto) {
+  async findByCompany(
+    companyId: string,
+    query: QueryApplicationDto,
+    recruiterId: string,
+  ) {
+    await this.assertCompanyAccess(companyId, recruiterId);
     const { stageId, search, page = 1, limit = 10 } = query as any;
 
     const qb = this.applicationRepo
@@ -169,7 +184,7 @@ export class ApplicationsService {
     return paginate(qb, { page, limit } as PaginationDto);
   }
 
-  async findOne(id: string) {
+  async findOne(id: string, recruiterId?: string) {
     const application = await this.applicationRepo.findOne({
       where: { id },
       relations: {
@@ -180,6 +195,8 @@ export class ApplicationsService {
     });
 
     if (!application) throw new NotFoundException('Application not found');
+    if (recruiterId)
+      await this.assertCompanyAccess(application.job.companyId, recruiterId);
     return application;
   }
 
@@ -188,7 +205,7 @@ export class ApplicationsService {
     dto: UpdateApplicationStageDto,
     changedById: string,
   ) {
-    const application = await this.findOne(id);
+    const application = await this.findOne(id, changedById);
 
     const newStage = await this.pipelineStageRepo.findOne({
       where: { id: dto.stageId },
@@ -212,18 +229,42 @@ export class ApplicationsService {
     });
   }
 
-  async updateScore(id: string, dto: any) {
-    await this.findOne(id);
+  async updateScore(
+    id: string,
+    dto: UpdateApplicationScoreDto,
+    recruiterId: string,
+  ) {
+    await this.findOne(id, recruiterId);
     await this.applicationRepo.update(id, { score: dto.score });
     return this.applicationRepo.findOne({ where: { id } });
   }
 
-  async getStageHistory(id: string) {
-    await this.findOne(id);
+  async getStageHistory(id: string, recruiterId: string) {
+    await this.findOne(id, recruiterId);
     return this.stageHistoryRepo.find({
       where: { applicationId: id },
       order: { createdAt: 'DESC' },
       relations: { changedBy: true }, // Added the HR manager's name for a better UI!
     });
+  }
+
+  private async assertJobAccess(jobId: string, userId: string) {
+    const job = await this.jobRepo.findOne({
+      where: { id: jobId },
+      select: { id: true, companyId: true },
+    });
+    if (!job) throw new NotFoundException('Job not found');
+    await this.assertCompanyAccess(job.companyId, userId);
+  }
+
+  private async assertCompanyAccess(companyId: string, userId: string) {
+    const membership = await this.companyMemberRepo.findOne({
+      where: { companyId, userId },
+      select: { id: true },
+    });
+    if (!membership)
+      throw new ForbiddenException(
+        'You cannot access applications outside your company',
+      );
   }
 }

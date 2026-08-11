@@ -10,3 +10,6 @@ export * from './job-status.enum';
 export * from './job-level.enum';
 export * from './job-category.enum';
 export * from './skill-level.enum';
+export * from './job-skill-requirement.enum';
+export * from './job-requirement-type.enum';
+export * from './resume-parsing-status.enum';

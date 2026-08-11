@@ -31,11 +31,11 @@ pubClient.on('error', (error) =>
   logger.warn(`Redis client error: ${error.message}`),
 );
 
-if (redisUrl) {
+if (redisUrl && process.env.NODE_ENV !== 'test') {
   pubClient
     .connect()
     .then(() => logger.log('Redis client connected'))
     .catch((error) => logger.warn(`Redis connection failed: ${error.message}`));
-} else {
+} else if (!redisUrl) {
   logger.warn('APP_REDIS_URL not set — Redis client will stay disconnected');
 }

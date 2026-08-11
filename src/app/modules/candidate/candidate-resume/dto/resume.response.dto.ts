@@ -1,4 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { ResumeParsingStatus } from '../../../../../utils/enums';
 
 export class ResumeResponseDto {
   @ApiProperty({ example: 'uuid' })
@@ -23,6 +24,15 @@ export class ResumeResponseDto {
 
   @ApiProperty({ example: false })
   parsed: boolean;
+
+  @ApiProperty({ enum: ResumeParsingStatus })
+  parsingStatus: ResumeParsingStatus;
+
+  @ApiProperty({ nullable: true })
+  parsingError: string | null;
+
+  @ApiProperty({ nullable: true })
+  parsedAt: Date | null;
 
   @ApiProperty({ example: '2026-06-05T10:00:00.000Z' })
   createdAt: Date;

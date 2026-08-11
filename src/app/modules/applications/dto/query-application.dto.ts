@@ -1,8 +1,13 @@
-import { IsEnum, IsInt, IsOptional, IsString, Min } from 'class-validator';
+import { IsInt, IsOptional, IsString, IsUUID, Max, Min } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 
 export class QueryApplicationDto {
+  @IsOptional()
+  @IsUUID('4')
+  @ApiPropertyOptional({ format: 'uuid' })
+  stageId?: string;
+
   @IsOptional()
   @IsString()
   @ApiPropertyOptional({
@@ -22,6 +27,7 @@ export class QueryApplicationDto {
   @Type(() => Number)
   @IsInt()
   @Min(1)
+  @Max(100)
   @ApiPropertyOptional({ example: 10, default: 10 })
   limit?: number = 10;
 }

@@ -79,6 +79,10 @@ export class CandidateResumeService {
           title: saved.title,
           fileUrl: saved.fileUrl,
           isDefault: saved.isDefault,
+          parsed: saved.parsed,
+          parsingStatus: saved.parsingStatus,
+          parsingError: saved.parsingError,
+          parsedAt: saved.parsedAt,
           createdAt: saved.createdAt,
         };
       });
