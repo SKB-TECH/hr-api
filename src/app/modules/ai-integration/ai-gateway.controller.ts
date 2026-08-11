@@ -71,17 +71,12 @@ export class AiGatewayController {
       jobId,
       user.id,
     );
-    return this.operations.run(
-      'workflow',
-      user.id,
-      jobId,
-      idempotencyKey,
-      () =>
-        this.ai.post(
+    return this.operations.run('workflow', user.id, jobId, idempotencyKey, () =>
+      this.ai.post(
         '/api/v1/internal/ai/recruiter/workflows/job',
         { request: dto.request, jobId, companyId, limit: dto.limit },
         requestId || randomUUID(),
-        ),
+      ),
     );
   }
 
@@ -114,15 +109,15 @@ export class AiGatewayController {
       idempotencyKey,
       async () => {
         const criteria = await this.ai.post<{
-        seniority?: string | null;
-        requiredSkills?: string[];
-        domainExperience?: string[];
-        location?: string | null;
-      }>(
-        '/api/v1/internal/ai/recruiter/search/interpret',
-        { request: dto.request },
-        requestId || randomUUID(),
-      );
+          seniority?: string | null;
+          requiredSkills?: string[];
+          domainExperience?: string[];
+          location?: string | null;
+        }>(
+          '/api/v1/internal/ai/recruiter/search/interpret',
+          { request: dto.request },
+          requestId || randomUUID(),
+        );
         const candidates = await this.integration.searchCandidates(
           jobId,
           companyId,

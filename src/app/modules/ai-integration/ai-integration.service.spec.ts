@@ -19,6 +19,7 @@ describe('AiIntegrationService', () => {
       {} as any,
       {} as any,
       {} as any,
+      {} as any,
     );
     await expect(service.jobContext('job-id', 'company-b')).rejects.toThrow(
       ForbiddenException,
@@ -45,6 +46,7 @@ describe('AiIntegrationService', () => {
       {} as any,
       candidates,
       { log: jest.fn().mockResolvedValue(undefined) } as any,
+      {} as any,
       {} as any,
       {} as any,
       {} as any,
@@ -81,6 +83,7 @@ describe('AiIntegrationService', () => {
       resumes as any,
       {} as any,
       {} as any,
+      {} as any,
     );
 
     await service.updateResumeParsingStatus(
@@ -113,9 +116,52 @@ describe('AiIntegrationService', () => {
       {} as any,
       {} as any,
       { findOne: jest.fn().mockResolvedValue({ id: 'membership' }) } as any,
+      {} as any,
     );
     await expect(service.companyForRecruiter('job', 'user')).resolves.toBe(
       'company',
+    );
+  });
+
+  it('persists one reviewable profile suggestion per resume', async () => {
+    const audit = { log: jest.fn().mockResolvedValue(undefined) };
+    const suggestions = {
+      upsert: jest.fn().mockResolvedValue(undefined),
+      findOne: jest.fn().mockResolvedValue({
+        id: 'suggestion',
+        resumeId: 'resume',
+        status: 'pending_review',
+      }),
+    };
+    const service = new AiIntegrationService(
+      {} as any,
+      {} as any,
+      {} as any,
+      audit as any,
+      {
+        findOne: jest.fn().mockResolvedValue({
+          id: 'resume',
+          candidateId: 'profile',
+          candidate: { userId: 'user' },
+        }),
+      } as any,
+      {} as any,
+      {} as any,
+      suggestions as any,
+    );
+
+    await expect(
+      service.saveProfileSuggestion('resume', 'user', {
+        data: { headline: 'Engineer' },
+      }),
+    ).resolves.toMatchObject({ id: 'suggestion', status: 'pending_review' });
+    expect(suggestions.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        candidateProfileId: 'profile',
+        resumeId: 'resume',
+        status: 'pending_review',
+      }),
+      { conflictPaths: ['resumeId'] },
     );
   });
 });

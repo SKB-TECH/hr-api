@@ -65,6 +65,37 @@ export class JobsController {
     return sendPaginated(HttpStatus.OK, 'Company jobs fetched', result);
   }
 
+  @Get('company/me/stats')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(...recruiterRoles)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get job and application totals for my company' })
+  async companyStats(@Req() req: any) {
+    return sendResult(
+      HttpStatus.OK,
+      'Company job statistics fetched',
+      await this.jobsService.companyStats(req.user.id),
+    );
+  }
+
+  @Get('company/me/:id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(...recruiterRoles)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Get a draft, live or closed job owned by my company',
+  })
+  async findMyCompanyJob(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Req() req: any,
+  ) {
+    return sendResult(
+      HttpStatus.OK,
+      'Company job fetched',
+      await this.jobsService.findMyCompanyJob(id, req.user.id),
+    );
+  }
+
   @Get(':id')
   @ApiOperation({ summary: 'Get full job details (screens 1.5, 2.6)' })
   @ApiResponse({ status: 200, description: 'Job details returned' })
@@ -110,12 +141,66 @@ export class JobsController {
     return sendResult(HttpStatus.OK, 'Job updated', data);
   }
 
+  @Post(':id/publish')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(...recruiterRoles)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Validate and publish a draft job' })
+  async publishJob(@Param('id', ParseUUIDPipe) id: string, @Req() req: any) {
+    return sendResult(
+      HttpStatus.OK,
+      'Job published',
+      await this.jobsService.publishJob(id, req.user.id),
+    );
+  }
+
+  @Post(':id/close')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(...recruiterRoles)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Close a job while preserving it in company history',
+  })
+  async closeJob(@Param('id', ParseUUIDPipe) id: string, @Req() req: any) {
+    return sendResult(
+      HttpStatus.OK,
+      'Job closed',
+      await this.jobsService.closeJob(id, req.user.id),
+    );
+  }
+
+  @Post(':id/reopen')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(...recruiterRoles)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Reopen a closed job as a draft for review' })
+  async reopenJob(@Param('id', ParseUUIDPipe) id: string, @Req() req: any) {
+    return sendResult(
+      HttpStatus.OK,
+      'Job reopened as draft',
+      await this.jobsService.reopenJob(id, req.user.id),
+    );
+  }
+
+  @Post(':id/duplicate')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(...recruiterRoles)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Duplicate a company job as a new draft' })
+  async duplicateJob(@Param('id', ParseUUIDPipe) id: string, @Req() req: any) {
+    return sendResult(
+      HttpStatus.CREATED,
+      'Job duplicated',
+      await this.jobsService.duplicateJob(id, req.user.id),
+    );
+  }
+
   @Delete(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(...recruiterRoles)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Delete/Close a job listing' })
-  @ApiResponse({ status: 200, description: 'Job successfully deleted' })
+  @ApiOperation({ summary: 'Legacy alias for closing a job listing' })
+  @ApiResponse({ status: 200, description: 'Job successfully closed' })
   async deleteJob(@Param('id', ParseUUIDPipe) id: string, @Req() req: any) {
     const userId = req.user.id;
     const data = await this.jobsService.deleteJob(id, userId);

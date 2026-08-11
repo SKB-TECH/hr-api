@@ -114,14 +114,17 @@ describe('CompaniesController', () => {
         name: 'Nomad Updated',
       });
 
-      const result = await controller.update('uuid-company-1', {
-        name: 'Nomad Updated',
-      });
+      const result = await controller.update(
+        'uuid-company-1',
+        { name: 'Nomad Updated' },
+        { id: 'owner-1' },
+      );
 
       expect(result.statusCode).toBe(200);
       expect(result.data.name).toBe('Nomad Updated');
       expect(mockCompaniesService.update).toHaveBeenCalledWith(
         'uuid-company-1',
+        'owner-1',
         { name: 'Nomad Updated' },
       );
     });

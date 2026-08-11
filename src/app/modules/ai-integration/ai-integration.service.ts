@@ -14,6 +14,7 @@ import { AuditLogService } from '../audit-logs/audit-log.service';
 import { Resume } from '../candidate/candidate-resume/entities/resume.entity';
 import { StorageService } from '@/libs/storage/storage.service';
 import { CompanyMember } from '../companies/entities/company-member.entity';
+import { AiProfileSuggestion } from './entities/ai-profile-suggestion.entity';
 
 @Injectable()
 export class AiIntegrationService {
@@ -29,6 +30,8 @@ export class AiIntegrationService {
     private readonly storage: StorageService,
     @InjectRepository(CompanyMember)
     private readonly companyMembers: Repository<CompanyMember>,
+    @InjectRepository(AiProfileSuggestion)
+    private readonly profileSuggestions: Repository<AiProfileSuggestion>,
   ) {}
 
   async jobContext(jobId: string, companyId: string) {
@@ -216,7 +219,7 @@ export class AiIntegrationService {
       relations: { candidate: true },
     });
     if (!resume) throw new NotFoundException('Resume not found');
-    if (resume.candidate.userId !== userId)
+    if (resume.candidate?.userId !== userId)
       throw new ForbiddenException('You do not own this resume');
     const file = await this.storage.downloadFile(resume.publicId);
     await this.auditLogs.log({
@@ -226,6 +229,67 @@ export class AiIntegrationService {
       newValues: { resumeId, candidateProfileId: resume.candidateId },
     });
     return file;
+  }
+
+  async saveProfileSuggestion(
+    resumeId: string,
+    userId: string,
+    proposal: Record<string, unknown>,
+  ) {
+    const resume = await this.resumes.findOne({
+      where: { id: resumeId },
+      relations: { candidate: true },
+    });
+    if (!resume) throw new NotFoundException('Resume not found');
+    if (resume.candidate?.userId !== userId)
+      throw new ForbiddenException('You do not own this resume');
+    await this.profileSuggestions.upsert(
+      {
+        candidateProfileId: resume.candidateId,
+        resumeId,
+        proposal,
+        status: 'pending_review',
+      },
+      { conflictPaths: ['resumeId'] },
+    );
+    const suggestion = await this.profileSuggestions.findOne({
+      where: { resumeId },
+    });
+    await this.auditLogs.log({
+      userId,
+      action: 'AI_PROFILE_SUGGESTION_SAVED',
+      module: 'ai-integration',
+      newValues: { resumeId, suggestionId: suggestion?.id },
+    });
+    return suggestion;
+  }
+
+  async getProfileSuggestion(resumeId: string, userId: string) {
+    const suggestion = await this.profileSuggestions.findOne({
+      where: { resumeId },
+      relations: [],
+    });
+    if (!suggestion)
+      throw new NotFoundException('Profile suggestion not found');
+    const profile = await this.candidates.findOne({
+      where: { id: suggestion.candidateProfileId, userId },
+      select: { id: true },
+    });
+    if (!profile)
+      throw new ForbiddenException('You do not own this suggestion');
+    return suggestion;
+  }
+
+  async deleteProfileSuggestion(resumeId: string, userId: string) {
+    const suggestion = await this.getProfileSuggestion(resumeId, userId);
+    await this.profileSuggestions.delete(suggestion.id);
+    await this.auditLogs.log({
+      userId,
+      action: 'AI_PROFILE_SUGGESTION_DELETED',
+      module: 'ai-integration',
+      newValues: { resumeId, suggestionId: suggestion.id },
+    });
+    return { deleted: true, resumeId };
   }
 
   async updateResumeParsingStatus(

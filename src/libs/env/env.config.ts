@@ -53,4 +53,5 @@ export const config = {
   HR_AI_SERVICE_TOKEN_PREVIOUS: process.env.HR_AI_SERVICE_TOKEN_PREVIOUS,
   HR_AI_BASE_URL: process.env.HR_AI_BASE_URL,
   HR_AI_REQUEST_TIMEOUT_MS: process.env.HR_AI_REQUEST_TIMEOUT_MS,
+  WEB_APP_URL: process.env.WEB_APP_URL || 'http://localhost:3000',
 };

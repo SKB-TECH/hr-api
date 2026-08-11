@@ -1,10 +1,18 @@
-import { IsOptional, IsString, IsInt, Min } from 'class-validator';
+import {
+  IsOptional,
+  IsString,
+  IsInt,
+  Max,
+  MaxLength,
+  Min,
+} from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 
 export class QueryCompanyDto {
   @IsOptional()
   @IsString()
+  @MaxLength(150)
   @ApiPropertyOptional({
     example: 'Nomad',
     description: 'Search by company name or keyword in description',
@@ -13,6 +21,7 @@ export class QueryCompanyDto {
 
   @IsOptional()
   @IsString()
+  @MaxLength(150)
   @ApiPropertyOptional({
     example: 'Paris, France',
     description: 'Filter by location',
@@ -21,6 +30,7 @@ export class QueryCompanyDto {
 
   @IsOptional()
   @IsString()
+  @MaxLength(150)
   @ApiPropertyOptional({
     example: 'Design',
     description: 'Filter by industry/category',
@@ -29,6 +39,7 @@ export class QueryCompanyDto {
 
   @IsOptional()
   @IsString()
+  @MaxLength(100)
   @ApiPropertyOptional({
     example: 'startup',
     description: 'Filter by company size',
@@ -46,6 +57,7 @@ export class QueryCompanyDto {
   @Type(() => Number)
   @IsInt()
   @Min(1)
+  @Max(100)
   @ApiPropertyOptional({ example: 12, default: 12 })
   limit?: number = 12;
 }

@@ -8,8 +8,8 @@ describe('AiGatewayController', () => {
       companyForRecruiter: jest.fn().mockResolvedValue('company-id'),
     };
     const operations = {
-      run: jest.fn(
-        (_operation, _userId, _entityId, _key, callback) => callback(),
+      run: jest.fn((_operation, _userId, _entityId, _key, callback) =>
+        callback(),
       ),
     };
     const controller = new AiGatewayController(
@@ -49,8 +49,8 @@ describe('AiGatewayController', () => {
       searchCandidates: jest.fn().mockResolvedValue([{ id: 'candidate' }]),
     };
     const operations = {
-      run: jest.fn(
-        (_operation, _userId, _entityId, _key, callback) => callback(),
+      run: jest.fn((_operation, _userId, _entityId, _key, callback) =>
+        callback(),
       ),
     };
     const controller = new AiGatewayController(

@@ -218,6 +218,8 @@ Job skills and other job requirements are structured. Required, nice-to-have and
 
 Recruiter applications call `POST /api/v1/ai/recruiter/jobs/:jobId/workflows` or `/search` with their normal JWT and a fresh UUID v4 in `idempotency-key`. `hr-api` verifies company membership, rate-limits the operation and prevents duplicate OpenAI work through Redis before calling `hr-ia` privately. The browser never receives or sends `HR_AI_SERVICE_TOKEN`.
 
+Candidates call `POST /api/v1/ai/candidate/resumes/:resumeId/extract` with their JWT and an `idempotency-key`. Ownership is checked before the CV is streamed privately to `hr-ia`. The response is explicitly a proposal (`requiresHumanReview: true`, `appliedToProfile: false`); extracted fields never overwrite the candidate profile automatically. The proposal is persisted for recovery and review through `GET /api/v1/ai/candidate/resumes/:resumeId/suggestion`, and a rejected proposal can be permanently removed with `DELETE` on the same path.
+
 > **Custom headers** (`Authorization`, `x-client-type`, `x-refresh-token`, `x-reset-token`, `x-language-code`, `x-request-id`), auth cookies, and CORS: see **[`docs/http-headers.md`](docs/http-headers.md)**.
 
 ---

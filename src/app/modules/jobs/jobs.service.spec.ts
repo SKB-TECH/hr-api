@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { NotFoundException } from '@nestjs/common';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import {
   EmploymentType,
@@ -19,10 +19,12 @@ const mockCompany = {
   name: 'Stripe',
   logo: 'https://cdn.example.com/stripe.png',
   location: 'Paris, France',
+  status: 'active',
 };
 
 const mockJob = {
   id: 'uuid-job-1',
+  companyId: 'uuid-company-1',
   title: 'Social Media Assistant',
   location: 'Paris, France',
   employmentType: EmploymentType.FULL_TIME,
@@ -182,9 +184,9 @@ describe('JobsService', () => {
       const result = await service.findAll({ keyword: 'Social Media' });
 
       expect(result.data).toHaveLength(1);
-      expect(qb.andWhere).toHaveBeenCalledWith('job.title ILIKE :keyword', {
-        keyword: '%Social Media%',
-      });
+      expect(qb.andWhere).toHaveBeenCalledWith(
+        expect.objectContaining({ whereFactory: expect.any(Function) }),
+      );
     });
 
     it('should filter by location', async () => {
@@ -363,6 +365,90 @@ describe('JobsService', () => {
       await expect(service.findOne('uuid-deleted-job')).rejects.toThrow(
         NotFoundException,
       );
+    });
+  });
+
+  describe('job lifecycle', () => {
+    it('publishes a complete draft and sets postedAt', async () => {
+      mockCompanyMemberRepo.findOne.mockResolvedValue({
+        companyId: 'uuid-company-1',
+      });
+      mockJobRepo.findOne.mockResolvedValue({
+        ...mockJobDetail,
+        status: JobStatus.DRAFT,
+        postedAt: null,
+        applyBefore: new Date(Date.now() + 86400000),
+        skills: [
+          {
+            requirementType: 'required',
+            isHardRequirement: false,
+          },
+        ],
+      });
+
+      await expect(service.publishJob('uuid-job-1', 'user-1')).resolves.toEqual(
+        { jobId: 'uuid-job-1', status: JobStatus.LIVE },
+      );
+      expect(mockJobRepo.update).toHaveBeenCalledWith(
+        'uuid-job-1',
+        expect.objectContaining({
+          status: JobStatus.LIVE,
+          postedAt: expect.any(Date),
+        }),
+      );
+    });
+
+    it('refuses to publish without a required skill', async () => {
+      mockCompanyMemberRepo.findOne.mockResolvedValue({
+        companyId: 'uuid-company-1',
+      });
+      mockJobRepo.findOne.mockResolvedValue({
+        ...mockJobDetail,
+        status: JobStatus.DRAFT,
+        applyBefore: new Date(Date.now() + 86400000),
+        skills: [],
+      });
+      await expect(service.publishJob('uuid-job-1', 'user-1')).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
+    it('closes without soft-deleting the job from company history', async () => {
+      mockCompanyMemberRepo.findOne.mockResolvedValue({
+        companyId: 'uuid-company-1',
+      });
+      mockJobRepo.findOne.mockResolvedValue(mockJobDetail);
+      await service.closeJob('uuid-job-1', 'user-1');
+      expect(mockJobRepo.update).toHaveBeenCalledWith(
+        'uuid-job-1',
+        expect.objectContaining({ status: JobStatus.CLOSED }),
+      );
+      const calls = mockJobRepo.update.mock.calls;
+      const lastUpdate = calls[calls.length - 1][1];
+      expect(lastUpdate).not.toHaveProperty('deletedAt');
+    });
+
+    it('rejects inverted salary ranges', async () => {
+      mockCompanyMemberRepo.findOne.mockResolvedValue({
+        companyId: 'uuid-company-1',
+      });
+      await expect(
+        service.createJob(
+          {
+            title: 'Engineer',
+            category: JobCategory.ENGINEERING,
+            jobLevel: JobLevel.MID_LEVEL,
+            employmentType: EmploymentType.FULL_TIME,
+            location: 'Remote',
+            salaryMin: 5000,
+            salaryMax: 1000,
+            description: 'Description',
+            responsibilities: 'Responsibilities',
+            whoYouAre: 'Qualifications',
+          },
+          'user-1',
+        ),
+      ).rejects.toThrow('salaryMin cannot exceed salaryMax');
     });
   });
 });

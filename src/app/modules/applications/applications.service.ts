@@ -1,9 +1,11 @@
 import {
+  BadRequestException,
   ConflictException,
   ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { JobStatus } from '../../../utils/enums';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, In, Repository } from 'typeorm';
 import { Application } from './entities/application.entity';
@@ -38,35 +40,44 @@ export class ApplicationsService {
   ) {}
 
   async create(dto: CreateApplicationDto, candidateId: string) {
-    const job = await this.jobRepo.findOne({
-      where: { id: dto.jobId },
-      relations: { company: { pipelineStages: true } },
+    return this.dataSource.transaction(async (manager) => {
+      const jobRepo = manager.getRepository(Job);
+      const applicationRepo = manager.getRepository(Application);
+      const job = await jobRepo.findOne({
+        where: { id: dto.jobId },
+        relations: { company: { pipelineStages: true } },
+        lock: { mode: 'pessimistic_write' },
+      });
+      if (!job) throw new NotFoundException('Job not found');
+      if (job.status !== JobStatus.LIVE)
+        throw new BadRequestException('This job is not accepting applications');
+      if (job.company?.status && job.company.status !== 'active')
+        throw new BadRequestException(
+          'This company is not accepting applications',
+        );
+      if (job.applyBefore && job.applyBefore.getTime() <= Date.now())
+        throw new BadRequestException('The application deadline has passed');
+      if (job.applicationsCount >= job.capacity)
+        throw new BadRequestException(
+          'This job has reached its application capacity',
+        );
+      const existing = await applicationRepo.findOne({
+        where: { jobId: dto.jobId, candidateId },
+      });
+      if (existing)
+        throw new ConflictException('You have already applied to this job');
+      const stages = (job.company?.pipelineStages || [])
+        .slice()
+        .sort((a, b) => a.order - b.order);
+      const application = applicationRepo.create({
+        ...dto,
+        candidateId,
+        stageId: stages[0]?.id || null,
+      });
+      const saved = await applicationRepo.save(application);
+      await jobRepo.increment({ id: dto.jobId }, 'applicationsCount', 1);
+      return saved;
     });
-
-    if (!job) throw new NotFoundException('Job not found');
-
-    const existing = await this.applicationRepo.findOne({
-      where: { jobId: dto.jobId, candidateId },
-    });
-
-    if (existing)
-      throw new ConflictException('You have already applied to this job');
-
-    const stages = (job.company?.pipelineStages || [])
-      .slice()
-      .sort((a, b) => a.order - b.order);
-    const initialStageId = stages[0]?.id || null;
-
-    const application = this.applicationRepo.create({
-      ...dto,
-      candidateId,
-      stageId: initialStageId,
-    });
-    const saved = await this.applicationRepo.save(application);
-
-    await this.jobRepo.increment({ id: dto.jobId }, 'applicationsCount', 1);
-
-    return saved;
   }
 
   async findMyApplications(candidateId: string, query: QueryApplicationDto) {

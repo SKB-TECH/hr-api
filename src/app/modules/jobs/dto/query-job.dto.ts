@@ -6,10 +6,19 @@ import {
   IsEnum,
   IsNumber,
   IsArray,
+  IsDateString,
+  IsUUID,
+  Max,
+  MaxLength,
 } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Type, Transform } from 'class-transformer';
-import { EmploymentType, JobLevel, JobCategory } from '../../../../utils/enums';
+import {
+  EmploymentType,
+  JobLevel,
+  JobCategory,
+  JobStatus,
+} from '../../../../utils/enums';
 
 export enum JobSortOption {
   MOST_RELEVANT = 'most_relevant',
@@ -21,6 +30,7 @@ export enum JobSortOption {
 export class QueryJobDto {
   @IsOptional()
   @IsString()
+  @MaxLength(150)
   @ApiPropertyOptional({
     example: 'Social Media',
     description: 'Search by job title or keyword',
@@ -34,6 +44,11 @@ export class QueryJobDto {
     description: 'Filter by location',
   })
   location?: string;
+
+  @IsOptional()
+  @IsUUID('4')
+  @ApiPropertyOptional({ format: 'uuid', description: 'Filter by company' })
+  companyId?: string;
 
   @IsOptional()
   @Transform(({ value }) => (Array.isArray(value) ? value : [value]))
@@ -72,6 +87,23 @@ export class QueryJobDto {
   jobLevel?: JobLevel[];
 
   @IsOptional()
+  @Transform(({ value }) => (Array.isArray(value) ? value : [value]))
+  @IsArray()
+  @IsEnum(JobStatus, { each: true })
+  @ApiPropertyOptional({ enum: JobStatus, isArray: true })
+  status?: JobStatus[];
+
+  @IsOptional()
+  @IsDateString()
+  @ApiPropertyOptional({ example: '2026-07-01' })
+  dateFrom?: string;
+
+  @IsOptional()
+  @IsDateString()
+  @ApiPropertyOptional({ example: '2026-07-31' })
+  dateTo?: string;
+
+  @IsOptional()
   @Type(() => Number)
   @IsNumber()
   @Min(0)
@@ -104,6 +136,7 @@ export class QueryJobDto {
   @Type(() => Number)
   @IsInt()
   @Min(1)
+  @Max(100)
   @ApiPropertyOptional({ example: 10, default: 10 })
   limit?: number = 10;
 }

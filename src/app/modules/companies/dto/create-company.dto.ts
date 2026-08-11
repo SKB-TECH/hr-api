@@ -1,5 +1,34 @@
-import { IsString, IsOptional, IsUrl, IsDateString } from 'class-validator';
+import {
+  ArrayMaxSize,
+  IsArray,
+  IsBoolean,
+  IsDateString,
+  IsIn,
+  IsOptional,
+  IsString,
+  IsUrl,
+  MaxLength,
+  ValidateNested,
+} from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
+
+export class CompanyPerkDto {
+  @ApiProperty({ example: 'Remote Working' })
+  @IsString()
+  @MaxLength(120)
+  title: string;
+
+  @ApiProperty({ example: 'Flexible work from approved locations.' })
+  @IsString()
+  @MaxLength(1000)
+  description: string;
+
+  @ApiPropertyOptional({ example: 'https://cdn.example.com/remote.svg' })
+  @IsOptional()
+  @IsUrl({ require_protocol: true })
+  icon?: string;
+}
 
 export class CreateCompanyDto {
   @ApiProperty({
@@ -7,6 +36,7 @@ export class CreateCompanyDto {
     description: 'The official name of the company',
   })
   @IsString()
+  @MaxLength(150)
   name: string;
 
   @ApiPropertyOptional({
@@ -20,6 +50,13 @@ export class CreateCompanyDto {
   @IsOptional()
   @IsString()
   location?: string;
+
+  @ApiPropertyOptional({ type: [String], example: ['Kinshasa', 'London'] })
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(50)
+  @IsString({ each: true })
+  locations?: string[];
 
   @ApiPropertyOptional({
     example: '2020-01-01T00:00:00.000Z',
@@ -81,4 +118,44 @@ export class CreateCompanyDto {
   @IsOptional()
   @IsUrl()
   youtube?: string;
+
+  @ApiPropertyOptional({ type: [String], example: ['React', 'NestJS'] })
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(100)
+  @IsString({ each: true })
+  techStack?: string[];
+
+  @ApiPropertyOptional({ type: [CompanyPerkDto] })
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(50)
+  @ValidateNested({ each: true })
+  @Type(() => CompanyPerkDto)
+  perks?: CompanyPerkDto[];
+
+  @ApiPropertyOptional({ type: [String] })
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(20)
+  @IsUrl({ require_protocol: true }, { each: true })
+  gallery?: string[];
+
+  @ApiPropertyOptional({
+    enum: ['public', 'authenticated', 'verified_candidates', 'private'],
+    default: 'public',
+  })
+  @IsOptional()
+  @IsIn(['public', 'authenticated', 'verified_candidates', 'private'])
+  visibility?: 'public' | 'authenticated' | 'verified_candidates' | 'private';
+
+  @ApiPropertyOptional({ default: true })
+  @IsOptional()
+  @IsBoolean()
+  emailContactEnabled?: boolean;
+
+  @ApiPropertyOptional({ default: true })
+  @IsOptional()
+  @IsBoolean()
+  inAppContactEnabled?: boolean;
 }

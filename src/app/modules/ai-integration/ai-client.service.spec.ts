@@ -59,4 +59,33 @@ describe('AiClientService', () => {
       BadGatewayException,
     );
   });
+
+  it('uploads CV bytes as multipart without forcing an invalid content type', async () => {
+    const fetchMock = jest.spyOn(global, 'fetch').mockResolvedValue({
+      ok: true,
+      json: async () => ({ data: {} }),
+    } as Response);
+    const service = new AiClientService({
+      get: (key: string) =>
+        key === 'HR_AI_BASE_URL'
+          ? 'http://hr-ia:3001'
+          : key === 'HR_AI_SERVICE_TOKEN'
+            ? 's'.repeat(32)
+            : undefined,
+    } as any);
+
+    await service.postFile(
+      '/extract',
+      {
+        buffer: Buffer.from('pdf'),
+        mimeType: 'application/pdf',
+        originalName: 'resume.pdf',
+      },
+      'request-id',
+    );
+
+    const init = fetchMock.mock.calls[0][1] as RequestInit;
+    expect(init.body).toBeInstanceOf(FormData);
+    expect(init.headers).not.toHaveProperty('content-type');
+  });
 });

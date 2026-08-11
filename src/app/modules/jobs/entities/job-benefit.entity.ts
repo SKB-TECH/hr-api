@@ -24,4 +24,7 @@ export class JobBenefit {
 
   @Column({ type: 'varchar' })
   description: string;
+
+  @Column({ type: 'varchar', nullable: true })
+  icon: string | null;
 }

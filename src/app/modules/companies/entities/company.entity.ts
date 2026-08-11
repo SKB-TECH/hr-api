@@ -10,6 +10,7 @@ import { CompanyMember } from './company-member.entity';
 import { Job } from '../../jobs/entities/job.entity';
 import { Interview } from '../../interviews/entities/interview.entity';
 import { PipelineStage } from '../../pipeline-stages/entities/pipeline-stage.entity';
+import { CompanyTeamMember } from './company-team-member.entity';
 
 @Entity({ name: 'companies' })
 export class Company {
@@ -30,6 +31,9 @@ export class Company {
 
   @Column({ type: 'varchar', nullable: true })
   location: string | null;
+
+  @Column({ type: 'jsonb', default: () => "'[]'::jsonb" })
+  locations: string[];
 
   @Column({ name: 'foundation_date', type: 'timestamptz', nullable: true })
   foundationDate: Date | null;
@@ -61,6 +65,37 @@ export class Company {
   @Column({ type: 'varchar', nullable: true })
   youtube: string | null;
 
+  @Column({ name: 'tech_stack', type: 'jsonb', default: () => "'[]'::jsonb" })
+  techStack: string[];
+
+  @Column({ type: 'jsonb', default: () => "'[]'::jsonb" })
+  perks: Array<{ title: string; description: string; icon?: string }>;
+
+  @Column({ type: 'jsonb', default: () => "'[]'::jsonb" })
+  gallery: string[];
+
+  @Column({ type: 'varchar', default: 'public' })
+  visibility: 'public' | 'authenticated' | 'verified_candidates' | 'private';
+
+  @Column({ name: 'email_contact_enabled', type: 'boolean', default: true })
+  emailContactEnabled: boolean;
+
+  @Column({ name: 'in_app_contact_enabled', type: 'boolean', default: true })
+  inAppContactEnabled: boolean;
+
+  @Column({ type: 'varchar', default: 'active' })
+  status: 'active' | 'deactivated' | 'deletion_scheduled';
+
+  @Column({ name: 'deactivation_reason', type: 'varchar', nullable: true })
+  deactivationReason: string | null;
+
+  @Column({
+    name: 'deletion_scheduled_at',
+    type: 'timestamptz',
+    nullable: true,
+  })
+  deletionScheduledAt: Date | null;
+
   @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
   createdAt: Date;
 
@@ -78,4 +113,7 @@ export class Company {
 
   @OneToMany(() => PipelineStage, (stage) => stage.company)
   pipelineStages: PipelineStage[];
+
+  @OneToMany(() => CompanyTeamMember, (member) => member.company)
+  teamMembers: CompanyTeamMember[];
 }

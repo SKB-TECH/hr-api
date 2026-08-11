@@ -1,5 +1,7 @@
 import {
   Controller,
+  Delete,
+  Get,
   Headers,
   Param,
   ParseUUIDPipe,
@@ -10,6 +12,7 @@ import { randomUUID } from 'crypto';
 import {
   ApiBearerAuth,
   ApiHeader,
+  ApiOkResponse,
   ApiOperation,
   ApiTags,
 } from '@nestjs/swagger';
@@ -22,6 +25,7 @@ import { ResumeParsingStatus, UserRole } from '@/utils/enums';
 import { AiClientService } from './ai-client.service';
 import { AiIntegrationService } from './ai-integration.service';
 import { AiOperationCoordinator } from './ai-operation-coordinator.service';
+import { AiProfileSuggestionDto } from './dto/ai-integration-response.dto';
 
 @ApiTags('AI Candidate')
 @ApiBearerAuth()
@@ -64,10 +68,15 @@ export class AiCandidateGatewayController {
           ResumeParsingStatus.PROCESSING,
         );
         try {
-          const proposal = await this.ai.postFile<unknown>(
+          const proposal = await this.ai.postFile<Record<string, unknown>>(
             '/api/v1/internal/ai/resumes/extract',
             file,
             requestId || randomUUID(),
+          );
+          const suggestion = await this.integration.saveProfileSuggestion(
+            resumeId,
+            user.id,
+            proposal,
           );
           await this.integration.updateResumeParsingStatus(
             resumeId,
@@ -75,6 +84,7 @@ export class AiCandidateGatewayController {
           );
           return {
             proposal,
+            suggestionId: suggestion?.id,
             resumeId,
             requiresHumanReview: true,
             appliedToProfile: false,
@@ -89,5 +99,29 @@ export class AiCandidateGatewayController {
         }
       },
     );
+  }
+
+  @Get('resumes/:resumeId/suggestion')
+  @ApiOperation({
+    summary: 'Retrieve the persisted AI proposal for human review',
+  })
+  @ApiOkResponse({ type: AiProfileSuggestionDto })
+  getSuggestion(
+    @Param('resumeId', ParseUUIDPipe) resumeId: string,
+    @CurrentUser() user: { id: string },
+  ) {
+    return this.integration.getProfileSuggestion(resumeId, user.id);
+  }
+
+  @Delete('resumes/:resumeId/suggestion')
+  @ApiOperation({
+    summary: 'Permanently delete a rejected AI profile proposal',
+  })
+  @ApiOkResponse({ schema: { example: { deleted: true, resumeId: 'uuid' } } })
+  deleteSuggestion(
+    @Param('resumeId', ParseUUIDPipe) resumeId: string,
+    @CurrentUser() user: { id: string },
+  ) {
+    return this.integration.deleteProfileSuggestion(resumeId, user.id);
   }
 }

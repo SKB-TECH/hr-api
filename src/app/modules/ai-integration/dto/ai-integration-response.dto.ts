@@ -66,3 +66,15 @@ export class AiResumeStatusDto {
   @ApiProperty({ format: 'uuid' }) resumeId: string;
   @ApiProperty({ enum: ResumeParsingStatus }) status: ResumeParsingStatus;
 }
+
+export class AiProfileSuggestionDto {
+  @ApiProperty({ format: 'uuid' }) id: string;
+  @ApiProperty({ format: 'uuid' }) candidateProfileId: string;
+  @ApiProperty({ format: 'uuid' }) resumeId: string;
+  @ApiProperty({ type: 'object', additionalProperties: true })
+  proposal: Record<string, unknown>;
+  @ApiProperty({ enum: ['pending_review', 'dismissed'] })
+  status: 'pending_review' | 'dismissed';
+  @ApiProperty() createdAt: Date;
+  @ApiProperty() updatedAt: Date;
+}

@@ -19,6 +19,9 @@ export class CompanyMember {
   @Column({ type: 'varchar' })
   role: string;
 
+  @Column({ type: 'varchar', nullable: true })
+  title: string | null;
+
   @CreateDateColumn({ name: 'joined_at', type: 'timestamptz' })
   joinedAt: Date;
 

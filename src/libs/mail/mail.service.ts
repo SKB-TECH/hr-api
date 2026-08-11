@@ -37,6 +37,29 @@ export class MailService {
     await this.send(to, passwordChangedTemplate(fullName));
   }
 
+  async sendCompanyInvitation(
+    to: string,
+    companyName: string,
+    inviterName: string,
+    acceptUrl: string,
+  ) {
+    const escape = (value: string) =>
+      value.replace(/[&<>"']/g, (character) => {
+        const entities: Record<string, string> = {
+          '&': '&amp;',
+          '<': '&lt;',
+          '>': '&gt;',
+          '"': '&quot;',
+          "'": '&#039;',
+        };
+        return entities[character];
+      });
+    await this.send(to, {
+      subject: `Invitation to join ${companyName}`,
+      html: `<p>${escape(inviterName)} invited you to join <strong>${escape(companyName)}</strong>.</p><p><a href="${escape(acceptUrl)}">Accept invitation</a></p><p>This link expires in 7 days.</p>`,
+    });
+  }
+
   private async send(to: string, { subject, html }: EmailContent) {
     if (!this.resend) {
       this.logger.log(`[MAIL:dev] to=${to} subject="${subject}"\n${html}`);

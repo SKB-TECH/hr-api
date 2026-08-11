@@ -12,6 +12,7 @@ import { AiGatewayController } from './ai-gateway.controller';
 import { AiClientService } from './ai-client.service';
 import { AiOperationCoordinator } from './ai-operation-coordinator.service';
 import { AiCandidateGatewayController } from './ai-candidate-gateway.controller';
+import { AiProfileSuggestion } from './entities/ai-profile-suggestion.entity';
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { AiCandidateGatewayController } from './ai-candidate-gateway.controller'
       CandidateProfile,
       Resume,
       CompanyMember,
+      AiProfileSuggestion,
     ]),
   ],
   controllers: [

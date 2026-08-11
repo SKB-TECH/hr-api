@@ -43,6 +43,13 @@ export class Job {
   @Column({ name: 'employment_type', type: 'enum', enum: EmploymentType })
   employmentType: EmploymentType;
 
+  @Column({
+    name: 'employment_types',
+    type: 'jsonb',
+    default: () => "'[]'::jsonb",
+  })
+  employmentTypes: EmploymentType[];
+
   @Index()
   @Column({ name: 'job_level', type: 'enum', enum: JobLevel })
   jobLevel: JobLevel;
@@ -104,6 +111,12 @@ export class Job {
 
   @Column({ name: 'posted_at', type: 'timestamptz', nullable: true })
   postedAt: Date | null;
+
+  @Column({ name: 'closed_at', type: 'timestamptz', nullable: true })
+  closedAt: Date | null;
+
+  @Column({ name: 'created_by', type: 'uuid', nullable: true })
+  createdBy: string | null;
 
   @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
   createdAt: Date;
