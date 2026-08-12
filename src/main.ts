@@ -19,13 +19,29 @@ async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     bufferLogs: true,
   });
+
   app.useLogger(app.get(Logger));
 
   app.set('trust proxy', 1);
 
   app.setGlobalPrefix('api/v1');
-  app.use(helmet());
+
+  app.use(
+    helmet({
+      contentSecurityPolicy: {
+        directives: {
+          defaultSrc: ["'self'"],
+          scriptSrc: ["'self'", "'unsafe-inline'"],
+          styleSrc: ["'self'", "'unsafe-inline'", 'https:'],
+          imgSrc: ["'self'", 'data:'],
+          fontSrc: ["'self'", 'https:', 'data:'],
+        },
+      },
+    }),
+  );
+
   app.use(cookieParser());
+
   app.enableCors({
     origin: true,
     credentials: true,
@@ -39,8 +55,12 @@ async function bootstrap() {
       'x-language-code',
     ],
   });
+
   app.use(compression());
-  app.useStaticAssets(join(process.cwd(), 'uploads'), { prefix: '/files' });
+
+  app.useStaticAssets(join(process.cwd(), 'uploads'), {
+    prefix: '/files',
+  });
 
   const i18nService = app.get(I18nService);
 
@@ -51,6 +71,7 @@ async function bootstrap() {
       transform: true,
       exceptionFactory: (errors) => {
         const first = findFirstConstraint(errors);
+
         if (!first) {
           return sendError(
             HttpStatus.BAD_REQUEST,
@@ -58,14 +79,20 @@ async function bootstrap() {
             'BAD_REQUEST',
           );
         }
+
         const i18nKey = `validation.${first.key}`;
-        const translated = i18nService.t(i18nKey, { property: first.property });
+        const translated = i18nService.t(i18nKey, {
+          property: first.property,
+        });
+
         if (translated !== i18nKey) {
           return sendError(HttpStatus.BAD_REQUEST, translated, 'BAD_REQUEST');
         }
+
         const translatedFallback = i18nService.t(first.fallback, {
           property: first.property,
         });
+
         return sendError(
           HttpStatus.BAD_REQUEST,
           translatedFallback,
@@ -84,7 +111,11 @@ async function bootstrap() {
     .setVersion('1.0')
     .addBearerAuth()
     .addApiKey(
-      { type: 'apiKey', name: 'x-service-token', in: 'header' },
+      {
+        type: 'apiKey',
+        name: 'x-service-token',
+        in: 'header',
+      },
       'ai-service-token',
     )
     .build();
@@ -97,8 +128,12 @@ async function bootstrap() {
 
   const configService = new ConfigService();
   const APP_PORT = parseInt(configService.get('APP_PORT') ?? '3000', 10);
-  await app.listen(APP_PORT);
+
+  await app.listen(APP_PORT, '0.0.0.0');
+
   app.get(Logger).log(`Server running on http://localhost:${APP_PORT}/api/v1`);
+
   app.get(Logger).log(`Swagger docs at http://localhost:${APP_PORT}/api/docs`);
 }
+
 void bootstrap();
