@@ -28,15 +28,10 @@ async function bootstrap() {
 
   app.use(
     helmet({
-      contentSecurityPolicy: {
-        directives: {
-          defaultSrc: ["'self'"],
-          scriptSrc: ["'self'", "'unsafe-inline'"],
-          styleSrc: ["'self'", "'unsafe-inline'", 'https:'],
-          imgSrc: ["'self'", 'data:'],
-          fontSrc: ["'self'", 'https:', 'data:'],
-        },
-      },
+      contentSecurityPolicy: false,
+      crossOriginEmbedderPolicy: false,
+      crossOriginOpenerPolicy: false,
+      crossOriginResourcePolicy: false,
     }),
   );
 
