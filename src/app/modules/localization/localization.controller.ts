@@ -4,7 +4,7 @@ import { LocalizationService } from './localization.service';
 import { sendResult } from '@/helpers/message/sendResult';
 
 @ApiTags('Localization')
-@Controller('api/v1/localization')
+@Controller('localization')
 export class LocalizationController {
   constructor(private readonly localizationService: LocalizationService) {}
 

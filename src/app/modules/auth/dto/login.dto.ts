@@ -1,11 +1,17 @@
 import {
   IsBoolean,
   IsEmail,
+  IsEnum,
   IsOptional,
   IsString,
   MinLength,
 } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
+
+export enum AuthPortal {
+  CANDIDATE = 'CANDIDATE',
+  COMPANY = 'COMPANY',
+}
 
 export class LoginDto {
   @ApiProperty({ example: 'john@example.com' })
@@ -25,4 +31,13 @@ export class LoginDto {
   @IsBoolean()
   @IsOptional()
   rememberMe?: boolean;
+
+  @ApiProperty({
+    enum: AuthPortal,
+    required: false,
+    description: 'Portal on which the user is attempting to sign in',
+  })
+  @IsEnum(AuthPortal)
+  @IsOptional()
+  portal?: AuthPortal;
 }

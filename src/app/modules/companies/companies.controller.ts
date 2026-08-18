@@ -39,6 +39,17 @@ import {
   UpdateCompanyMemberDto,
 } from './dto/company-member.dto';
 import { CompanyLifecycleReasonDto } from './dto/company-lifecycle.dto';
+import { RolesGuard } from '@/helpers/guards/roles.guard';
+import { Roles } from '@/helpers/decorators/roles.decorator';
+import { UserRole } from '@/utils/enums';
+
+const companyRoles = [
+  UserRole.COMPANY_OWNER,
+  UserRole.HR_MANAGER,
+  UserRole.RECRUITER,
+  UserRole.ADMIN,
+  UserRole.SUPER_ADMIN,
+] as const;
 
 @ApiTags('Companies')
 @Controller('companies')
@@ -46,7 +57,8 @@ export class CompaniesController {
   constructor(private readonly companiesService: CompaniesService) {}
 
   @Post()
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(...companyRoles)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Create a new company' })
   @ApiResponse({ status: 201, description: 'Company created successfully' })
@@ -70,7 +82,8 @@ export class CompaniesController {
   }
 
   @Get('profile/me')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(...companyRoles)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get the authenticated user company profile' })
   async findMine(@CurrentUser() user: { id: string }) {
@@ -87,7 +100,8 @@ export class CompaniesController {
     return sendResult(HttpStatus.OK, 'Company fetched', data);
   }
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(...companyRoles)
   @ApiBearerAuth()
   @Patch(':id')
   @ApiOperation({ summary: 'Update company settings' })
@@ -106,7 +120,8 @@ export class CompaniesController {
   }
 
   @Patch(':id/branding')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(...companyRoles)
   @ApiBearerAuth()
   @ApiConsumes('multipart/form-data')
   @UseInterceptors(
@@ -145,7 +160,8 @@ export class CompaniesController {
   }
 
   @Get(':id/members')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(...companyRoles)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'List company access members' })
   async members(
@@ -160,7 +176,8 @@ export class CompaniesController {
   }
 
   @Post(':id/members')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(...companyRoles)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Add a registered user to the company' })
   async addMember(
@@ -176,7 +193,8 @@ export class CompaniesController {
   }
 
   @Get(':id/invitations')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(...companyRoles)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'List company membership invitations' })
   async invitations(
@@ -206,7 +224,8 @@ export class CompaniesController {
   }
 
   @Delete(':id/invitations/:invitationId')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(...companyRoles)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Revoke a pending company invitation' })
   async revokeInvitation(
@@ -222,7 +241,8 @@ export class CompaniesController {
   }
 
   @Patch(':id/members/:memberId')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(...companyRoles)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Update a company member role or title' })
   async updateMember(
@@ -239,7 +259,8 @@ export class CompaniesController {
   }
 
   @Delete(':id/members/:memberId')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(...companyRoles)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Remove a non-owner company member' })
   async removeMember(
@@ -255,7 +276,8 @@ export class CompaniesController {
   }
 
   @Post(':id/team')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(...companyRoles)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Add a public company-profile team member' })
   async addTeamMember(
@@ -271,7 +293,8 @@ export class CompaniesController {
   }
 
   @Patch(':id/team/:teamMemberId')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(...companyRoles)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Update a public company-profile team member' })
   async updateTeamMember(
@@ -293,7 +316,8 @@ export class CompaniesController {
   }
 
   @Delete(':id/team/:teamMemberId')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(...companyRoles)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Remove a public company-profile team member' })
   async removeTeamMember(
@@ -309,7 +333,8 @@ export class CompaniesController {
   }
 
   @Post(':id/deactivate')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(...companyRoles)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Temporarily deactivate the company account' })
   async deactivate(
@@ -325,7 +350,8 @@ export class CompaniesController {
   }
 
   @Post(':id/reactivate')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(...companyRoles)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Reactivate a deactivated company account' })
   async reactivate(
@@ -340,7 +366,8 @@ export class CompaniesController {
   }
 
   @Post(':id/deletion-schedule')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(...companyRoles)
   @ApiBearerAuth()
   @ApiOperation({
     summary: 'Schedule company deletion after a 30-day recovery period',

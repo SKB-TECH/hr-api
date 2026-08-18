@@ -1,5 +1,5 @@
 const BRAND_NAME = 'Fast2Hire';
-const BRAND_COLOR = '#138ca3';
+const BRAND_COLOR = '#4640de';
 const BRAND_DARK = '#17243e';
 const TEXT_COLOR = '#4a4a4a';
 const MUTED_COLOR = '#777777';
@@ -52,7 +52,7 @@ export function renderLayout(params: {
         <td align="center" style="padding:24px 12px 32px;color:${MUTED_COLOR};font-size:12px;line-height:1.55;">
           <strong style="color:${TEXT_COLOR};font-size:13px;">FAST2HIRE</strong><br />
           <strong style="color:${TEXT_COLOR};">Fit not fight</strong><br /><br />
-          12 Rue de la Gare, L-1610 Luxembourg City, Luxembourg<br /><br />
+          Kinshasa, Democratic Republic of the Congo, Central Africa<br /><br />
           ${params.unsubscribeUrl ? `<a href="${escapeHtml(params.unsubscribeUrl)}" style="color:${MUTED_COLOR};text-decoration:underline;">Unsubscribe</a>` : ''}
         </td>
       </tr>

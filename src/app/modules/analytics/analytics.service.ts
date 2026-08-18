@@ -1,9 +1,10 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Job } from '../jobs/entities/job.entity';
 import { Application } from '../applications/entities/application.entity';
 import { AnalyticsQueryDto } from './dto/analytics-query.dto';
+import { CompanyMember } from '../companies/entities/company-member.entity';
 
 @Injectable()
 export class AnalyticsService {
@@ -12,10 +13,13 @@ export class AnalyticsService {
     private readonly jobRepo: Repository<Job>,
     @InjectRepository(Application)
     private readonly appRepo: Repository<Application>,
+    @InjectRepository(CompanyMember)
+    private readonly companyMemberRepo: Repository<CompanyMember>,
   ) {}
 
-  async getCompanyKpis(query: AnalyticsQueryDto) {
+  async getCompanyKpis(query: AnalyticsQueryDto, userId: string) {
     const { companyId, startDate, endDate } = query;
+    await this.assertCompanyAccess(companyId, userId);
 
     const jobQb = this.jobRepo.createQueryBuilder('j');
     if (companyId) jobQb.andWhere('j.companyId = :companyId', { companyId });
@@ -56,22 +60,12 @@ export class AnalyticsService {
       hiredQb.getCount(),
     ]);
 
-    return {
-      success: true,
-      data: {
-        totalJobsActive: totalJobs,
-        totalApplicants: totalApplicants,
-        hiredCandidates: hiredApplicants,
-        trends: {
-          applicantsTrend: '+12%', // Hardcoded for now, can be dynamic later
-          hiredTrend: '+2%',
-        },
-      },
-    };
+    return { totalJobsActive: totalJobs, totalApplicants, hiredCandidates: hiredApplicants };
   }
 
-  async getApplicationsChart(query: AnalyticsQueryDto) {
+  async getApplicationsChart(query: AnalyticsQueryDto, userId: string) {
     const { companyId, startDate, endDate } = query;
+    await this.assertCompanyAccess(companyId, userId);
 
     const appQb = this.appRepo
       .createQueryBuilder('a')
@@ -103,14 +97,12 @@ export class AnalyticsService {
       applications: groupedData[date],
     }));
 
-    return {
-      success: true,
-      data: formattedChartData,
-    };
+    return formattedChartData;
   }
 
-  async getPipelineFunnel(query: AnalyticsQueryDto) {
+  async getPipelineFunnel(query: AnalyticsQueryDto, userId: string) {
     const { companyId, startDate, endDate } = query;
+    await this.assertCompanyAccess(companyId, userId);
 
     const qb = this.appRepo
       .createQueryBuilder('a')
@@ -134,9 +126,12 @@ export class AnalyticsService {
       count: Number(row.count),
     }));
 
-    return {
-      success: true,
-      data: formattedFunnel,
-    };
+    return formattedFunnel;
+  }
+
+  private async assertCompanyAccess(companyId: string | undefined, userId: string) {
+    if (!companyId) throw new BadRequestException('companyId is required');
+    const member = await this.companyMemberRepo.findOne({ where: { companyId, userId }, select: { id: true } });
+    if (!member) throw new ForbiddenException('You cannot access analytics outside your company');
   }
 }

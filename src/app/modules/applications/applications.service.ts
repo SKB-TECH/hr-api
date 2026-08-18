@@ -188,6 +188,8 @@ export class ApplicationsService {
       .createQueryBuilder('a')
       .leftJoinAndSelect('a.stage', 'stage')
       .leftJoinAndSelect('a.job', 'job')
+      .leftJoinAndSelect('a.candidate', 'candidate')
+      .leftJoinAndSelect('candidate.candidateProfile', 'candidateProfile')
       .where('job.companyId = :companyId', { companyId });
 
     if (stageId) qb.andWhere('a.stageId = :stageId', { stageId });

@@ -4,9 +4,10 @@ import { InterviewsController } from './interviews.controller';
 import { InterviewsService } from './interviews.service';
 import { Interview } from './entities/interview.entity';
 import { Application } from '../applications/entities/application.entity';
+import { CompanyMember } from '../companies/entities/company-member.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Interview, Application])],
+  imports: [TypeOrmModule.forFeature([Interview, Application, CompanyMember])],
   controllers: [InterviewsController],
   providers: [InterviewsService],
   exports: [InterviewsService],

@@ -20,10 +20,22 @@ import { CreateInterviewDto } from './dto/create-interview.dto';
 import { AddFeedbackDto } from './dto/add-feedback.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { sendResult } from '@/helpers/message/sendResult';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { RolesGuard } from '@/helpers/guards/roles.guard';
+import { Roles } from '@/helpers/decorators/roles.decorator';
+import { UserRole } from '@/utils/enums';
+
+const companyRoles = [
+  UserRole.COMPANY_OWNER,
+  UserRole.HR_MANAGER,
+  UserRole.RECRUITER,
+  UserRole.ADMIN,
+] as const;
 
 @ApiTags('Interviews')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles(...companyRoles)
 @Controller('interviews')
 export class InterviewsController {
   constructor(private readonly interviewsService: InterviewsService) {}
@@ -32,8 +44,11 @@ export class InterviewsController {
   @ApiOperation({ summary: 'Schedule an interview (screen 3.8)' })
   @ApiResponse({ status: 201, description: 'Interview scheduled' })
   @ApiResponse({ status: 404, description: 'Application not found' })
-  async create(@Body() dto: CreateInterviewDto) {
-    const data = await this.interviewsService.create(dto);
+  async create(
+    @Body() dto: CreateInterviewDto,
+    @CurrentUser() user: { id: string },
+  ) {
+    const data = await this.interviewsService.create(dto, user.id);
     return sendResult(HttpStatus.CREATED, 'Interview scheduled', data);
   }
 
@@ -41,8 +56,12 @@ export class InterviewsController {
   @ApiOperation({ summary: 'Get interview list for an applicant (screen 3.8)' })
   async findByApplication(
     @Param('applicationId', ParseUUIDPipe) applicationId: string,
+    @CurrentUser() user: { id: string },
   ) {
-    const data = await this.interviewsService.findByApplication(applicationId);
+    const data = await this.interviewsService.findByApplication(
+      applicationId,
+      user.id,
+    );
     return sendResult(HttpStatus.OK, 'Interviews fetched', data);
   }
 
@@ -50,8 +69,11 @@ export class InterviewsController {
   @ApiOperation({
     summary: 'Get all company interviews for schedule (screen 3.14)',
   })
-  async findByCompany(@Param('companyId', ParseUUIDPipe) companyId: string) {
-    const data = await this.interviewsService.findByCompany(companyId);
+  async findByCompany(
+    @Param('companyId', ParseUUIDPipe) companyId: string,
+    @CurrentUser() user: { id: string },
+  ) {
+    const data = await this.interviewsService.findByCompany(companyId, user.id);
     return sendResult(HttpStatus.OK, 'Interviews fetched', data);
   }
 
@@ -62,8 +84,9 @@ export class InterviewsController {
   async addFeedback(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: AddFeedbackDto,
+    @CurrentUser() user: { id: string },
   ) {
-    const data = await this.interviewsService.addFeedback(id, dto);
+    const data = await this.interviewsService.addFeedback(id, dto, user.id);
     return sendResult(HttpStatus.OK, 'Feedback added', data);
   }
 }

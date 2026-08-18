@@ -1,27 +1,36 @@
-import { Injectable } from '@nestjs/common';
+import { ForbiddenException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, In, Not, Repository } from 'typeorm';
 import { UpdatePipelineStagesDto } from './dto/update-pipeline-stages.dto';
 import { PipelineStage } from './entities/pipeline-stage.entity';
+import { CompanyMember } from '../companies/entities/company-member.entity';
 
 @Injectable()
 export class PipelineStagesService {
   constructor(
     @InjectRepository(PipelineStage)
     private readonly pipelineStageRepo: Repository<PipelineStage>,
+    @InjectRepository(CompanyMember)
+    private readonly companyMemberRepo: Repository<CompanyMember>,
     private readonly dataSource: DataSource,
   ) {}
 
-  async getCompanyStages(companyId: string) {
+  async getCompanyStages(companyId: string, userId: string) {
+    await this.assertCompanyAccess(companyId, userId);
     const stages = await this.pipelineStageRepo.find({
       where: { companyId },
       order: { order: 'ASC' }, // Crucial: Ensures left-to-right frontend rendering
     });
 
-    return { success: true, data: stages };
+    return stages;
   }
 
-  async updateCompanyStages(companyId: string, dto: UpdatePipelineStagesDto) {
+  async updateCompanyStages(
+    companyId: string,
+    dto: UpdatePipelineStagesDto,
+    userId: string,
+  ) {
+    await this.assertCompanyAccess(companyId, userId);
     const { stages } = dto;
 
     const incomingIds = stages
@@ -60,10 +69,17 @@ export class PipelineStagesService {
       return results;
     });
 
-    return {
-      success: true,
-      message: 'Pipeline stages updated successfully',
-      data: finalStages,
-    };
+    return finalStages;
+  }
+
+  private async assertCompanyAccess(companyId: string, userId: string) {
+    const member = await this.companyMemberRepo.findOne({
+      where: { companyId, userId },
+      select: { id: true },
+    });
+    if (!member)
+      throw new ForbiddenException(
+        'You cannot access pipeline stages outside your company',
+      );
   }
 }

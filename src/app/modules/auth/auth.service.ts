@@ -1,4 +1,9 @@
-import { HttpStatus, Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  ForbiddenException,
+  HttpStatus,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { randomUUID } from 'crypto';
 import * as bcrypt from 'bcrypt';
 import { UserRole, UserStatus, AuthProvider } from '@/utils/enums';
@@ -11,7 +16,7 @@ import { EmailPublisher } from '@/libs/pubsub/publishers/email.publisher';
 import { RedisService } from '@/libs/redis/redis.service';
 import { I18nService } from '@/libs/i18n/i18n.service';
 import { sendError } from '@/helpers/message/sendResult';
-import { LoginDto } from './dto/login.dto';
+import { AuthPortal, LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { VerifyOtpDto } from './dto/verify-otp.dto';
 import { SetupPasswordDto } from './dto/setup-password.dto';
@@ -183,6 +188,27 @@ export class AuthService {
 
     const valid = await bcrypt.compare(dto.password, user.password);
     if (!valid) throw new UnauthorizedException('Invalid credentials');
+
+    const companyRoles: UserRole[] = [
+      UserRole.COMPANY_OWNER,
+      UserRole.HR_MANAGER,
+      UserRole.RECRUITER,
+      UserRole.ADMIN,
+      UserRole.SUPER_ADMIN,
+    ];
+    const isCompanyAccount = companyRoles.includes(user.role);
+
+    if (dto.portal === AuthPortal.COMPANY && !isCompanyAccount) {
+      throw new ForbiddenException(
+        'This account is not authorized for the company portal.',
+      );
+    }
+
+    if (dto.portal === AuthPortal.CANDIDATE && isCompanyAccount) {
+      throw new ForbiddenException(
+        'This account is not authorized for the candidate portal.',
+      );
+    }
 
     await this.usersService.update(user.id, { lastLogin: new Date() });
 
