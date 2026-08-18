@@ -26,7 +26,17 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       const exceptionResponse = exception.getResponse();
       const mapped = ERROR_MAP[status];
 
-      if (mapped?.forceTranslate) {
+      const exceptionMessage =
+        typeof exceptionResponse === 'object' &&
+        exceptionResponse !== null &&
+        'message' in exceptionResponse
+          ? (exceptionResponse as { message?: unknown }).message
+          : undefined;
+      const hasSpecificMessage =
+        typeof exceptionMessage === 'string' &&
+        !['Unauthorized', 'Forbidden'].includes(exceptionMessage);
+
+      if (mapped?.forceTranslate && !hasSpecificMessage) {
         response.status(status).json({
           statusCode: status,
           message: this.i18n.t(mapped.key),
