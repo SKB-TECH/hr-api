@@ -48,6 +48,7 @@ export const config = {
 
   RESEND_API_KEY: process.env.RESEND_API_KEY,
   RESEND_FROM_EMAIL: process.env.RESEND_FROM_EMAIL || 'noreply@hr-api.local',
+  EMAIL_LOGO_URL: process.env.EMAIL_LOGO_URL,
   HR_AI_SERVICE_TOKEN: process.env.HR_AI_SERVICE_TOKEN,
   HR_AI_SERVICE_TOKEN_CURRENT: process.env.HR_AI_SERVICE_TOKEN_CURRENT,
   HR_AI_SERVICE_TOKEN_PREVIOUS: process.env.HR_AI_SERVICE_TOKEN_PREVIOUS,

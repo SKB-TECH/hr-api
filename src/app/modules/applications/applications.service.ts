@@ -22,6 +22,7 @@ import {
   createPaginatedResult,
   paginate,
 } from '../../../helpers/pagination';
+import { MailService } from '../../../libs/mail/mail.service';
 
 @Injectable()
 export class ApplicationsService {
@@ -37,10 +38,11 @@ export class ApplicationsService {
     @InjectRepository(CompanyMember)
     private readonly companyMemberRepo: Repository<CompanyMember>,
     private readonly dataSource: DataSource,
+    private readonly mail: MailService,
   ) {}
 
   async create(dto: CreateApplicationDto, candidateId: string) {
-    return this.dataSource.transaction(async (manager) => {
+    const saved = await this.dataSource.transaction(async (manager) => {
       const jobRepo = manager.getRepository(Job);
       const applicationRepo = manager.getRepository(Application);
       const job = await jobRepo.findOne({
@@ -78,6 +80,8 @@ export class ApplicationsService {
       await jobRepo.increment({ id: dto.jobId }, 'applicationsCount', 1);
       return saved;
     });
+    await this.mail.sendApplicationReviewingEmail(dto.email, dto.fullName);
+    return saved;
   }
 
   async findMyApplications(candidateId: string, query: QueryApplicationDto) {

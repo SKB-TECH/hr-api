@@ -15,6 +15,7 @@ describe('ApplicationsService authorization', () => {
       {} as any,
       { findOne: jest.fn().mockResolvedValue(null) } as any,
       {} as any,
+      {} as any,
     );
 
     await expect(service.findByJob('job', {}, 'outsider')).rejects.toThrow(

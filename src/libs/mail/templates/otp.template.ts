@@ -1,12 +1,18 @@
 import { EmailContent } from './email-content.interface';
-import { renderCode, renderLayout } from './layout';
+import {
+  renderCode,
+  renderHeading,
+  renderLayout,
+  renderWelcome,
+} from './layout';
 
-export function otpTemplate(otp: string): EmailContent {
+export function otpTemplate(otp: string, logoUrl?: string): EmailContent {
   const content = `
-    <h1 style="margin:0 0 12px;font-size:20px;font-weight:700;">Verify your email</h1>
+    ${renderHeading('Verify your email')}
+    ${renderWelcome()}
     <p style="margin:0 0 8px;">Use the verification code below to continue creating your account. This code expires in <strong>10 minutes</strong>.</p>
     ${renderCode(otp)}
-    <p style="margin:0;color:#7c8493;font-size:13px;">Never share this code with anyone. HR API staff will never ask you for it.</p>
+    <p style="margin:0;color:#777777;font-size:13px;">Never share this code with anyone. Fast2Hire staff will never ask you for it.</p>
   `;
 
   return {
@@ -15,6 +21,7 @@ export function otpTemplate(otp: string): EmailContent {
       title: 'Verify your email',
       preheader: `Your verification code is ${otp}`,
       content,
+      logoUrl,
     }),
   };
 }
