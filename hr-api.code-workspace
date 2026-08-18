@@ -1,0 +1,16 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"path": "../hr-app"
+		},
+		{
+			"path": "../hr-ia"
+		}
+	],
+	"settings": {
+		"js/ts.experimental.useTsgo": false
+	}
+}

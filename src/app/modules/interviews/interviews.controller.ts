@@ -46,9 +46,11 @@ export class InterviewsController {
   @ApiResponse({ status: 404, description: 'Application not found' })
   async create(
     @Body() dto: CreateInterviewDto,
-    @CurrentUser() user: { id: string },
+    @CurrentUser() user?: { id: string },
   ) {
-    const data = await this.interviewsService.create(dto, user.id);
+    const data = user
+      ? await this.interviewsService.create(dto, user.id)
+      : await this.interviewsService.create(dto);
     return sendResult(HttpStatus.CREATED, 'Interview scheduled', data);
   }
 
@@ -56,12 +58,11 @@ export class InterviewsController {
   @ApiOperation({ summary: 'Get interview list for an applicant (screen 3.8)' })
   async findByApplication(
     @Param('applicationId', ParseUUIDPipe) applicationId: string,
-    @CurrentUser() user: { id: string },
+    @CurrentUser() user?: { id: string },
   ) {
-    const data = await this.interviewsService.findByApplication(
-      applicationId,
-      user.id,
-    );
+    const data = user
+      ? await this.interviewsService.findByApplication(applicationId, user.id)
+      : await this.interviewsService.findByApplication(applicationId);
     return sendResult(HttpStatus.OK, 'Interviews fetched', data);
   }
 
@@ -71,9 +72,11 @@ export class InterviewsController {
   })
   async findByCompany(
     @Param('companyId', ParseUUIDPipe) companyId: string,
-    @CurrentUser() user: { id: string },
+    @CurrentUser() user?: { id: string },
   ) {
-    const data = await this.interviewsService.findByCompany(companyId, user.id);
+    const data = user
+      ? await this.interviewsService.findByCompany(companyId, user.id)
+      : await this.interviewsService.findByCompany(companyId);
     return sendResult(HttpStatus.OK, 'Interviews fetched', data);
   }
 
@@ -84,9 +87,11 @@ export class InterviewsController {
   async addFeedback(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: AddFeedbackDto,
-    @CurrentUser() user: { id: string },
+    @CurrentUser() user?: { id: string },
   ) {
-    const data = await this.interviewsService.addFeedback(id, dto, user.id);
+    const data = user
+      ? await this.interviewsService.addFeedback(id, dto, user.id)
+      : await this.interviewsService.addFeedback(id, dto);
     return sendResult(HttpStatus.OK, 'Feedback added', data);
   }
 }
