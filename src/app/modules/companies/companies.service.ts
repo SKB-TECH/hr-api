@@ -29,6 +29,8 @@ import { createHash, randomBytes } from 'crypto';
 import { MailService } from '../../../libs/mail/mail.service';
 import { ConfigService } from '../../../libs/env/config.service';
 import { StorageService } from '../../../libs/storage/storage.service';
+import { CompanyNotificationPreference } from './entities/company-notification-preference.entity';
+import { UpdateCompanyNotificationPreferencesDto } from './dto/company-notification-preferences.dto';
 
 @Injectable()
 export class CompaniesService {
@@ -43,6 +45,8 @@ export class CompaniesService {
     private readonly userRepo: Repository<User>,
     @InjectRepository(CompanyInvitation)
     private readonly invitationRepo: Repository<CompanyInvitation>,
+    @InjectRepository(CompanyNotificationPreference)
+    private readonly notificationPreferenceRepo: Repository<CompanyNotificationPreference>,
     private readonly dataSource: DataSource,
     private readonly mail: MailService,
     private readonly config: ConfigService,
@@ -151,7 +155,20 @@ export class CompaniesService {
   }
 
   async findMine(userId: string) {
-    const membership = await this.membershipForUser(userId);
+    let membership = await this.companyMemberRepo.findOne({
+      where: { userId },
+    });
+    if (!membership) {
+      const user = await this.userRepo.findOne({ where: { id: userId } });
+      if (!user || user.role !== UserRole.COMPANY_OWNER) {
+        throw new NotFoundException('User is not assigned to a company');
+      }
+
+      await this.create({ name: `${user.fullName} Company` }, userId);
+      membership = await this.companyMemberRepo.findOne({ where: { userId } });
+      if (!membership)
+        throw new NotFoundException('Company provisioning failed');
+    }
     const company = await this.companyRepo.findOne({
       where: { id: membership.companyId },
       relations: { teamMembers: true },
@@ -159,6 +176,27 @@ export class CompaniesService {
     });
     if (!company) throw new NotFoundException('Company not found');
     return company;
+  }
+
+  async notificationPreferences(companyId: string, userId: string) {
+    await this.assertMember(companyId, userId);
+    let preferences = await this.notificationPreferenceRepo.findOne({
+      where: { companyId, userId },
+    });
+    if (!preferences)
+      preferences = await this.notificationPreferenceRepo.save(
+        this.notificationPreferenceRepo.create({ companyId, userId }),
+      );
+    return preferences;
+  }
+
+  async updateNotificationPreferences(
+    companyId: string,
+    userId: string,
+    dto: UpdateCompanyNotificationPreferencesDto,
+  ) {
+    const preferences = await this.notificationPreferences(companyId, userId);
+    return this.notificationPreferenceRepo.save({ ...preferences, ...dto });
   }
 
   async update(id: string, userId: string, updateCompanyDto: UpdateCompanyDto) {

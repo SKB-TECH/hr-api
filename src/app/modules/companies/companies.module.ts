@@ -7,6 +7,7 @@ import { CompanyMember } from './entities/company-member.entity';
 import { CompanyTeamMember } from './entities/company-team-member.entity';
 import { User } from '../users/entities/user.entity';
 import { CompanyInvitation } from './entities/company-invitation.entity';
+import { CompanyNotificationPreference } from './entities/company-notification-preference.entity';
 
 @Module({
   imports: [
@@ -15,6 +16,7 @@ import { CompanyInvitation } from './entities/company-invitation.entity';
       CompanyMember,
       CompanyTeamMember,
       CompanyInvitation,
+      CompanyNotificationPreference,
       User,
     ]),
   ],

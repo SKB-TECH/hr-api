@@ -42,6 +42,7 @@ import { CompanyLifecycleReasonDto } from './dto/company-lifecycle.dto';
 import { RolesGuard } from '@/helpers/guards/roles.guard';
 import { Roles } from '@/helpers/decorators/roles.decorator';
 import { UserRole } from '@/utils/enums';
+import { UpdateCompanyNotificationPreferencesDto } from './dto/company-notification-preferences.dto';
 
 const companyRoles = [
   UserRole.COMPANY_OWNER,
@@ -89,6 +90,41 @@ export class CompaniesController {
   async findMine(@CurrentUser() user: { id: string }) {
     const data = await this.companiesService.findMine(user.id);
     return sendResult(HttpStatus.OK, 'Company profile fetched', data);
+  }
+
+  @Get(':id/notification-preferences')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(...companyRoles)
+  @ApiBearerAuth()
+  async notificationPreferences(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: { id: string },
+  ) {
+    return sendResult(
+      HttpStatus.OK,
+      'Notification preferences fetched',
+      await this.companiesService.notificationPreferences(id, user.id),
+    );
+  }
+
+  @Patch(':id/notification-preferences')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(...companyRoles)
+  @ApiBearerAuth()
+  async updateNotificationPreferences(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: UpdateCompanyNotificationPreferencesDto,
+    @CurrentUser() user: { id: string },
+  ) {
+    return sendResult(
+      HttpStatus.OK,
+      'Notification preferences updated',
+      await this.companiesService.updateNotificationPreferences(
+        id,
+        user.id,
+        dto,
+      ),
+    );
   }
 
   @Get(':id')

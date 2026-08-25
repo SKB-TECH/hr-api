@@ -8,6 +8,7 @@ import { CompanyMember } from './entities/company-member.entity';
 import { CompanyTeamMember } from './entities/company-team-member.entity';
 import { User } from '../users/entities/user.entity';
 import { CompanyInvitation } from './entities/company-invitation.entity';
+import { CompanyNotificationPreference } from './entities/company-notification-preference.entity';
 import { MailService } from '../../../libs/mail/mail.service';
 import { ConfigService } from '../../../libs/env/config.service';
 import { StorageService } from '../../../libs/storage/storage.service';
@@ -83,6 +84,11 @@ const mockInvitationRepo = {
   create: jest.fn((value) => value),
   save: jest.fn((value) => value),
 };
+const mockNotificationPreferenceRepo = {
+  findOne: jest.fn(),
+  create: jest.fn((value) => value),
+  save: jest.fn((value) => Promise.resolve(value)),
+};
 const mockMail = { sendCompanyInvitation: jest.fn() };
 const mockConfig = { get: jest.fn(() => 'http://localhost:3000') };
 const mockStorage = {
@@ -115,6 +121,10 @@ describe('CompaniesService', () => {
         {
           provide: getRepositoryToken(CompanyInvitation),
           useValue: mockInvitationRepo,
+        },
+        {
+          provide: getRepositoryToken(CompanyNotificationPreference),
+          useValue: mockNotificationPreferenceRepo,
         },
         { provide: DataSource, useValue: mockDataSource },
         { provide: MailService, useValue: mockMail },
@@ -248,6 +258,31 @@ describe('CompaniesService', () => {
       await expect(
         service.update('uuid-company-1', 'outsider', { name: 'X' }),
       ).rejects.toThrow('Company access denied');
+    });
+  });
+
+  describe('findMine', () => {
+    it('automatically provisions a company for an owner without membership', async () => {
+      mockCompanyMemberRepo.findOne
+        .mockResolvedValueOnce(null)
+        .mockResolvedValueOnce({
+          userId: 'owner-1',
+          companyId: 'uuid-company-1',
+          role: 'COMPANY_OWNER',
+        });
+      mockUserRepo.findOne.mockResolvedValue({
+        id: 'owner-1',
+        fullName: 'Acme',
+        role: 'COMPANY_OWNER',
+      });
+      mockCompanyRepo.findOne.mockResolvedValue(mockCompany);
+      jest.spyOn(service, 'create').mockResolvedValue(mockCompany as Company);
+
+      await expect(service.findMine('owner-1')).resolves.toEqual(mockCompany);
+      expect(service.create).toHaveBeenCalledWith(
+        { name: 'Acme Company' },
+        'owner-1',
+      );
     });
   });
 
