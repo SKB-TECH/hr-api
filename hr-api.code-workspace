@@ -9,8 +9,5 @@
 		{
 			"path": "../hr-ia"
 		}
-	],
-	"settings": {
-		"js/ts.experimental.useTsgo": false
-	}
+	]
 }
