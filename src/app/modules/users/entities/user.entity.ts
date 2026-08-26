@@ -35,6 +35,16 @@ export class User {
   @Column({ type: 'enum', enum: UserRole, default: UserRole.CANDIDATE })
   role: UserRole;
 
+  @Column({
+    type: 'varchar',
+    array: true,
+    default: () => "ARRAY['CANDIDATE']::varchar[]",
+  })
+  profiles: Array<'CANDIDATE' | 'COMPANY'>;
+
+  @Column({ name: 'active_profile', type: 'varchar', default: 'CANDIDATE' })
+  activeProfile: 'CANDIDATE' | 'COMPANY';
+
   @Column({ type: 'enum', enum: UserStatus, default: UserStatus.pending })
   status: UserStatus;
 

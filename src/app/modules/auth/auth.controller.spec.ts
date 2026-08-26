@@ -7,6 +7,9 @@ const mockAuthService = {
   logout: jest.fn(),
   refresh: jest.fn(),
   googleLogin: jest.fn(),
+  session: jest.fn(),
+  enableProfile: jest.fn(),
+  switchProfile: jest.fn(),
 };
 
 const mockUser = {
@@ -94,6 +97,7 @@ describe('AuthController', () => {
         email: 'john@example.com',
         role: 'CANDIDATE',
       };
+      mockAuthService.session.mockResolvedValue(jwtUser);
       const result: any = await controller.me(jwtUser);
       expect(result.data).toEqual(jwtUser);
     });

@@ -8,6 +8,7 @@ import {
   Req,
   Res,
   UseGuards,
+  Patch,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { Request, Response } from 'express';
@@ -29,6 +30,7 @@ import {
   setTokenCookies,
 } from './helpers/cookie.helper';
 import { sendResult } from '@/helpers/message/sendResult';
+import { SwitchProfileDto } from './dto/switch-profile.dto';
 
 @ApiTags('Auth')
 @ApiHeader({
@@ -113,8 +115,53 @@ export class AuthController {
   @ApiOperation({ summary: 'Get the currently authenticated user' })
   @ApiResponse({ status: 200, description: 'Current user returned' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  me(@CurrentUser() user: { id: string; email: string; role: string }) {
-    return sendResult(HttpStatus.OK, 'Current user', user);
+  async me(
+    @CurrentUser()
+    user: {
+      id: string;
+      activeProfile?: 'CANDIDATE' | 'COMPANY';
+    },
+  ) {
+    return sendResult(
+      HttpStatus.OK,
+      'Current user',
+      await this.authService.session(user.id, user.activeProfile),
+    );
+  }
+
+  @Post('profiles')
+  @UseGuards(JwtAuthGuard)
+  async enableProfile(
+    @CurrentUser() user: { id: string },
+    @Body() dto: SwitchProfileDto,
+  ) {
+    return sendResult(
+      HttpStatus.OK,
+      'Profile enabled',
+      await this.authService.enableProfile(user.id, dto.profile),
+    );
+  }
+
+  @Patch('active-profile')
+  @UseGuards(JwtAuthGuard)
+  async switchProfile(
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+    @CurrentUser() user: { id: string },
+    @Body() dto: SwitchProfileDto,
+  ) {
+    const clientType = isWebClient(req) ? 'web' : 'mobile';
+    const result = await this.authService.switchProfile(
+      user.id,
+      dto.profile,
+      clientType,
+    );
+    if (clientType === 'web') {
+      const { accessToken, refreshToken, user: sessionUser } = result;
+      setTokenCookies(res, { accessToken, refreshToken });
+      return sendResult(HttpStatus.OK, 'Active profile changed', sessionUser);
+    }
+    return sendResult(HttpStatus.OK, 'Active profile changed', result);
   }
 
   @Get('google')
@@ -131,7 +178,7 @@ export class AuthController {
   async googleCallback(@Req() req: any, @Res() res: Response) {
     const clientType = isWebClient(req) ? 'web' : 'mobile';
     const { accessToken, refreshToken, ...rest } =
-      await this.authService.googleLogin(req.user, clientType);
+      await this.authService.googleLogin(req.user, clientType, req.query.state);
     if (clientType === 'web') {
       setTokenCookies(res, { accessToken, refreshToken });
       return res.json(

@@ -16,12 +16,13 @@ import { EmailPublisher } from '@/libs/pubsub/publishers/email.publisher';
 import { RedisService } from '@/libs/redis/redis.service';
 import { I18nService } from '@/libs/i18n/i18n.service';
 import { sendError } from '@/helpers/message/sendResult';
-import { AuthPortal, LoginDto } from './dto/login.dto';
+import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { VerifyOtpDto } from './dto/verify-otp.dto';
 import { SetupPasswordDto } from './dto/setup-password.dto';
 import { PendingRegistration } from './interfaces/pending-registration.interface';
 import { ClientType } from './types/client-type.type';
+import { AccountProfile } from './dto/switch-profile.dto';
 
 @Injectable()
 export class AuthService {
@@ -189,28 +190,17 @@ export class AuthService {
     const valid = await bcrypt.compare(dto.password, user.password);
     if (!valid) throw new UnauthorizedException('Invalid credentials');
 
-    const companyRoles: UserRole[] = [
-      UserRole.COMPANY_OWNER,
-      UserRole.HR_MANAGER,
-      UserRole.RECRUITER,
-      UserRole.ADMIN,
-      UserRole.SUPER_ADMIN,
-    ];
-    const isCompanyAccount = companyRoles.includes(user.role);
-
-    if (dto.portal === AuthPortal.COMPANY && !isCompanyAccount) {
+    const profiles = this.profilesFor(user);
+    const requestedProfile = dto.portal ?? user.activeProfile ?? profiles[0];
+    if (!profiles.includes(requestedProfile)) {
       throw new ForbiddenException(
-        'This account is not authorized for the company portal.',
+        `This account is not authorized for the ${requestedProfile.toLowerCase()} portal.`,
       );
     }
-
-    if (dto.portal === AuthPortal.CANDIDATE && isCompanyAccount) {
-      throw new ForbiddenException(
-        'This account is not authorized for the candidate portal.',
-      );
-    }
-
-    await this.usersService.update(user.id, { lastLogin: new Date() });
+    const activeUser = await this.usersService.update(user.id, {
+      lastLogin: new Date(),
+      activeProfile: requestedProfile,
+    });
 
     void this.auditLogService.log({
       userId: user.id,
@@ -219,8 +209,12 @@ export class AuthService {
       newValues: { email: user.email },
     });
 
-    const tokens = await this.generateAndStoreTokens(user, clientType);
-    return { user: this.sanitize(user), ...tokens };
+    const tokens = await this.generateAndStoreTokens(
+      activeUser,
+      clientType,
+      requestedProfile,
+    );
+    return { user: this.sessionUser(activeUser, requestedProfile), ...tokens };
   }
 
   async refresh(
@@ -239,7 +233,37 @@ export class AuthService {
     if (!user)
       throw new UnauthorizedException('Invalid or expired refresh token');
 
-    return this.generateAndStoreTokens(user, clientType);
+    return this.generateAndStoreTokens(user, clientType, user.activeProfile);
+  }
+
+  async enableProfile(userId: string, profile: AccountProfile) {
+    const user = await this.usersService.enableProfile(userId, profile);
+    return this.sessionUser(user, user.activeProfile);
+  }
+
+  async switchProfile(
+    userId: string,
+    profile: AccountProfile,
+    clientType: ClientType,
+  ) {
+    const user = await this.usersService.findById(userId);
+    if (!user || !this.profilesFor(user).includes(profile))
+      throw new ForbiddenException('Profile is not enabled for this account.');
+    const updated = await this.usersService.update(userId, {
+      activeProfile: profile,
+    });
+    const tokens = await this.generateAndStoreTokens(
+      updated,
+      clientType,
+      profile,
+    );
+    return { user: this.sessionUser(updated, profile), ...tokens };
+  }
+
+  async session(userId: string, activeProfile?: 'CANDIDATE' | 'COMPANY') {
+    const user = await this.usersService.findById(userId);
+    if (!user) throw new UnauthorizedException('User not found');
+    return this.sessionUser(user, activeProfile ?? user.activeProfile);
   }
 
   async logout(userId: string) {
@@ -257,6 +281,7 @@ export class AuthService {
   async googleLogin(
     googleUser: { email: string; fullName: string; avatar: string },
     clientType: ClientType = 'mobile',
+    requestedProfile: AccountProfile = AccountProfile.CANDIDATE,
   ) {
     let user = await this.usersService.findByEmail(googleUser.email);
 
@@ -266,13 +291,24 @@ export class AuthService {
         fullName: googleUser.fullName,
         avatar: googleUser.avatar,
         provider: AuthProvider.google,
-        role: UserRole.CANDIDATE,
+        role:
+          requestedProfile === AccountProfile.COMPANY
+            ? UserRole.COMPANY_OWNER
+            : UserRole.CANDIDATE,
         status: UserStatus.active,
         emailVerified: true,
       });
     }
 
-    await this.usersService.update(user.id, { lastLogin: new Date() });
+    if (!this.profilesFor(user).includes(requestedProfile))
+      throw new ForbiddenException(
+        `This account is not authorized for the ${requestedProfile.toLowerCase()} portal.`,
+      );
+
+    user = await this.usersService.update(user.id, {
+      lastLogin: new Date(),
+      activeProfile: requestedProfile,
+    });
 
     void this.auditLogService.log({
       userId: user.id,
@@ -281,8 +317,12 @@ export class AuthService {
       newValues: { email: user.email },
     });
 
-    const tokens = await this.generateAndStoreTokens(user, clientType);
-    return { user: this.sanitize(user), ...tokens };
+    const tokens = await this.generateAndStoreTokens(
+      user,
+      clientType,
+      requestedProfile,
+    );
+    return { user: this.sessionUser(user, requestedProfile), ...tokens };
   }
 
   // -------------------- Set password (authenticated) ----------------------
@@ -543,13 +583,41 @@ export class AuthService {
     return JSON.parse(data) as PendingRegistration;
   }
 
-  private async generateAndStoreTokens(user: User, clientType: ClientType) {
+  private async generateAndStoreTokens(
+    user: User,
+    clientType: ClientType,
+    activeProfile = user.activeProfile,
+  ) {
+    const role = activeProfile === 'CANDIDATE' ? UserRole.CANDIDATE : user.role;
     const tokens = await this.jwtTokenService.generateTokenPair(
-      { sub: user.id, email: user.email, phone: user.phone, role: user.role },
+      {
+        sub: user.id,
+        email: user.email,
+        phone: user.phone,
+        role,
+        profiles: this.profilesFor(user),
+        activeProfile,
+      },
       clientType,
     );
     await this.jwtTokenService.storeRefreshToken(user.id, tokens.refreshToken);
     return tokens;
+  }
+
+  private sessionUser(user: User, activeProfile = user.activeProfile) {
+    const profiles = this.profilesFor(user);
+    const selected = activeProfile ?? profiles[0];
+    return {
+      ...this.sanitize(user),
+      profiles,
+      role: selected === 'CANDIDATE' ? UserRole.CANDIDATE : user.role,
+      activeProfile: selected,
+    };
+  }
+
+  private profilesFor(user: User): Array<'CANDIDATE' | 'COMPANY'> {
+    if (user.profiles?.length) return user.profiles;
+    return user.role === UserRole.CANDIDATE ? ['CANDIDATE'] : ['COMPANY'];
   }
 
   private sanitize(user: User) {

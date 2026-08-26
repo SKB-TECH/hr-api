@@ -40,7 +40,13 @@ export class UsersService {
       const userRepo = manager.getRepository(User);
       const profileRepo = manager.getRepository(CandidateProfile);
 
-      const user = userRepo.create(data);
+      const profile =
+        data.role === UserRole.CANDIDATE ? 'CANDIDATE' : 'COMPANY';
+      const user = userRepo.create({
+        ...data,
+        profiles: data.profiles ?? [profile],
+        activeProfile: data.activeProfile ?? profile,
+      });
       const saved = await userRepo.save(user);
 
       if (data.role === UserRole.CANDIDATE) {
@@ -53,6 +59,36 @@ export class UsersService {
       }
 
       return saved;
+    });
+  }
+
+  async enableProfile(userId: string, profile: 'CANDIDATE' | 'COMPANY') {
+    return this.dataSource.transaction(async (manager) => {
+      const userRepo = manager.getRepository(User);
+      const profileRepo = manager.getRepository(CandidateProfile);
+      const user = await userRepo.findOne({ where: { id: userId } });
+      if (!user) throw new NotFoundException('User not found');
+      const profiles = user.profiles?.length
+        ? user.profiles
+        : user.role === UserRole.CANDIDATE
+          ? ['CANDIDATE' as const]
+          : ['COMPANY' as const];
+      if (!profiles.includes(profile)) user.profiles = [...profiles, profile];
+      if (profile === 'COMPANY' && user.role === UserRole.CANDIDATE)
+        user.role = UserRole.COMPANY_OWNER;
+      if (
+        profile === 'CANDIDATE' &&
+        !(await profileRepo.findOne({ where: { userId } }))
+      ) {
+        await profileRepo.save(
+          profileRepo.create({
+            userId,
+            openToWork: true,
+            profileVisibility: ProfileVisibility.public,
+          }),
+        );
+      }
+      return userRepo.save(user);
     });
   }
 

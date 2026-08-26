@@ -5,4 +5,6 @@ export interface JwtPayload {
   email: string | null;
   phone?: string | null;
   role: UserRole | null;
+  profiles: Array<'CANDIDATE' | 'COMPANY'>;
+  activeProfile: 'CANDIDATE' | 'COMPANY';
 }
