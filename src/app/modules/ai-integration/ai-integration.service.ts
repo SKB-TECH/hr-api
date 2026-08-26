@@ -34,6 +34,16 @@ export class AiIntegrationService {
     private readonly profileSuggestions: Repository<AiProfileSuggestion>,
   ) {}
 
+  async activeCompanyForRecruiter(userId: string) {
+    const membership = await this.companyMembers.findOne({
+      where: { userId, isActive: true },
+      select: { companyId: true },
+    });
+    if (!membership)
+      throw new ForbiddenException('No active company is selected');
+    return membership.companyId;
+  }
+
   async jobContext(jobId: string, companyId: string) {
     const job = await this.jobs.findOne({
       where: { id: jobId },

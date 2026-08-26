@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Headers,
+  HttpStatus,
   Param,
   ParseUUIDPipe,
   Post,
@@ -23,8 +24,10 @@ import { UserRole } from '@/utils/enums';
 import { AiClientService } from './ai-client.service';
 import { AiIntegrationService } from './ai-integration.service';
 import { RunRecruiterWorkflowDto } from './dto/run-recruiter-workflow.dto';
+import { GenerateJobDescriptionDto } from './dto/generate-job-description.dto';
 import { Throttle } from '@nestjs/throttler';
 import { AiOperationCoordinator } from './ai-operation-coordinator.service';
+import { sendResult } from '@/helpers/message/sendResult';
 
 @ApiTags('AI Recruiter')
 @ApiBearerAuth()
@@ -46,6 +49,33 @@ export class AiGatewayController {
     private readonly integration: AiIntegrationService,
     private readonly operations: AiOperationCoordinator,
   ) {}
+
+  @Post('jobs/generate')
+  @ApiOperation({
+    summary: 'Generate a reviewable job draft before publication',
+  })
+  @ApiHeader({ name: 'idempotency-key', required: true })
+  async generateJob(
+    @Body() dto: GenerateJobDescriptionDto,
+    @CurrentUser() user: { id: string },
+    @Headers('x-request-id') requestId?: string,
+    @Headers('idempotency-key') idempotencyKey?: string,
+  ) {
+    const companyId = await this.integration.activeCompanyForRecruiter(user.id);
+    const generated = await this.operations.run(
+      'generate-job',
+      user.id,
+      companyId,
+      idempotencyKey,
+      () =>
+        this.ai.post(
+          '/api/v1/internal/ai/recruiter/jobs/generate',
+          { evidence: { ...dto.evidence, companyId } },
+          requestId || randomUUID(),
+        ),
+    );
+    return sendResult(HttpStatus.OK, 'Job draft generated', generated);
+  }
 
   @Post('jobs/:jobId/workflows')
   @ApiOperation({
