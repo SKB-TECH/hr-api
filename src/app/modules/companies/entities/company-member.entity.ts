@@ -31,6 +31,9 @@ export class CompanyMember {
   @Column({ name: 'company_id', type: 'uuid' })
   companyId: string;
 
+  @Column({ name: 'is_active', type: 'boolean', default: false })
+  isActive: boolean;
+
   @ManyToOne(() => User, (user) => user.companyMemberships, {
     onDelete: 'CASCADE',
   })

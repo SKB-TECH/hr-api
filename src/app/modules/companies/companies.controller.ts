@@ -92,6 +92,33 @@ export class CompaniesController {
     return sendResult(HttpStatus.OK, 'Company profile fetched', data);
   }
 
+  @Get('profile/me/companies')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(...companyRoles)
+  @ApiBearerAuth()
+  async findMyCompanies(@CurrentUser() user: { id: string }) {
+    return sendResult(
+      HttpStatus.OK,
+      'User companies fetched',
+      await this.companiesService.findMyCompanies(user.id),
+    );
+  }
+
+  @Patch('profile/me/active-company/:companyId')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(...companyRoles)
+  @ApiBearerAuth()
+  async switchActiveCompany(
+    @Param('companyId', ParseUUIDPipe) companyId: string,
+    @CurrentUser() user: { id: string },
+  ) {
+    return sendResult(
+      HttpStatus.OK,
+      'Active company changed',
+      await this.companiesService.switchActiveCompany(companyId, user.id),
+    );
+  }
+
   @Get(':id/notification-preferences')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(...companyRoles)

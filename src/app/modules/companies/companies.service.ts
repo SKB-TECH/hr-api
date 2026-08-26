@@ -54,11 +54,6 @@ export class CompaniesService {
   ) {}
 
   async create(createCompanyDto: CreateCompanyDto, userId: string) {
-    const existingMembership = await this.companyMemberRepo.findOne({
-      where: { userId },
-    });
-    if (existingMembership)
-      throw new ConflictException('User already belongs to a company');
     return this.dataSource.transaction(async (manager) => {
       const companyRepo = manager.getRepository(Company);
       const memberRepo = manager.getRepository(CompanyMember);
@@ -79,11 +74,14 @@ export class CompaniesService {
         }),
       );
 
+      await memberRepo.update({ userId, isActive: true }, { isActive: false });
+
       await memberRepo.save(
         memberRepo.create({
           userId,
           companyId: company.id,
           role: 'COMPANY_OWNER',
+          isActive: true,
         }),
       );
 
@@ -156,7 +154,7 @@ export class CompaniesService {
 
   async findMine(userId: string) {
     let membership = await this.companyMemberRepo.findOne({
-      where: { userId },
+      where: { userId, isActive: true },
     });
     if (!membership) {
       const user = await this.userRepo.findOne({ where: { id: userId } });
@@ -165,7 +163,9 @@ export class CompaniesService {
       }
 
       await this.create({ name: `${user.fullName} Company` }, userId);
-      membership = await this.companyMemberRepo.findOne({ where: { userId } });
+      membership = await this.companyMemberRepo.findOne({
+        where: { userId, isActive: true },
+      });
       if (!membership)
         throw new NotFoundException('Company provisioning failed');
     }
@@ -176,6 +176,24 @@ export class CompaniesService {
     });
     if (!company) throw new NotFoundException('Company not found');
     return company;
+  }
+
+  async findMyCompanies(userId: string) {
+    return this.companyMemberRepo.find({
+      where: { userId },
+      relations: { company: true },
+      order: { joinedAt: 'ASC' },
+    });
+  }
+
+  async switchActiveCompany(companyId: string, userId: string) {
+    await this.assertMember(companyId, userId);
+    await this.dataSource.transaction(async (manager) => {
+      const repo = manager.getRepository(CompanyMember);
+      await repo.update({ userId, isActive: true }, { isActive: false });
+      await repo.update({ userId, companyId }, { isActive: true });
+    });
+    return this.findMine(userId);
   }
 
   async notificationPreferences(companyId: string, userId: string) {
@@ -327,10 +345,8 @@ export class CompaniesService {
     if (!user || user.email.toLowerCase() !== invitation.email.toLowerCase())
       throw new ForbiddenException('Invitation belongs to another email');
     const existing = await this.companyMemberRepo.findOne({
-      where: { userId },
+      where: { userId, companyId: invitation.companyId },
     });
-    if (existing && existing.companyId !== invitation.companyId)
-      throw new ConflictException('User already belongs to another company');
     if (!existing)
       await this.companyMemberRepo.save(
         this.companyMemberRepo.create({
@@ -338,6 +354,9 @@ export class CompaniesService {
           userId,
           role: invitation.role,
           title: invitation.title,
+          isActive: !(await this.companyMemberRepo.exist({
+            where: { userId },
+          })),
         }),
       );
     invitation.status = 'accepted';
@@ -469,7 +488,7 @@ export class CompaniesService {
 
   private async membershipForUser(userId: string) {
     const membership = await this.companyMemberRepo.findOne({
-      where: { userId },
+      where: { userId, isActive: true },
     });
     if (!membership)
       throw new NotFoundException('User is not assigned to a company');

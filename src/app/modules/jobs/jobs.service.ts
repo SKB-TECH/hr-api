@@ -254,7 +254,7 @@ export class JobsService {
 
   async updateJob(jobId: string, userId: string, updateJobDto: UpdateJobDto) {
     const companyMember = await this.companyMemberRepo.findOne({
-      where: { userId },
+      where: { userId, isActive: true },
     });
     if (!companyMember)
       throw new NotFoundException('You are not associated with a company.');
@@ -489,7 +489,7 @@ export class JobsService {
 
   private async membership(userId: string) {
     const membership = await this.companyMemberRepo.findOne({
-      where: { userId },
+      where: { userId, isActive: true },
       relations: { company: true },
     });
     if (!membership)
