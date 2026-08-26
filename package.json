@@ -12,6 +12,8 @@
     "start:dev": "NODE_ENV=local nest start --watch",
     "start:debug": "nest start --debug --watch",
     "start:prod": "node dist/main",
+    "start:prod:migrate": "node dist/database/run-migrations.js && node dist/main.js",
+    "typeorm:compiled:migration:run": "node dist/database/run-migrations.js",
     "pubsub:emulator": "docker compose up pubsub-emulator",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
     "test": "jest --forceExit",
