@@ -279,10 +279,14 @@ export class AuthService {
   }
 
   async googleLogin(
-    googleUser: { email: string; fullName: string; avatar: string },
+    googleUser: { email: string; fullName: string; avatar: string | null },
     clientType: ClientType = 'mobile',
     requestedProfile: AccountProfile = AccountProfile.CANDIDATE,
   ) {
+    requestedProfile =
+      requestedProfile === AccountProfile.COMPANY
+        ? AccountProfile.COMPANY
+        : AccountProfile.CANDIDATE;
     let user = await this.usersService.findByEmail(googleUser.email);
 
     if (!user) {

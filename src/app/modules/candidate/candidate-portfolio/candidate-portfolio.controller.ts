@@ -109,27 +109,6 @@ export class PortfolioController {
     return sendResult(HttpStatus.CREATED, 'Portfolio created', data);
   }
 
-  @Get('public/:candidateId')
-  @HttpCode(HttpStatus.OK)
-  @ApiOperation({
-    summary: 'Public recruiter view of candidate portfolios by candidateId',
-  })
-  @ApiParam({
-    name: 'candidateId',
-    description: 'Candidate profile UUID',
-  })
-  @ApiResponse({
-    status: HttpStatus.OK,
-    type: [PortfolioResponseDto],
-  })
-  async findPublicByCandidateId(
-    @Param('candidateId', ParseUUIDPipe) candidateId: string,
-  ) {
-    const data =
-      await this.portfolioService.findPublicByCandidateId(candidateId);
-    return sendResult(HttpStatus.OK, 'Portfolios fetched', data);
-  }
-
   @Get()
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
@@ -195,5 +174,24 @@ export class PortfolioController {
   async remove(@Param('id', ParseUUIDPipe) id: string, @Req() req: any) {
     const data = await this.portfolioService.remove(id, req.user.id);
     return sendResult(HttpStatus.OK, 'Portfolio deleted', data);
+  }
+}
+
+@ApiTags('Public / Candidate Portfolios')
+@Controller('candidate/portfolio/public')
+export class PublicPortfolioController {
+  constructor(private readonly portfolioService: PortfolioService) {}
+
+  @Get(':candidateId')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'List portfolios of a publicly visible candidate' })
+  @ApiParam({ name: 'candidateId', description: 'Candidate profile UUID' })
+  @ApiResponse({ status: HttpStatus.OK, type: [PortfolioResponseDto] })
+  async findByCandidateId(
+    @Param('candidateId', ParseUUIDPipe) candidateId: string,
+  ) {
+    const data =
+      await this.portfolioService.findPublicByCandidateId(candidateId);
+    return sendResult(HttpStatus.OK, 'Portfolios fetched', data);
   }
 }

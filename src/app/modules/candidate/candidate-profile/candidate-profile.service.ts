@@ -1,9 +1,4 @@
-import {
-  Injectable,
-  NotFoundException,
-  BadRequestException,
-  ConflictException,
-} from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
 
@@ -11,6 +6,7 @@ import { UpdateUserCandidateProfileDto } from './dto/update-candidate-profile.dt
 import { StorageService } from '@/libs/storage/storage.service';
 import { User } from '@/app/modules/users/entities/user.entity';
 import { CandidateProfile } from './entities/candidate-profile.entity';
+import { ProfileVisibility, UserStatus } from '@/utils/enums';
 
 @Injectable()
 export class CandidateProfilesService {
@@ -39,8 +35,53 @@ export class CandidateProfilesService {
     if (!userWithProfile) {
       throw new NotFoundException('User profile record could not be found.');
     }
-    const { password, ...sanitizedUser } = userWithProfile;
+    const { password: _password, ...sanitizedUser } = userWithProfile;
     return sanitizedUser;
+  }
+
+  async getPublicProfile(candidateId: string) {
+    const profile = await this.candidateProfileRepo.findOne({
+      where: { id: candidateId, profileVisibility: ProfileVisibility.public },
+      relations: {
+        user: true,
+        candidatePortfolios: true,
+        candidateExperiences: true,
+        candidate_educations: true,
+        candidateCertifications: true,
+        candidateSkills: { skill: true },
+      },
+    });
+    if (!profile || profile.user.status !== UserStatus.active) {
+      throw new NotFoundException('Public candidate profile not found.');
+    }
+
+    return {
+      id: profile.id,
+      fullName: profile.user.fullName,
+      avatar: profile.user.avatar,
+      headline: profile.headline,
+      bio: profile.bio,
+      countryName: profile.countryName,
+      cityName: profile.cityName,
+      yearsExperience: profile.yearsExperience,
+      linkedinUrl: profile.linkedinUrl,
+      githubUrl: profile.githubUrl,
+      portfolioUrl: profile.portfolioUrl,
+      availability: profile.availability,
+      workType: profile.workType,
+      openToWork: profile.openToWork,
+      experiences: profile.candidateExperiences,
+      education: profile.candidate_educations,
+      certifications: profile.candidateCertifications,
+      skills: profile.candidateSkills.map((candidateSkill) => ({
+        id: candidateSkill.skillId,
+        name: candidateSkill.skill?.name,
+        level: candidateSkill.level,
+        yearsExperience: candidateSkill.yearsExperience,
+      })),
+      portfolios: profile.candidatePortfolios,
+      updatedAt: profile.updatedAt,
+    };
   }
 
   async updateCandidateProfile(

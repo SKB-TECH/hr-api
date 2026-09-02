@@ -13,6 +13,7 @@ import { plainToInstance } from 'class-transformer';
 import { PortfolioResponseDto } from './dto/portfolio-response.dto';
 import { CandidatePortfolio } from './entities/candidate-portfolio.entity';
 import { CandidateProfile } from '../candidate-profile/entities/candidate-profile.entity';
+import { ProfileVisibility, UserStatus } from '@/utils/enums';
 
 @Injectable()
 export class PortfolioService {
@@ -145,10 +146,14 @@ export class PortfolioService {
     candidateId: string,
   ): Promise<PortfolioResponseDto[]> {
     const profile = await this.candidateProfileRepo.findOne({
-      where: { id: candidateId },
+      where: {
+        id: candidateId,
+        profileVisibility: ProfileVisibility.public,
+      },
+      relations: { user: true },
     });
 
-    if (!profile) {
+    if (!profile || profile.user.status !== UserStatus.active) {
       throw new NotFoundException('Candidate not found.');
     }
 

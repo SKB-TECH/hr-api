@@ -4,10 +4,11 @@ import { CandidateProfilesController } from './candidate-profile.controller';
 import { CandidateProfilesService } from './candidate-profile.service';
 import { User } from '@/app/modules/users/entities/user.entity';
 import { CandidateProfile } from './entities/candidate-profile.entity';
+import { PublicCandidateProfilesController } from './public-candidate-profile.controller';
 
 @Module({
   imports: [TypeOrmModule.forFeature([User, CandidateProfile])],
-  controllers: [CandidateProfilesController],
+  controllers: [CandidateProfilesController, PublicCandidateProfilesController],
   providers: [CandidateProfilesService],
   exports: [CandidateProfilesService],
 })
