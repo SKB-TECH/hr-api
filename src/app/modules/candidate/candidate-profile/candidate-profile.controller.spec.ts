@@ -59,5 +59,21 @@ describe('CandidateProfilesController', () => {
 
       expect(mockService.getCandidateProfile).toHaveBeenCalledWith('abc');
     });
+
+    it('returns the phone number stored on the candidate profile', async () => {
+      mockService.getCandidateProfile.mockResolvedValue({
+        id: 'user-id',
+        phoneNumber: '+243812345678',
+        candidateProfile: {
+          id: 'candidate-id',
+          phoneNumber: '+243812345678',
+        },
+      });
+
+      const result = await controller.getProfile({ user: { id: 'user-id' } });
+
+      expect(result.data.phoneNumber).toBe('+243812345678');
+      expect(result.data.candidateProfile.phoneNumber).toBe('+243812345678');
+    });
   });
 });

@@ -36,7 +36,10 @@ export class CandidateProfilesService {
       throw new NotFoundException('User profile record could not be found.');
     }
     const { password: _password, ...sanitizedUser } = userWithProfile;
-    return sanitizedUser;
+    return {
+      ...sanitizedUser,
+      phoneNumber: userWithProfile.candidateProfile?.phoneNumber ?? null,
+    };
   }
 
   async getPublicProfile(candidateId: string) {

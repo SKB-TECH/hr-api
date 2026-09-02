@@ -16,6 +16,12 @@ class CandidateProfileDto {
   id: string;
 
   @ApiPropertyOptional({
+    example: '+243812345678',
+    description: 'Candidate phone number',
+  })
+  phoneNumber: string | null;
+
+  @ApiPropertyOptional({
     example: 'Male',
     description: 'Gender of the candidate',
   })

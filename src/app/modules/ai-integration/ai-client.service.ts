@@ -1,12 +1,14 @@
 import {
   BadGatewayException,
   Injectable,
+  Logger,
   ServiceUnavailableException,
 } from '@nestjs/common';
 import { ConfigService } from '@/libs/env/config.service';
 
 @Injectable()
 export class AiClientService {
+  private readonly logger = new Logger(AiClientService.name);
   constructor(private readonly config: ConfigService) {}
 
   async post<T>(path: string, body: unknown, requestId: string): Promise<T> {
@@ -70,8 +72,21 @@ export class AiClientService {
     }
 
     if (!response.ok) {
-      if (response.status >= 500)
-        throw new ServiceUnavailableException('AI service failed');
+      if (response.status >= 500) {
+        const failure = await response.json().catch(() => null);
+        const providerCode =
+          typeof failure?.providerCode === 'string'
+            ? failure.providerCode
+            : undefined;
+        this.logger.error(
+          `AI service failed status=${response.status}${providerCode ? ` providerCode=${providerCode}` : ''}`,
+        );
+        throw new ServiceUnavailableException(
+          providerCode
+            ? `AI provider request failed (${providerCode})`
+            : 'AI service failed',
+        );
+      }
       throw new BadGatewayException('AI service rejected the request');
     }
     try {
