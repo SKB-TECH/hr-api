@@ -29,6 +29,7 @@ describe('ApplicationsService authorization', () => {
       id: 'job-1',
       status: 'LIVE',
       company: { status: 'active', pipelineStages: [] },
+      companyId: 'company-1',
       applicationsCount: 0,
       capacity: 10,
       applyBefore: null,
@@ -42,12 +43,21 @@ describe('ApplicationsService authorization', () => {
       create: jest.fn().mockReturnValue(saved),
       save: jest.fn().mockResolvedValue(saved),
     };
+    const companyRepo = {
+      findOne: jest
+        .fn()
+        .mockResolvedValue({ id: 'company-1', status: 'active' }),
+    };
+    const pipelineStageRepo = { find: jest.fn().mockResolvedValue([]) };
     const dataSource = {
       transaction: jest.fn(async (callback) =>
         callback({
-          getRepository: jest.fn((entity) =>
-            entity.name === 'Job' ? jobRepo : applicationRepo,
-          ),
+          getRepository: jest.fn((entity) => {
+            if (entity.name === 'Job') return jobRepo;
+            if (entity.name === 'Company') return companyRepo;
+            if (entity.name === 'PipelineStage') return pipelineStageRepo;
+            return applicationRepo;
+          }),
         }),
       ),
     };

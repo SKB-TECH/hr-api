@@ -18,6 +18,7 @@ import { QueryApplicationDto } from './dto/query-application.dto';
 import { UpdateApplicationStageDto } from './dto/update-application-stage.dto';
 import { UpdateApplicationScoreDto } from './dto/update-application-score.dto';
 import { CompanyMember } from '../companies/entities/company-member.entity';
+import { Company } from '../companies/entities/company.entity';
 import {
   PaginationDto,
   createPaginatedResult,
@@ -50,13 +51,16 @@ export class ApplicationsService {
       const applicationRepo = manager.getRepository(Application);
       const job = await jobRepo.findOne({
         where: { id: dto.jobId },
-        relations: { company: { pipelineStages: true } },
         lock: { mode: 'pessimistic_write' },
       });
       if (!job) throw new NotFoundException('Job not found');
       if (job.status !== JobStatus.LIVE)
         throw new BadRequestException('This job is not accepting applications');
-      if (job.company?.status && job.company.status !== 'active')
+      const company = await manager.getRepository(Company).findOne({
+        where: { id: job.companyId },
+        select: { id: true, status: true },
+      });
+      if (!company || company.status !== 'active')
         throw new BadRequestException(
           'This company is not accepting applications',
         );
@@ -71,9 +75,10 @@ export class ApplicationsService {
       });
       if (existing)
         throw new ConflictException('You have already applied to this job');
-      const stages = (job.company?.pipelineStages || [])
-        .slice()
-        .sort((a, b) => a.order - b.order);
+      const stages = await manager.getRepository(PipelineStage).find({
+        where: { companyId: job.companyId },
+        order: { order: 'ASC' },
+      });
       const application = applicationRepo.create({
         ...dto,
         candidateId,
