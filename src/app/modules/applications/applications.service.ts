@@ -242,6 +242,11 @@ export class ApplicationsService {
       where: { id: dto.stageId },
     });
     if (!newStage) throw new NotFoundException('Pipeline stage not found');
+    if (newStage.companyId !== application.job.companyId) {
+      throw new ForbiddenException(
+        'This pipeline stage does not belong to the application company',
+      );
+    }
 
     return this.dataSource.transaction(async (manager) => {
       await manager.update(Application, { id }, { stageId: dto.stageId });
