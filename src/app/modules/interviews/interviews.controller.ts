@@ -40,6 +40,14 @@ const companyRoles = [
 export class InterviewsController {
   constructor(private readonly interviewsService: InterviewsService) {}
 
+  @Get('my')
+  @Roles(UserRole.CANDIDATE)
+  @ApiOperation({ summary: 'Get the authenticated candidate interview schedule' })
+  async findMine(@CurrentUser() user: { id: string }) {
+    const data = await this.interviewsService.findByCandidate(user.id);
+    return sendResult(HttpStatus.OK, 'Candidate interviews fetched', data);
+  }
+
   @Post()
   @ApiOperation({ summary: 'Schedule an interview (screen 3.8)' })
   @ApiResponse({ status: 201, description: 'Interview scheduled' })

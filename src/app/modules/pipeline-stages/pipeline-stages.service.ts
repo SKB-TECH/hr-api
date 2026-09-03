@@ -4,6 +4,15 @@ import { DataSource, In, Not, Repository } from 'typeorm';
 import { UpdatePipelineStagesDto } from './dto/update-pipeline-stages.dto';
 import { PipelineStage } from './entities/pipeline-stage.entity';
 import { CompanyMember } from '../companies/entities/company-member.entity';
+import { Application } from '../applications/entities/application.entity';
+
+const DEFAULT_PIPELINE_STAGES = [
+  'À examiner',
+  'Présélection',
+  'Entretien',
+  'Embauché',
+  'Rejeté',
+];
 
 @Injectable()
 export class PipelineStagesService {
@@ -17,10 +26,40 @@ export class PipelineStagesService {
 
   async getCompanyStages(companyId: string, userId: string) {
     await this.assertCompanyAccess(companyId, userId);
-    const stages = await this.pipelineStageRepo.find({
+    let stages = await this.pipelineStageRepo.find({
       where: { companyId },
       order: { order: 'ASC' }, // Crucial: Ensures left-to-right frontend rendering
     });
+
+    if (stages.length === 0) {
+      stages = await this.dataSource.transaction(async (manager) => {
+        const repo = manager.getRepository(PipelineStage);
+        const existing = await repo.find({
+          where: { companyId },
+          order: { order: 'ASC' },
+        });
+        if (existing.length > 0) return existing;
+
+        const created = await repo.save(
+          DEFAULT_PIPELINE_STAGES.map((name, order) =>
+            repo.create({ companyId, name, order }),
+          ),
+        );
+
+        await manager
+          .createQueryBuilder()
+          .update(Application)
+          .set({ stageId: created[0].id })
+          .where('stage_id IS NULL')
+          .andWhere(
+            'job_id IN (SELECT id FROM jobs WHERE company_id = :companyId)',
+            { companyId },
+          )
+          .execute();
+
+        return created;
+      });
+    }
 
     return stages;
   }

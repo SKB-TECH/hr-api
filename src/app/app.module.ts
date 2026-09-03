@@ -28,6 +28,7 @@ import { LocalizationModule } from './modules/localization/localization.module';
 import { PipelineStagesModule } from './modules/pipeline-stages/pipeline-stages.module';
 import { AiIntegrationModule } from './modules/ai-integration/ai-integration.module';
 import { PlatformReferencesModule } from './modules/platform-references/platform-references.module';
+import { MessagesModule } from './modules/messages/messages.module';
 
 @Module({
   imports: [
@@ -102,6 +103,7 @@ import { PlatformReferencesModule } from './modules/platform-references/platform
     PipelineStagesModule,
     AiIntegrationModule,
     PlatformReferencesModule,
+    MessagesModule,
   ],
   controllers: [],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],

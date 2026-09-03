@@ -80,6 +80,17 @@ export class InterviewsService {
     });
   }
 
+  async findByCandidate(candidateId: string) {
+    return this.interviewRepo
+      .createQueryBuilder('interview')
+      .innerJoinAndSelect('interview.application', 'application')
+      .innerJoinAndSelect('application.job', 'job')
+      .innerJoinAndSelect('job.company', 'company')
+      .where('application.candidateId = :candidateId', { candidateId })
+      .orderBy('interview.scheduledAt', 'ASC')
+      .getMany();
+  }
+
   async addFeedback(id: string, dto: AddFeedbackDto, userId?: string) {
     const interview = await this.interviewRepo.findOne({ where: { id } });
     if (!interview) throw new NotFoundException('Interview not found');
