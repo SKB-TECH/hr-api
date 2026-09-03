@@ -1,6 +1,13 @@
 import { IsString, IsNotEmpty, IsUUID } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
+export class CreateSkillCategoryDto {
+  @ApiProperty({ example: 'Software Development' })
+  @IsString()
+  @IsNotEmpty()
+  name: string;
+}
+
 export class CreateSkillDto {
   @ApiProperty({
     example: 'Node.js',

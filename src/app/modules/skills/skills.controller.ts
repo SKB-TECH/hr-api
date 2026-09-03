@@ -9,7 +9,7 @@ import {
 } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { SkillsService } from './skills.service';
-import { CreateSkillDto } from './dto/create-skill.dto';
+import { CreateSkillCategoryDto, CreateSkillDto } from './dto/create-skill.dto';
 import { sendResult } from '@/helpers/message/sendResult';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '@/helpers/guards/roles.guard';
@@ -34,6 +34,23 @@ export class SkillsController {
   async createSkill(@Body() createSkillDto: CreateSkillDto) {
     const data = await this.skillsService.createSkill(createSkillDto);
     return sendResult(HttpStatus.CREATED, 'Skill created', data);
+  }
+
+  @Post('categories')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @ApiOperation({ summary: 'Add a skill category (Admin)' })
+  async createCategory(@Body() dto: CreateSkillCategoryDto) {
+    const data = await this.skillsService.createCategory(dto.name);
+    return sendResult(HttpStatus.CREATED, 'Skill category saved', data);
+  }
+
+  @Get('categories')
+  @ApiOperation({ summary: 'Get all skill categories for autocomplete' })
+  async findAllCategories() {
+    const data = await this.skillsService.findAllCategories();
+    return sendResult(HttpStatus.OK, 'Skill categories fetched', data);
   }
 
   @Get()

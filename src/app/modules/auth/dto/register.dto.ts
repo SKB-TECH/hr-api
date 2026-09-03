@@ -1,7 +1,7 @@
 import {
   IsBoolean,
   IsEmail,
-  IsEnum,
+  IsIn,
   IsNotEmpty,
   IsOptional,
   IsString,
@@ -31,7 +31,7 @@ export class RegisterDto {
     default: UserRole.CANDIDATE,
     description: 'Job Seeker = CANDIDATE, Company = COMPANY_OWNER',
   })
-  @IsEnum(UserRole)
+  @IsIn([UserRole.CANDIDATE, UserRole.COMPANY_OWNER])
   @IsOptional()
   role?: UserRole;
 }

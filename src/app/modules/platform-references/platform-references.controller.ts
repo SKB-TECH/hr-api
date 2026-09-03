@@ -33,6 +33,7 @@ import {
 } from './dto/platform-reference.dto';
 import { PlatformReferenceType } from './entities/platform-reference.entity';
 import { PlatformReferencesService } from './platform-references.service';
+import type { ImportCatalog } from './platform-references.service';
 
 @ApiTags('Platform References')
 @Controller('references')
@@ -93,11 +94,112 @@ export class PlatformReferencesController {
     FileInterceptor('file', { limits: { fileSize: 10 * 1024 * 1024 } }),
   )
   async importExcel(@UploadedFile() file?: Express.Multer.File) {
-    if (!file) throw new BadRequestException('Excel file is required');
-    if (!/\.(xlsx|xls)$/i.test(file.originalname)) {
-      throw new BadRequestException('Only .xlsx and .xls files are accepted');
-    }
+    this.validateExcel(file);
     const data = await this.service.importWorkbook(file);
     return sendResult(HttpStatus.OK, 'Reference workbook imported', data);
+  }
+
+  @Post('admin/import/countries')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @ApiConsumes('multipart/form-data')
+  @ApiOperation({ summary: 'Import countries from an Excel file (Admin)' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      required: ['file'],
+      properties: { file: { type: 'string', format: 'binary' } },
+    },
+  })
+  @UseInterceptors(
+    FileInterceptor('file', { limits: { fileSize: 10 * 1024 * 1024 } }),
+  )
+  importCountries(@UploadedFile() file?: Express.Multer.File) {
+    return this.importCatalog(file, 'countries', 'Countries imported');
+  }
+
+  @Post('admin/import/languages')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @ApiConsumes('multipart/form-data')
+  @ApiOperation({ summary: 'Import languages from an Excel file (Admin)' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      required: ['file'],
+      properties: { file: { type: 'string', format: 'binary' } },
+    },
+  })
+  @UseInterceptors(
+    FileInterceptor('file', { limits: { fileSize: 10 * 1024 * 1024 } }),
+  )
+  importLanguages(@UploadedFile() file?: Express.Multer.File) {
+    return this.importCatalog(file, 'languages', 'Languages imported');
+  }
+
+  @Post('admin/import/skills')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @ApiConsumes('multipart/form-data')
+  @ApiOperation({ summary: 'Import skills from an Excel file (Admin)' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      required: ['file'],
+      properties: { file: { type: 'string', format: 'binary' } },
+    },
+  })
+  @UseInterceptors(
+    FileInterceptor('file', { limits: { fileSize: 10 * 1024 * 1024 } }),
+  )
+  importSkills(@UploadedFile() file?: Express.Multer.File) {
+    return this.importCatalog(file, 'skills', 'Skills imported');
+  }
+
+  @Post('admin/import/skill-categories')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @ApiConsumes('multipart/form-data')
+  @ApiOperation({
+    summary: 'Import skill categories from an Excel file (Admin)',
+  })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      required: ['file'],
+      properties: { file: { type: 'string', format: 'binary' } },
+    },
+  })
+  @UseInterceptors(
+    FileInterceptor('file', { limits: { fileSize: 10 * 1024 * 1024 } }),
+  )
+  importSkillCategories(@UploadedFile() file?: Express.Multer.File) {
+    return this.importCatalog(
+      file,
+      'skill-categories',
+      'Skill categories imported',
+    );
+  }
+
+  private async importCatalog(
+    file: Express.Multer.File | undefined,
+    catalog: ImportCatalog,
+    message: string,
+  ) {
+    this.validateExcel(file);
+    const data = await this.service.importWorkbook(file, catalog);
+    return sendResult(HttpStatus.OK, message, data);
+  }
+
+  private validateExcel(
+    file?: Express.Multer.File,
+  ): asserts file is Express.Multer.File {
+    if (!file) throw new BadRequestException('Excel file is required');
+    if (!/\.(xlsx|xls)$/i.test(file.originalname))
+      throw new BadRequestException('Only .xlsx and .xls files are accepted');
   }
 }

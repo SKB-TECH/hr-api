@@ -42,6 +42,21 @@ export class SkillsService {
     return this.skillRepo.save(skill);
   }
 
+  async createCategory(name: string) {
+    const normalized = name.trim();
+    const existing = await this.categoryRepo.findOne({
+      where: { name: ILike(normalized) },
+    });
+    if (existing) return existing;
+    return this.categoryRepo.save(
+      this.categoryRepo.create({ name: normalized }),
+    );
+  }
+
+  findAllCategories() {
+    return this.categoryRepo.find({ order: { name: 'ASC' } });
+  }
+
   async findAllSkills(q?: string, limit = 30) {
     return this.skillRepo.find({
       where: q ? { name: ILike(`%${q}%`) } : {},

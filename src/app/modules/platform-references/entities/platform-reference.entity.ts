@@ -10,6 +10,7 @@ import {
 
 export enum PlatformReferenceType {
   COUNTRY = 'country',
+  LANGUAGE = 'language',
   JOB_CATEGORY = 'job_category',
   BENEFIT = 'benefit',
 }

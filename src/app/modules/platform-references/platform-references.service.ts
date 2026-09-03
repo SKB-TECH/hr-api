@@ -17,6 +17,11 @@ import { CreatePlatformReferenceDto } from './dto/platform-reference.dto';
 import { JobCategory } from '@/utils/enums';
 
 type ExcelRow = Record<string, unknown>;
+export type ImportCatalog =
+  | 'countries'
+  | 'languages'
+  | 'skills'
+  | 'skill-categories';
 
 @Injectable()
 export class PlatformReferencesService {
@@ -59,7 +64,7 @@ export class PlatformReferencesService {
     return this.references.save(item);
   }
 
-  async importWorkbook(file: Express.Multer.File) {
+  async importWorkbook(file: Express.Multer.File, only?: ImportCatalog) {
     let workbook: XLSX.WorkBook;
     try {
       workbook = XLSX.read(file.buffer, { type: 'buffer' });
@@ -67,19 +72,43 @@ export class PlatformReferencesService {
       throw new BadRequestException('Invalid Excel workbook');
     }
 
-    const sheet = (names: string[]) => {
+    const sheet = (names: string[], catalog?: ImportCatalog) => {
       const actual = workbook.SheetNames.find((name) =>
         names.includes(name.trim().toLowerCase()),
       );
-      return actual
-        ? XLSX.utils.sheet_to_json<ExcelRow>(workbook.Sheets[actual], {
+      const selected =
+        actual || (only === catalog ? workbook.SheetNames[0] : '');
+      return selected
+        ? XLSX.utils.sheet_to_json<ExcelRow>(workbook.Sheets[selected], {
             defval: '',
           })
         : [];
     };
 
-    const skills = sheet(['skills', 'compétences', 'competences']);
-    const countries = sheet(['countries', 'pays']);
+    const skills =
+      !only || only === 'skills'
+        ? sheet(['skills', 'compétences', 'competences'], 'skills')
+        : [];
+    const skillCategories =
+      !only || only === 'skill-categories'
+        ? sheet(
+            [
+              'skill categories',
+              'skill_categories',
+              'catégories compétences',
+              'categories competences',
+            ],
+            'skill-categories',
+          )
+        : [];
+    const countries =
+      !only || only === 'countries'
+        ? sheet(['countries', 'pays'], 'countries')
+        : [];
+    const languages =
+      !only || only === 'languages'
+        ? sheet(['languages', 'langues'], 'languages')
+        : [];
     const categories = sheet([
       'job categories',
       'job_categories',
@@ -88,10 +117,17 @@ export class PlatformReferencesService {
     ]);
     const benefits = sheet(['benefits', 'avantages', 'bénéfices', 'benefices']);
     if (
-      ![skills, countries, categories, benefits].some((rows) => rows.length)
+      ![
+        skills,
+        skillCategories,
+        countries,
+        languages,
+        categories,
+        benefits,
+      ].some((rows) => rows.length)
     ) {
       throw new BadRequestException(
-        'Workbook must contain Skills, Countries, Job Categories, or Benefits sheets',
+        'Workbook does not contain a supported sheet or any data rows',
       );
     }
 
@@ -99,7 +135,30 @@ export class PlatformReferencesService {
       const referenceRepo = manager.getRepository(PlatformReference);
       const skillRepo = manager.getRepository(Skill);
       const categoryRepo = manager.getRepository(SkillCategory);
-      const result = { skills: 0, countries: 0, jobCategories: 0, benefits: 0 };
+      const result = {
+        skills: 0,
+        skillCategories: 0,
+        countries: 0,
+        languages: 0,
+        jobCategories: 0,
+        benefits: 0,
+      };
+
+      for (const row of skillCategories) {
+        const name = this.value(row, [
+          'name',
+          'nom',
+          'category',
+          'categorie',
+          'catégorie',
+        ]);
+        if (!name) continue;
+        const existing = await categoryRepo.findOne({
+          where: { name: ILike(name) },
+        });
+        if (!existing) await categoryRepo.save(categoryRepo.create({ name }));
+        result.skillCategories++;
+      }
 
       for (const row of skills) {
         const name = this.value(row, ['name', 'nom', 'skill']);
@@ -131,7 +190,7 @@ export class PlatformReferencesService {
       const importReferences = async (
         rows: ExcelRow[],
         type: PlatformReferenceType,
-        counter: 'countries' | 'jobCategories' | 'benefits',
+        counter: 'countries' | 'languages' | 'jobCategories' | 'benefits',
       ) => {
         for (const row of rows) {
           const name = this.value(row, ['name', 'nom', 'title', 'titre']);
@@ -170,6 +229,11 @@ export class PlatformReferencesService {
         countries,
         PlatformReferenceType.COUNTRY,
         'countries',
+      );
+      await importReferences(
+        languages,
+        PlatformReferenceType.LANGUAGE,
+        'languages',
       );
       await importReferences(
         categories,
