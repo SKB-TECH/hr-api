@@ -15,6 +15,7 @@ import {
 } from './entities/platform-reference.entity';
 import { CreatePlatformReferenceDto } from './dto/platform-reference.dto';
 import { JobCategory } from '@/utils/enums';
+import { StorageService } from '@/libs/storage/storage.service';
 
 type ExcelRow = Record<string, unknown>;
 export type ImportCatalog =
@@ -29,6 +30,7 @@ export class PlatformReferencesService {
     @InjectRepository(PlatformReference)
     private readonly references: Repository<PlatformReference>,
     private readonly dataSource: DataSource,
+    private readonly storage: StorageService,
   ) {}
 
   list(
@@ -64,7 +66,11 @@ export class PlatformReferencesService {
     return this.references.save(item);
   }
 
-  async importWorkbook(file: Express.Multer.File, only?: ImportCatalog) {
+  async importWorkbook(
+    file: Express.Multer.File,
+    only?: ImportCatalog,
+    uploadedBy?: string,
+  ) {
     let workbook: XLSX.WorkBook;
     try {
       workbook = XLSX.read(file.buffer, { type: 'buffer' });
@@ -131,122 +137,137 @@ export class PlatformReferencesService {
       );
     }
 
-    return this.dataSource.transaction(async (manager) => {
-      const referenceRepo = manager.getRepository(PlatformReference);
-      const skillRepo = manager.getRepository(Skill);
-      const categoryRepo = manager.getRepository(SkillCategory);
-      const result = {
-        skills: 0,
-        skillCategories: 0,
-        countries: 0,
-        languages: 0,
-        jobCategories: 0,
-        benefits: 0,
-      };
+    const sourceFile = await this.storage.uploadDocument(
+      file,
+      'admin/reference-imports',
+      uploadedBy,
+    );
+    try {
+      const imported = await this.dataSource.transaction(async (manager) => {
+        const referenceRepo = manager.getRepository(PlatformReference);
+        const skillRepo = manager.getRepository(Skill);
+        const categoryRepo = manager.getRepository(SkillCategory);
+        const result = {
+          skills: 0,
+          skillCategories: 0,
+          countries: 0,
+          languages: 0,
+          jobCategories: 0,
+          benefits: 0,
+        };
 
-      for (const row of skillCategories) {
-        const name = this.value(row, [
-          'name',
-          'nom',
-          'category',
-          'categorie',
-          'catégorie',
-        ]);
-        if (!name) continue;
-        const existing = await categoryRepo.findOne({
-          where: { name: ILike(name) },
-        });
-        if (!existing) await categoryRepo.save(categoryRepo.create({ name }));
-        result.skillCategories++;
-      }
-
-      for (const row of skills) {
-        const name = this.value(row, ['name', 'nom', 'skill']);
-        const categoryName = this.value(row, [
-          'category',
-          'categorie',
-          'catégorie',
-        ]);
-        if (!name || !categoryName) continue;
-        let category = await categoryRepo.findOne({
-          where: { name: ILike(categoryName) },
-        });
-        if (!category)
-          category = await categoryRepo.save(
-            categoryRepo.create({ name: categoryName }),
-          );
-        const slug = slugify(name, { lower: true, strict: true });
-        const existing = await skillRepo.findOne({
-          where: [{ name: ILike(name) }, { slug }],
-        });
-        await skillRepo.save(
-          existing
-            ? skillRepo.merge(existing, { name, slug, categoryId: category.id })
-            : skillRepo.create({ name, slug, categoryId: category.id }),
-        );
-        result.skills++;
-      }
-
-      const importReferences = async (
-        rows: ExcelRow[],
-        type: PlatformReferenceType,
-        counter: 'countries' | 'languages' | 'jobCategories' | 'benefits',
-      ) => {
-        for (const row of rows) {
-          const name = this.value(row, ['name', 'nom', 'title', 'titre']);
+        for (const row of skillCategories) {
+          const name = this.value(row, [
+            'name',
+            'nom',
+            'category',
+            'categorie',
+            'catégorie',
+          ]);
           if (!name) continue;
-          const code = this.code(this.value(row, ['code', 'slug']) || name);
-          if (
-            type === PlatformReferenceType.JOB_CATEGORY &&
-            !Object.values(JobCategory).includes(code as JobCategory)
-          ) {
-            throw new BadRequestException(
-              `Unsupported job category code '${code}'. Allowed codes: ${Object.values(JobCategory).join(', ')}`,
-            );
-          }
-          const values = {
-            type,
-            code,
-            name,
-            description: this.value(row, ['description']) || null,
-            icon: this.value(row, ['icon', 'icone', 'icône']) || null,
-            metadata: {},
-            isActive: true,
-          };
-          const existing = await referenceRepo.findOne({
-            where: { type, code },
+          const existing = await categoryRepo.findOne({
+            where: { name: ILike(name) },
           });
-          await referenceRepo.save(
-            existing
-              ? referenceRepo.merge(existing, values)
-              : referenceRepo.create(values),
-          );
-          result[counter]++;
+          if (!existing) await categoryRepo.save(categoryRepo.create({ name }));
+          result.skillCategories++;
         }
-      };
 
-      await importReferences(
-        countries,
-        PlatformReferenceType.COUNTRY,
-        'countries',
-      );
-      await importReferences(
-        languages,
-        PlatformReferenceType.LANGUAGE,
-        'languages',
-      );
-      await importReferences(
-        categories,
-        PlatformReferenceType.JOB_CATEGORY,
-        'jobCategories',
-      );
-      await importReferences(
-        benefits,
-        PlatformReferenceType.BENEFIT,
-        'benefits',
-      );
-      return result;
-    });
+        for (const row of skills) {
+          const name = this.value(row, ['name', 'nom', 'skill']);
+          const categoryName = this.value(row, [
+            'category',
+            'categorie',
+            'catégorie',
+          ]);
+          if (!name || !categoryName) continue;
+          let category = await categoryRepo.findOne({
+            where: { name: ILike(categoryName) },
+          });
+          if (!category)
+            category = await categoryRepo.save(
+              categoryRepo.create({ name: categoryName }),
+            );
+          const slug = slugify(name, { lower: true, strict: true });
+          const existing = await skillRepo.findOne({
+            where: [{ name: ILike(name) }, { slug }],
+          });
+          await skillRepo.save(
+            existing
+              ? skillRepo.merge(existing, {
+                  name,
+                  slug,
+                  categoryId: category.id,
+                })
+              : skillRepo.create({ name, slug, categoryId: category.id }),
+          );
+          result.skills++;
+        }
+
+        const importReferences = async (
+          rows: ExcelRow[],
+          type: PlatformReferenceType,
+          counter: 'countries' | 'languages' | 'jobCategories' | 'benefits',
+        ) => {
+          for (const row of rows) {
+            const name = this.value(row, ['name', 'nom', 'title', 'titre']);
+            if (!name) continue;
+            const code = this.code(this.value(row, ['code', 'slug']) || name);
+            if (
+              type === PlatformReferenceType.JOB_CATEGORY &&
+              !Object.values(JobCategory).includes(code as JobCategory)
+            ) {
+              throw new BadRequestException(
+                `Unsupported job category code '${code}'. Allowed codes: ${Object.values(JobCategory).join(', ')}`,
+              );
+            }
+            const values = {
+              type,
+              code,
+              name,
+              description: this.value(row, ['description']) || null,
+              icon: this.value(row, ['icon', 'icone', 'icône']) || null,
+              metadata: {},
+              isActive: true,
+            };
+            const existing = await referenceRepo.findOne({
+              where: { type, code },
+            });
+            await referenceRepo.save(
+              existing
+                ? referenceRepo.merge(existing, values)
+                : referenceRepo.create(values),
+            );
+            result[counter]++;
+          }
+        };
+
+        await importReferences(
+          countries,
+          PlatformReferenceType.COUNTRY,
+          'countries',
+        );
+        await importReferences(
+          languages,
+          PlatformReferenceType.LANGUAGE,
+          'languages',
+        );
+        await importReferences(
+          categories,
+          PlatformReferenceType.JOB_CATEGORY,
+          'jobCategories',
+        );
+        await importReferences(
+          benefits,
+          PlatformReferenceType.BENEFIT,
+          'benefits',
+        );
+        return result;
+      });
+      return { ...imported, sourceFile };
+    } catch (error) {
+      await this.storage.deleteFile(sourceFile.id).catch(() => undefined);
+      throw error;
+    }
   }
 
   private value(row: ExcelRow, accepted: string[]) {

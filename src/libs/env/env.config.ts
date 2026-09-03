@@ -28,6 +28,13 @@ export const config = {
   GCS_BUCKET: process.env.GCS_BUCKET,
   GCS_PROJECT_ID: process.env.GCS_PROJECT_ID,
   GCS_KEY_FILE: process.env.GCS_KEY_FILE,
+  S3_ENDPOINT: process.env.S3_ENDPOINT,
+  S3_REGION: process.env.S3_REGION,
+  S3_BUCKET: process.env.S3_BUCKET,
+  S3_ACCESS_KEY: process.env.S3_ACCESS_KEY,
+  S3_SECRET_KEY: process.env.S3_SECRET_KEY,
+  S3_FORCE_PATH_STYLE: process.env.S3_FORCE_PATH_STYLE || 'false',
+  S3_PUBLIC_URL: process.env.S3_PUBLIC_URL,
   PUBSUB_ENABLED: process.env.PUBSUB_ENABLED,
   PUBSUB_PROJECT_ID:
     process.env.PUBSUB_PROJECT_ID || process.env.GCS_PROJECT_ID,

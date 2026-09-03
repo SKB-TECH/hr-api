@@ -22,4 +22,59 @@ describe('ApplicationsService authorization', () => {
       ForbiddenException,
     );
   });
+
+  it('returns the saved application when the confirmation email fails', async () => {
+    const saved = { id: 'application-1' };
+    const job = {
+      id: 'job-1',
+      status: 'LIVE',
+      company: { status: 'active', pipelineStages: [] },
+      applicationsCount: 0,
+      capacity: 10,
+      applyBefore: null,
+    };
+    const jobRepo = {
+      findOne: jest.fn().mockResolvedValue(job),
+      increment: jest.fn(),
+    };
+    const applicationRepo = {
+      findOne: jest.fn().mockResolvedValue(null),
+      create: jest.fn().mockReturnValue(saved),
+      save: jest.fn().mockResolvedValue(saved),
+    };
+    const dataSource = {
+      transaction: jest.fn(async (callback) =>
+        callback({
+          getRepository: jest.fn((entity) =>
+            entity.name === 'Job' ? jobRepo : applicationRepo,
+          ),
+        }),
+      ),
+    };
+    const mail = {
+      sendApplicationReviewingEmail: jest
+        .fn()
+        .mockRejectedValue(new Error('mail unavailable')),
+    };
+    const service = new ApplicationsService(
+      {} as any,
+      {} as any,
+      {} as any,
+      {} as any,
+      {} as any,
+      dataSource as any,
+      mail as any,
+    );
+
+    await expect(
+      service.create(
+        {
+          jobId: 'job-1',
+          fullName: 'Benjamin',
+          email: 'benjamin@example.com',
+        },
+        'candidate-1',
+      ),
+    ).resolves.toEqual(saved);
+  });
 });

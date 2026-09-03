@@ -34,6 +34,7 @@ import {
 import { PlatformReferenceType } from './entities/platform-reference.entity';
 import { PlatformReferencesService } from './platform-references.service';
 import type { ImportCatalog } from './platform-references.service';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
 
 @ApiTags('Platform References')
 @Controller('references')
@@ -93,9 +94,12 @@ export class PlatformReferencesController {
   @UseInterceptors(
     FileInterceptor('file', { limits: { fileSize: 10 * 1024 * 1024 } }),
   )
-  async importExcel(@UploadedFile() file?: Express.Multer.File) {
+  async importExcel(
+    @UploadedFile() file: Express.Multer.File | undefined,
+    @CurrentUser() user: { id: string },
+  ) {
     this.validateExcel(file);
-    const data = await this.service.importWorkbook(file);
+    const data = await this.service.importWorkbook(file, undefined, user.id);
     return sendResult(HttpStatus.OK, 'Reference workbook imported', data);
   }
 
@@ -115,8 +119,11 @@ export class PlatformReferencesController {
   @UseInterceptors(
     FileInterceptor('file', { limits: { fileSize: 10 * 1024 * 1024 } }),
   )
-  importCountries(@UploadedFile() file?: Express.Multer.File) {
-    return this.importCatalog(file, 'countries', 'Countries imported');
+  importCountries(
+    @UploadedFile() file: Express.Multer.File | undefined,
+    @CurrentUser() user: { id: string },
+  ) {
+    return this.importCatalog(file, 'countries', 'Countries imported', user.id);
   }
 
   @Post('admin/import/languages')
@@ -135,8 +142,11 @@ export class PlatformReferencesController {
   @UseInterceptors(
     FileInterceptor('file', { limits: { fileSize: 10 * 1024 * 1024 } }),
   )
-  importLanguages(@UploadedFile() file?: Express.Multer.File) {
-    return this.importCatalog(file, 'languages', 'Languages imported');
+  importLanguages(
+    @UploadedFile() file: Express.Multer.File | undefined,
+    @CurrentUser() user: { id: string },
+  ) {
+    return this.importCatalog(file, 'languages', 'Languages imported', user.id);
   }
 
   @Post('admin/import/skills')
@@ -155,8 +165,11 @@ export class PlatformReferencesController {
   @UseInterceptors(
     FileInterceptor('file', { limits: { fileSize: 10 * 1024 * 1024 } }),
   )
-  importSkills(@UploadedFile() file?: Express.Multer.File) {
-    return this.importCatalog(file, 'skills', 'Skills imported');
+  importSkills(
+    @UploadedFile() file: Express.Multer.File | undefined,
+    @CurrentUser() user: { id: string },
+  ) {
+    return this.importCatalog(file, 'skills', 'Skills imported', user.id);
   }
 
   @Post('admin/import/skill-categories')
@@ -177,11 +190,15 @@ export class PlatformReferencesController {
   @UseInterceptors(
     FileInterceptor('file', { limits: { fileSize: 10 * 1024 * 1024 } }),
   )
-  importSkillCategories(@UploadedFile() file?: Express.Multer.File) {
+  importSkillCategories(
+    @UploadedFile() file: Express.Multer.File | undefined,
+    @CurrentUser() user: { id: string },
+  ) {
     return this.importCatalog(
       file,
       'skill-categories',
       'Skill categories imported',
+      user.id,
     );
   }
 
@@ -189,9 +206,10 @@ export class PlatformReferencesController {
     file: Express.Multer.File | undefined,
     catalog: ImportCatalog,
     message: string,
+    uploadedBy: string,
   ) {
     this.validateExcel(file);
-    const data = await this.service.importWorkbook(file, catalog);
+    const data = await this.service.importWorkbook(file, catalog, uploadedBy);
     return sendResult(HttpStatus.OK, message, data);
   }
 

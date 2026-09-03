@@ -214,10 +214,7 @@ export class JobsService {
       },
     });
 
-    return {
-      message: 'Job created successfully',
-      data: newJob,
-    };
+    return newJob;
   }
 
   async findMyCompanyJobs(userId: string, query: QueryJobDto) {
@@ -387,12 +384,6 @@ export class JobsService {
       !job.whoYouAre
     )
       throw new BadRequestException('Job profile is incomplete');
-    if (
-      !job.skills?.some(
-        (skill) => skill.requirementType === JobSkillRequirement.REQUIRED,
-      )
-    )
-      throw new BadRequestException('At least one required skill is needed');
     if (job.applyBefore && job.applyBefore.getTime() <= Date.now())
       throw new BadRequestException(
         'Application deadline must be in the future',

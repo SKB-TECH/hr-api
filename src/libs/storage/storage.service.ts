@@ -1,7 +1,18 @@
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Injectable,
+  Logger,
+  NotFoundException,
+  OnModuleInit,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Storage, Bucket } from '@google-cloud/storage';
+import {
+  DeleteObjectCommand,
+  GetObjectCommand,
+  PutObjectCommand,
+  S3Client,
+} from '@aws-sdk/client-s3';
 import { randomUUID } from 'crypto';
 import * as path from 'path';
 import { ConfigService } from '../env/config.service';
@@ -17,9 +28,9 @@ import { MulterLike } from './interfaces/multer-like.interface';
 @Injectable()
 export class StorageService implements OnModuleInit {
   private readonly logger = new Logger(StorageService.name);
-  private storage!: Storage;
-  private bucket!: Bucket;
+  private storage!: S3Client;
   private bucketName!: string;
+  private publicUrl!: string;
 
   constructor(
     @InjectRepository(FileEntity)
@@ -30,18 +41,25 @@ export class StorageService implements OnModuleInit {
   ) {}
 
   onModuleInit() {
-    const projectId = this.configService.get('GCS_PROJECT_ID');
-    const keyFile = this.configService.get('GCS_KEY_FILE');
-    this.bucketName = this.configService.get('GCS_BUCKET') || '';
+    const region = this.configService.get('S3_REGION');
+    const endpoint = this.configService.get('S3_ENDPOINT');
+    const accessKeyId = this.configService.get('S3_ACCESS_KEY');
+    const secretAccessKey = this.configService.get('S3_SECRET_KEY');
+    this.bucketName = this.configService.get('S3_BUCKET') || '';
+    this.publicUrl = (
+      this.configService.get('S3_PUBLIC_URL') ||
+      `https://${this.bucketName}.s3.${region}.amazonaws.com`
+    ).replace(/\/$/, '');
+    if (!region || !this.bucketName || !accessKeyId || !secretAccessKey)
+      throw new Error('S3 storage configuration is incomplete');
 
-    const options: ConstructorParameters<typeof Storage>[0] = { projectId };
-    if (keyFile) {
-      options.keyFilename = keyFile;
-    }
-
-    this.storage = new Storage(options);
-    this.bucket = this.storage.bucket(this.bucketName);
-    this.logger.log(`GCS initialized — bucket: ${this.bucketName}`);
+    this.storage = new S3Client({
+      region,
+      ...(endpoint ? { endpoint } : {}),
+      forcePathStyle: this.configService.get('S3_FORCE_PATH_STYLE') === 'true',
+      credentials: { accessKeyId, secretAccessKey },
+    });
+    this.logger.log(`S3 initialized — bucket: ${this.bucketName}`);
   }
 
   async upload(
@@ -55,12 +73,15 @@ export class StorageService implements OnModuleInit {
     const fileName = this.generateFileName(originalName);
     const destination = `${folder}/${fileName}`;
 
-    const blob = this.bucket.file(destination);
-    await blob.save(file, {
-      contentType,
-      resumable: false,
-      metadata: { cacheControl: 'public, max-age=31536000' },
-    });
+    await this.storage.send(
+      new PutObjectCommand({
+        Bucket: this.bucketName,
+        Key: destination,
+        Body: file,
+        ContentType: contentType,
+        CacheControl: 'public, max-age=31536000',
+      }),
+    );
 
     const url = this.getPublicUrl(destination);
 
@@ -130,22 +151,25 @@ export class StorageService implements OnModuleInit {
     return result;
   }
 
-  async deleteFile(fileId: string): Promise<void> {
+  async deleteFile(fileId: string, requestedBy?: string): Promise<void> {
     const file = await this.fileRepo.findOne({ where: { id: fileId } });
     if (!file) return;
+    if (requestedBy && file.uploadedBy !== requestedBy)
+      throw new ForbiddenException('You cannot delete this file');
 
-    const blob = this.bucket.file(file.path);
-    const [exists] = await blob.exists();
-    if (exists) {
-      await blob.delete();
-    }
+    await this.storage.send(
+      new DeleteObjectCommand({ Bucket: this.bucketName, Key: file.path }),
+    );
 
     file.status = FileStatus.DELETED;
     await this.fileRepo.save(file);
     await this.fileRepo.softRemove(file);
   }
 
-  async downloadFile(fileId: string): Promise<{
+  async downloadFile(
+    fileId: string,
+    requestedBy?: string,
+  ): Promise<{
     buffer: Buffer;
     mimeType: string;
     originalName: string;
@@ -153,8 +177,15 @@ export class StorageService implements OnModuleInit {
     const file = await this.fileRepo.findOne({
       where: { id: fileId, status: FileStatus.ACTIVE },
     });
-    if (!file) throw new Error('Stored file not found or unavailable');
-    const [buffer] = await this.bucket.file(file.path).download();
+    if (!file)
+      throw new NotFoundException('Stored file not found or unavailable');
+    if (requestedBy && file.uploadedBy !== requestedBy)
+      throw new ForbiddenException('You cannot download this file');
+    const response = await this.storage.send(
+      new GetObjectCommand({ Bucket: this.bucketName, Key: file.path }),
+    );
+    if (!response.Body) throw new Error('Stored file has no content');
+    const buffer = Buffer.from(await response.Body.transformToByteArray());
     return {
       buffer,
       mimeType: file.mimeType,
@@ -164,15 +195,13 @@ export class StorageService implements OnModuleInit {
 
   async deleteByUrl(url: string): Promise<void> {
     if (!url) return;
-    const prefix = `https://storage.googleapis.com/${this.bucketName}/`;
+    const prefix = `${this.publicUrl}/`;
     if (!url.startsWith(prefix)) return;
 
     const objectPath = url.slice(prefix.length);
-    const blob = this.bucket.file(objectPath);
-    const [exists] = await blob.exists();
-    if (exists) {
-      await blob.delete();
-    }
+    await this.storage.send(
+      new DeleteObjectCommand({ Bucket: this.bucketName, Key: objectPath }),
+    );
 
     const record = await this.fileRepo.findOne({ where: { url } });
     if (record) {
@@ -206,8 +235,11 @@ export class StorageService implements OnModuleInit {
     if (!file) return;
 
     try {
-      const blob = this.bucket.file(file.path);
-      const [buffer] = await blob.download();
+      const source = await this.storage.send(
+        new GetObjectCommand({ Bucket: this.bucketName, Key: file.path }),
+      );
+      if (!source.Body) throw new Error('Stored image has no content');
+      const buffer = Buffer.from(await source.Body.transformToByteArray());
 
       const compressed = await this.imageCompressor.compress(buffer, {
         maxWidth: options?.maxWidth || 800,
@@ -216,11 +248,15 @@ export class StorageService implements OnModuleInit {
         format: options?.format || 'webp',
       });
 
-      await blob.save(compressed.buffer, {
-        contentType: compressed.mimeType,
-        resumable: false,
-        metadata: { cacheControl: 'public, max-age=31536000' },
-      });
+      await this.storage.send(
+        new PutObjectCommand({
+          Bucket: this.bucketName,
+          Key: file.path,
+          Body: compressed.buffer,
+          ContentType: compressed.mimeType,
+          CacheControl: 'public, max-age=31536000',
+        }),
+      );
 
       file.mimeType = compressed.mimeType;
       file.size = compressed.buffer.length;
@@ -235,7 +271,11 @@ export class StorageService implements OnModuleInit {
   }
 
   getPublicUrl(destination: string): string {
-    return `https://storage.googleapis.com/${this.bucketName}/${destination}`;
+    const encodedPath = destination
+      .split('/')
+      .map((part) => encodeURIComponent(part))
+      .join('/');
+    return `${this.publicUrl}/${encodedPath}`;
   }
 
   private generateFileName(originalName: string): string {

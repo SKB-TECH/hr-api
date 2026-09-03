@@ -67,7 +67,7 @@ Copy `.env.example` → `.env.local` and fill it in. Key groups:
 | Database      | `POSTGRES_HOST/PORT/USER/PASSWORD/DB`, `DATABASE_SSL_CONNECTION`, `DB_POOL_*`                                   | Set `DATABASE_SSL_CONNECTION=false` for local.                                                             |
 | Redis         | `APP_REDIS_URL`, `APP_REDIS_SSL_CONNECTION`                                                                     | Leave `APP_REDIS_URL` empty to run without Redis (login/refresh need it).                                  |
 | JWT           | `JWT_SECRET`, `JWT_REFRESH_SECRET`, `JWT_EXPIRATION`, `JWT_REFRESH_EXPIRATION`, `JWT_*_SECRET_CURRENT/PREVIOUS` | `*_CURRENT/PREVIOUS` enable zero-downtime secret rotation.                                                 |
-| Storage (GCS) | `GCS_BUCKET`, `GCS_PROJECT_ID`, `GCS_KEY_FILE`                                                                  | `GCS_KEY_FILE` = path to a service-account JSON (gitignored); omit to use Application Default Credentials. |
+| Storage (S3) | `S3_ENDPOINT`, `S3_REGION`, `S3_BUCKET`, `S3_ACCESS_KEY`, `S3_SECRET_KEY`, `S3_FORCE_PATH_STYLE`, `S3_PUBLIC_URL` | Used for avatars, resumes, portfolio images, company branding and generic attachments. |
 | Pub/Sub       | `PUBSUB_ENABLED`, `PUBSUB_PROJECT_ID`, `PUBSUB_KEY_FILE`, `PUBSUB_EMULATOR_HOST`                                | `PUBSUB_ENABLED=false` to disable in dev; defaults to the GCS project/key.                                 |
 | Google OAuth  | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_CALLBACK_URL`                                               | For "Login with Google".                                                                                   |
 | AI service    | `HR_AI_BASE_URL`, `HR_AI_SERVICE_TOKEN`, `HR_AI_SERVICE_TOKEN_CURRENT/PREVIOUS`, `HR_AI_REQUEST_TIMEOUT_MS`     | Private server-to-server connection to `hr-ia`, with optional zero-downtime token rotation.                |
@@ -139,7 +139,7 @@ PUBSUB_ENABLED=true
 PUBSUB_EMULATOR_HOST=localhost:8085
 ```
 
-The image-compression pipeline also needs Redis and a valid `GCS_KEY_FILE`.
+The image-compression pipeline also needs Redis and valid S3 credentials.
 
 ### Email (OTP & password flows)
 

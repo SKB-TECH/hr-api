@@ -3,6 +3,7 @@ import {
   ConflictException,
   ForbiddenException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { JobStatus } from '../../../utils/enums';
@@ -26,6 +27,8 @@ import { MailService } from '../../../libs/mail/mail.service';
 
 @Injectable()
 export class ApplicationsService {
+  private readonly logger = new Logger(ApplicationsService.name);
+
   constructor(
     @InjectRepository(Application)
     private readonly applicationRepo: Repository<Application>,
@@ -80,7 +83,13 @@ export class ApplicationsService {
       await jobRepo.increment({ id: dto.jobId }, 'applicationsCount', 1);
       return saved;
     });
-    await this.mail.sendApplicationReviewingEmail(dto.email, dto.fullName);
+    try {
+      await this.mail.sendApplicationReviewingEmail(dto.email, dto.fullName);
+    } catch (error) {
+      this.logger.warn(
+        `Application ${saved.id} was saved but its confirmation email could not be sent: ${error instanceof Error ? error.message : 'unknown mail error'}`,
+      );
+    }
     return saved;
   }
 

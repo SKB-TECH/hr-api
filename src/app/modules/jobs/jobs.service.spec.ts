@@ -398,7 +398,7 @@ describe('JobsService', () => {
       );
     });
 
-    it('refuses to publish without a required skill', async () => {
+    it('allows publishing a complete draft without skills', async () => {
       mockCompanyMemberRepo.findOne.mockResolvedValue({
         companyId: 'uuid-company-1',
       });
@@ -408,8 +408,8 @@ describe('JobsService', () => {
         applyBefore: new Date(Date.now() + 86400000),
         skills: [],
       });
-      await expect(service.publishJob('uuid-job-1', 'user-1')).rejects.toThrow(
-        BadRequestException,
+      await expect(service.publishJob('uuid-job-1', 'user-1')).resolves.toEqual(
+        { jobId: 'uuid-job-1', status: JobStatus.LIVE },
       );
     });
 
