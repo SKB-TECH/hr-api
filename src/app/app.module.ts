@@ -27,6 +27,7 @@ import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { LocalizationModule } from './modules/localization/localization.module';
 import { PipelineStagesModule } from './modules/pipeline-stages/pipeline-stages.module';
 import { AiIntegrationModule } from './modules/ai-integration/ai-integration.module';
+import { PlatformReferencesModule } from './modules/platform-references/platform-references.module';
 
 @Module({
   imports: [
@@ -100,6 +101,7 @@ import { AiIntegrationModule } from './modules/ai-integration/ai-integration.mod
     LocalizationModule,
     PipelineStagesModule,
     AiIntegrationModule,
+    PlatformReferencesModule,
   ],
   controllers: [],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
