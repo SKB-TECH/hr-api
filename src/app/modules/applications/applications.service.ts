@@ -25,6 +25,9 @@ import {
   paginate,
 } from '../../../helpers/pagination';
 import { MailService } from '../../../libs/mail/mail.service';
+import { Resume } from '../candidate/candidate-resume/entities/resume.entity';
+import { CandidateProfile } from '../candidate/candidate-profile/entities/candidate-profile.entity';
+import { StorageService } from '../../../libs/storage/storage.service';
 
 @Injectable()
 export class ApplicationsService {
@@ -43,6 +46,7 @@ export class ApplicationsService {
     private readonly companyMemberRepo: Repository<CompanyMember>,
     private readonly dataSource: DataSource,
     private readonly mail: MailService,
+    private readonly storage: StorageService,
   ) {}
 
   async create(dto: CreateApplicationDto, candidateId: string) {
@@ -75,6 +79,18 @@ export class ApplicationsService {
       });
       if (existing)
         throw new ConflictException('You have already applied to this job');
+      const candidateProfile = await manager.getRepository(CandidateProfile).findOne({
+        where: { userId: candidateId },
+        select: { id: true },
+      });
+      if (!candidateProfile)
+        throw new BadRequestException('Candidate profile not found');
+      const resumeRepo = manager.getRepository(Resume);
+      const resume = dto.resumeId
+        ? await resumeRepo.findOne({ where: { id: dto.resumeId, candidateId: candidateProfile.id } })
+        : await resumeRepo.findOne({ where: { candidateId: candidateProfile.id, isDefault: true } });
+      if (dto.resumeId && !resume)
+        throw new ForbiddenException('This resume does not belong to the candidate');
       const stages = await manager.getRepository(PipelineStage).find({
         where: { companyId: job.companyId },
         order: { order: 'ASC' },
@@ -82,6 +98,7 @@ export class ApplicationsService {
       const application = applicationRepo.create({
         ...dto,
         candidateId,
+        resumeId: resume?.id || null,
         stageId: stages[0]?.id || null,
       });
       const saved = await applicationRepo.save(application);
@@ -179,6 +196,7 @@ export class ApplicationsService {
       .leftJoinAndSelect('a.job', 'job')
       .leftJoinAndSelect('a.candidate', 'candidate')
       .leftJoinAndSelect('candidate.candidateProfile', 'candidateProfile')
+      .leftJoinAndSelect('a.resume', 'resume')
       .where('a.jobId = :jobId', { jobId });
 
     if (stageId) qb.andWhere('a.stageId = :stageId', { stageId });
@@ -204,6 +222,7 @@ export class ApplicationsService {
       .leftJoinAndSelect('a.job', 'job')
       .leftJoinAndSelect('a.candidate', 'candidate')
       .leftJoinAndSelect('candidate.candidateProfile', 'candidateProfile')
+      .leftJoinAndSelect('a.resume', 'resume')
       .where('job.companyId = :companyId', { companyId });
 
     if (stageId) qb.andWhere('a.stageId = :stageId', { stageId });
@@ -222,6 +241,8 @@ export class ApplicationsService {
         stage: true,
         job: { company: true },
         interviews: true,
+        resume: true,
+        candidate: { candidateProfile: true },
       },
     });
 
@@ -229,6 +250,13 @@ export class ApplicationsService {
     if (recruiterId)
       await this.assertCompanyAccess(application.job.companyId, recruiterId);
     return application;
+  }
+
+  async downloadResume(id: string, recruiterId: string) {
+    const application = await this.findOne(id, recruiterId);
+    if (!application.resume)
+      throw new NotFoundException('No resume attached to this application');
+    return this.storage.downloadFile(application.resume.publicId);
   }
 
   async updateStage(

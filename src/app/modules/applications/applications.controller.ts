@@ -8,8 +8,10 @@ import {
   Patch,
   Post,
   Query,
+  Res,
   UseGuards,
 } from '@nestjs/common';
+import type { Response } from 'express';
 import {
   ApiBearerAuth,
   ApiOperation,
@@ -118,6 +120,23 @@ export class ApplicationsController {
   ) {
     const data = await this.applicationsService.findOne(id, user.id);
     return sendResult(HttpStatus.OK, 'Application fetched', data);
+  }
+
+  @Get(':id/resume')
+  @Roles(...recruiterRoles)
+  @ApiOperation({ summary: 'Download the resume attached to an application' })
+  async downloadResume(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: { id: string },
+    @Res() response: Response,
+  ) {
+    const file = await this.applicationsService.downloadResume(id, user.id);
+    response.setHeader('Content-Type', file.mimeType);
+    response.setHeader(
+      'Content-Disposition',
+      `attachment; filename="${file.originalName.replace(/["\r\n]/g, '_')}"`,
+    );
+    response.send(file.buffer);
   }
 
   @Patch(':id/stage')

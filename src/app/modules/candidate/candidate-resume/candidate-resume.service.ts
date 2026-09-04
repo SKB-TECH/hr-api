@@ -37,6 +37,7 @@ export class CandidateResumeService {
   }
 
   async uploadResume(file: any, userId: string, title: string) {
+    if (!file) throw new BadRequestException('Resume file is required');
     const candidateId = await this.getCandidateProfileId(userId);
 
     if (!candidateId) {
@@ -50,7 +51,7 @@ export class CandidateResumeService {
       uploadResult = await this.storage.uploadDocument(
         file,
         'resumes',
-        candidateId,
+        userId,
       );
     } catch (error) {
       throw new InternalServerErrorException('File upload service failed');
@@ -66,7 +67,7 @@ export class CandidateResumeService {
 
         const newResume = repo.create({
           candidateId,
-          title,
+          title: title?.trim() || file.originalname,
           fileUrl: uploadResult.url,
           publicId: uploadResult.id,
           isDefault: !existingDefault,
@@ -78,6 +79,7 @@ export class CandidateResumeService {
           candidateId: saved.candidateId,
           title: saved.title,
           fileUrl: saved.fileUrl,
+          publicId: saved.publicId,
           isDefault: saved.isDefault,
           parsed: saved.parsed,
           parsingStatus: saved.parsingStatus,

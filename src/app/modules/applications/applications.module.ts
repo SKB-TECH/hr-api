@@ -7,6 +7,8 @@ import { ApplicationStageHistory } from './entities/application-stage-history.en
 import { Job } from '../jobs/entities/job.entity';
 import { PipelineStage } from '../pipeline-stages/entities/pipeline-stage.entity';
 import { CompanyMember } from '../companies/entities/company-member.entity';
+import { Resume } from '../candidate/candidate-resume/entities/resume.entity';
+import { CandidateProfile } from '../candidate/candidate-profile/entities/candidate-profile.entity';
 
 @Module({
   imports: [
@@ -16,6 +18,8 @@ import { CompanyMember } from '../companies/entities/company-member.entity';
       Job,
       PipelineStage,
       CompanyMember,
+      Resume,
+      CandidateProfile,
     ]),
   ],
   controllers: [ApplicationsController],

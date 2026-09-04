@@ -16,6 +16,7 @@ describe('ApplicationsService authorization', () => {
       { findOne: jest.fn().mockResolvedValue(null) } as any,
       {} as any,
       {} as any,
+      {} as any,
     );
 
     await expect(service.findByJob('job', {}, 'outsider')).rejects.toThrow(
@@ -49,6 +50,10 @@ describe('ApplicationsService authorization', () => {
         .mockResolvedValue({ id: 'company-1', status: 'active' }),
     };
     const pipelineStageRepo = { find: jest.fn().mockResolvedValue([]) };
+    const candidateProfileRepo = {
+      findOne: jest.fn().mockResolvedValue({ id: 'profile-1' }),
+    };
+    const resumeRepo = { findOne: jest.fn().mockResolvedValue(null) };
     const dataSource = {
       transaction: jest.fn(async (callback) =>
         callback({
@@ -56,6 +61,8 @@ describe('ApplicationsService authorization', () => {
             if (entity.name === 'Job') return jobRepo;
             if (entity.name === 'Company') return companyRepo;
             if (entity.name === 'PipelineStage') return pipelineStageRepo;
+            if (entity.name === 'CandidateProfile') return candidateProfileRepo;
+            if (entity.name === 'Resume') return resumeRepo;
             return applicationRepo;
           }),
         }),
@@ -74,6 +81,7 @@ describe('ApplicationsService authorization', () => {
       {} as any,
       dataSource as any,
       mail as any,
+      {} as any,
     );
 
     await expect(
