@@ -4,7 +4,7 @@ import {
   ConflictException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Not, Repository } from 'typeorm';
 import {
   CreateCategoryDto,
   CreateSkillDto,
@@ -181,6 +181,23 @@ export class SkillManagementService {
       relations: { skill: { category: true } },
     });
     return records.map((node) => this.mapToCandidateSkillResponse(node));
+  }
+
+  async syncCandidateSkills(userId: string, inputIds: string[]) {
+    const profile = await this.candidateProfileRepo.findOne({ where: { userId } });
+    if (!profile) throw new NotFoundException('Candidate profile record not found.');
+    const skillIds = [...new Set(inputIds)];
+    const existingSkills = skillIds.length ? await this.skillRepo.find({ where: { id: In(skillIds) } }) : [];
+    if (existingSkills.length !== skillIds.length) throw new NotFoundException('One or more selected skills do not exist.');
+    await this.candidateSkillRepo.manager.transaction(async manager => {
+      if (skillIds.length) await manager.delete(CandidateSkill, { candidateId: profile.id, skillId: Not(In(skillIds)) });
+      else await manager.delete(CandidateSkill, { candidateId: profile.id });
+      const current = skillIds.length ? await manager.find(CandidateSkill, { where: { candidateId: profile.id, skillId: In(skillIds) } }) : [];
+      const currentIds = new Set(current.map(item => item.skillId));
+      const missing = skillIds.filter(id => !currentIds.has(id)).map(skillId => manager.create(CandidateSkill, { candidateId: profile.id, skillId }));
+      if (missing.length) await manager.save(CandidateSkill, missing);
+    });
+    return this.getCandidateSkills(userId);
   }
 
   async removeSkillFromCandidate(

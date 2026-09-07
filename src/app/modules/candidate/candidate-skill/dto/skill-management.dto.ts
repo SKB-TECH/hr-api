@@ -6,6 +6,7 @@ import {
   IsEnum,
   IsInt,
   Min,
+  IsArray,
 } from 'class-validator';
 import { SkillLevel } from '../../../../../utils/enums';
 
@@ -65,4 +66,11 @@ export class AssignSkillDto {
   @IsInt()
   @Min(0)
   yearsExperience: number;
+}
+
+export class SyncCandidateSkillsDto {
+  @ApiProperty({ type: [String], format: 'uuid', description: 'Complete list of skill UUIDs selected by the candidate' })
+  @IsArray()
+  @IsUUID('4', { each: true })
+  skillIds: string[];
 }

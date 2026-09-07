@@ -1,6 +1,7 @@
 import {
   Controller,
   Post,
+  Put,
   Get,
   Delete,
   Body,
@@ -24,6 +25,7 @@ import {
   CreateCategoryDto,
   CreateSkillDto,
   AssignSkillDto,
+  SyncCandidateSkillsDto,
 } from './dto/skill-management.dto';
 import {
   CategoryResponseDto,
@@ -98,6 +100,15 @@ export class SkillManagementController {
   async linkSkillSelf(@Req() req, @Body() dto: AssignSkillDto) {
     const data = await this.service.assignSkillToCandidate(req.user.id, dto);
     return sendResult(HttpStatus.CREATED, 'Skill assigned', data);
+  }
+
+  @Put()
+  @Roles(UserRole.CANDIDATE)
+  @ApiOperation({ summary: 'Synchronize the complete candidate skills selection' })
+  @ApiBody({ type: SyncCandidateSkillsDto })
+  async syncSkillsSelf(@Req() req, @Body() dto: SyncCandidateSkillsDto) {
+    const data = await this.service.syncCandidateSkills(req.user.id, dto.skillIds);
+    return sendResult(HttpStatus.OK, 'Candidate skills synchronized', data);
   }
 
   @Get()
