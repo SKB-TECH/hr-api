@@ -41,6 +41,30 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator';
 export class PlatformReferencesController {
   constructor(private readonly service: PlatformReferencesService) {}
 
+  @Get('countries')
+  @ApiOperation({ summary: 'List countries from the countries catalog' })
+  async countries(@Query('q') q?: string, @Query('limit') limit?: string) {
+    return sendResult(HttpStatus.OK, 'Countries fetched', await this.service.listCountries(q, Number(limit) || 300));
+  }
+
+  @Get('languages')
+  @ApiOperation({ summary: 'List languages from the languages catalog' })
+  async languages(@Query('q') q?: string, @Query('limit') limit?: string) {
+    return sendResult(HttpStatus.OK, 'Languages fetched', await this.service.listLanguages(q, Number(limit) || 300));
+  }
+
+  @Get('skill-categories')
+  @ApiOperation({ summary: 'List skill categories for autocomplete' })
+  async skillCategories(@Query('q') q?: string, @Query('limit') limit?: string) {
+    return sendResult(HttpStatus.OK, 'Skill categories fetched', await this.service.listSkillCategories(q, Number(limit) || 100));
+  }
+
+  @Get('skills')
+  @ApiOperation({ summary: 'List skills, optionally filtered by category' })
+  async skills(@Query('q') q?: string, @Query('categoryId') categoryId?: string, @Query('limit') limit?: string) {
+    return sendResult(HttpStatus.OK, 'Skills fetched', await this.service.listSkills(q, categoryId, Number(limit) || 100));
+  }
+
   @Get(':type')
   @ApiOperation({ summary: 'Search an autocomplete reference list' })
   async list(

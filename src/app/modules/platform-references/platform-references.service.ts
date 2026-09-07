@@ -16,6 +16,8 @@ import {
 import { CreatePlatformReferenceDto } from './dto/platform-reference.dto';
 import { JobCategory } from '@/utils/enums';
 import { StorageService } from '@/libs/storage/storage.service';
+import { Country } from './entities/country.entity';
+import { Language } from './entities/language.entity';
 
 type ExcelRow = Record<string, unknown>;
 export type ImportCatalog =
@@ -29,9 +31,29 @@ export class PlatformReferencesService {
   constructor(
     @InjectRepository(PlatformReference)
     private readonly references: Repository<PlatformReference>,
+    @InjectRepository(Country) private readonly countries: Repository<Country>,
+    @InjectRepository(Language) private readonly languages: Repository<Language>,
+    @InjectRepository(Skill) private readonly skills: Repository<Skill>,
+    @InjectRepository(SkillCategory) private readonly skillCategories: Repository<SkillCategory>,
     private readonly dataSource: DataSource,
     private readonly storage: StorageService,
   ) {}
+
+  listCountries(q?: string, limit = 300) {
+    return this.countries.find({ where: q ? { name: ILike(`%${q}%`) } : {}, order: { name: 'ASC' }, take: Math.min(Math.max(limit, 1), 500) });
+  }
+
+  listLanguages(q?: string, limit = 300) {
+    return this.languages.find({ where: q ? { name: ILike(`%${q}%`) } : {}, order: { name: 'ASC' }, take: Math.min(Math.max(limit, 1), 500) });
+  }
+
+  listSkillCategories(q?: string, limit = 100) {
+    return this.skillCategories.find({ where: q ? { name: ILike(`%${q}%`) } : {}, order: { name: 'ASC' }, take: Math.min(Math.max(limit, 1), 200) });
+  }
+
+  listSkills(q?: string, categoryId?: string, limit = 100) {
+    return this.skills.find({ where: { ...(q ? { name: ILike(`%${q}%`) } : {}), ...(categoryId ? { categoryId } : {}) }, relations: { category: true }, order: { name: 'ASC' }, take: Math.min(Math.max(limit, 1), 200) });
+  }
 
   list(
     type: PlatformReferenceType,
