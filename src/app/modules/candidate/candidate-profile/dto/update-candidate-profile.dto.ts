@@ -7,6 +7,7 @@ import {
   IsNumber,
   Min,
   IsDateString,
+  IsArray,
 } from 'class-validator';
 import { Type, Transform } from 'class-transformer';
 import { ApiPropertyOptional } from '@nestjs/swagger';
@@ -65,6 +66,13 @@ export class UpdateUserCandidateProfileDto {
   @IsString()
   @IsOptional()
   address?: string;
+
+  @ApiPropertyOptional({ example: ['fr', 'en'], type: [String] })
+  @Transform(({ value }) => (Array.isArray(value) ? value : value ? [value] : []))
+  @IsArray()
+  @IsString({ each: true })
+  @IsOptional()
+  languageCodes?: string[];
 
   @ApiPropertyOptional({ example: 2500.0 })
   @Type(() => Number)

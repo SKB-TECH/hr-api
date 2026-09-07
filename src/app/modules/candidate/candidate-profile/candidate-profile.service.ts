@@ -1,6 +1,7 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource } from 'typeorm';
+import { Repository, DataSource, In } from 'typeorm';
+import { Language } from '../../platform-references/entities/language.entity';
 
 import { UpdateUserCandidateProfileDto } from './dto/update-candidate-profile.dto';
 import { StorageService } from '@/libs/storage/storage.service';
@@ -73,6 +74,7 @@ export class CandidateProfilesService {
       availability: profile.availability,
       workType: profile.workType,
       openToWork: profile.openToWork,
+      languageCodes: profile.languageCodes,
       experiences: profile.candidateExperiences,
       education: profile.candidate_educations,
       certifications: profile.candidateCertifications,
@@ -124,6 +126,12 @@ export class CandidateProfilesService {
       }
 
       const profilePatch: any = { ...profileFields };
+      if (profileFields.languageCodes !== undefined) {
+        const codes = [...new Set(profileFields.languageCodes.map((code) => code.trim().toLowerCase()).filter(Boolean))];
+        const found = codes.length ? await manager.count(Language, { where: { code: In(codes) } }) : 0;
+        if (found !== codes.length) throw new BadRequestException('One or more languages are invalid');
+        profilePatch.languageCodes = codes;
+      }
       if (birthDate !== undefined) {
         profilePatch.birthDate = birthDate ? new Date(birthDate) : undefined;
       }

@@ -60,6 +60,9 @@ export class CandidateProfile {
   @Column({ type: 'varchar', nullable: true })
   address: string | null;
 
+  @Column({ name: 'language_codes', type: 'text', array: true, default: () => "'{}'" })
+  languageCodes: string[];
+
   @Column({
     name: 'current_salary',
     type: 'decimal',
