@@ -36,6 +36,7 @@ const mockUsersService = {
   update: jest.fn(),
   createPendingUser: jest.fn(),
   activateUser: jest.fn(),
+  assertActiveProfession: jest.fn().mockResolvedValue({ id: '11111111-1111-4111-8111-111111111111' }),
 };
 
 const mockJwtTokenService = {
@@ -102,6 +103,7 @@ describe('AuthService', () => {
         fullName: 'John Doe',
         email: 'john@example.com',
         acceptTerms: true,
+        professionId: '11111111-1111-4111-8111-111111111111',
       });
 
       expect(result.requestId).toBeDefined();
@@ -121,6 +123,7 @@ describe('AuthService', () => {
           fullName: 'John Doe',
           email: 'john@example.com',
           acceptTerms: false,
+          professionId: '11111111-1111-4111-8111-111111111111',
         }),
       ).rejects.toThrow();
     });
@@ -133,6 +136,7 @@ describe('AuthService', () => {
           fullName: 'John Doe',
           email: 'john@example.com',
           acceptTerms: true,
+          professionId: '11111111-1111-4111-8111-111111111111',
         }),
       ).rejects.toThrow();
     });
@@ -147,6 +151,7 @@ describe('AuthService', () => {
           email: 'john@example.com',
           role: 'CANDIDATE',
           acceptTerms: true,
+          professionId: '11111111-1111-4111-8111-111111111111',
         }),
       );
       mockUsersService.createPendingUser.mockResolvedValue(pendingUser);

@@ -1,14 +1,11 @@
 import {
   IsBoolean,
   IsEmail,
-  IsIn,
   IsNotEmpty,
-  IsOptional,
   IsString,
   IsUUID,
 } from 'class-validator';
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { UserRole } from '../../../../utils/enums';
+import { ApiProperty } from '@nestjs/swagger';
 
 export class RegisterDto {
   @ApiProperty({ example: 'John Doe', description: 'Full name of the user' })
@@ -30,13 +27,4 @@ export class RegisterDto {
   })
   @IsBoolean()
   acceptTerms: boolean;
-
-  @ApiPropertyOptional({
-    enum: [UserRole.CANDIDATE, UserRole.COMPANY_OWNER],
-    default: UserRole.CANDIDATE,
-    description: 'Job Seeker = CANDIDATE, Company = COMPANY_OWNER',
-  })
-  @IsIn([UserRole.CANDIDATE, UserRole.COMPANY_OWNER])
-  @IsOptional()
-  role?: UserRole;
 }

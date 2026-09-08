@@ -29,6 +29,7 @@ import { PipelineStagesModule } from './modules/pipeline-stages/pipeline-stages.
 import { AiIntegrationModule } from './modules/ai-integration/ai-integration.module';
 import { PlatformReferencesModule } from './modules/platform-references/platform-references.module';
 import { MessagesModule } from './modules/messages/messages.module';
+import { SearchModule } from './modules/search/search.module';
 
 @Module({
   imports: [
@@ -104,6 +105,7 @@ import { MessagesModule } from './modules/messages/messages.module';
     AiIntegrationModule,
     PlatformReferencesModule,
     MessagesModule,
+    SearchModule,
   ],
   controllers: [],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],

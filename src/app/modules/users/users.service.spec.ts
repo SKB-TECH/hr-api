@@ -11,6 +11,7 @@ import { User } from './entities/user.entity';
 import { CandidateProfile } from '../candidate/candidate-profile/entities/candidate-profile.entity';
 import { AuditLogService } from '../audit-logs/audit-log.service';
 import { JwtTokenService } from '@/libs/jwt/jwt-token.service';
+import { Profession } from './entities/profession.entity';
 import * as bcrypt from 'bcrypt';
 
 const mockUser = {
@@ -46,6 +47,7 @@ const mockCandidateProfileRepo = {
   create: jest.fn((data) => data),
   save: jest.fn(),
 };
+const mockProfessionRepo = { findOne: jest.fn() };
 
 const mockDataSource = {
   transaction: jest.fn(),
@@ -67,6 +69,7 @@ describe('UsersService', () => {
           provide: getRepositoryToken(CandidateProfile),
           useValue: mockCandidateProfileRepo,
         },
+        { provide: getRepositoryToken(Profession), useValue: mockProfessionRepo },
         { provide: DataSource, useValue: mockDataSource },
         { provide: AuditLogService, useValue: mockAuditLogService },
         { provide: JwtTokenService, useValue: mockJwtTokenService },
@@ -236,6 +239,7 @@ describe('UsersService', () => {
       const result = await service.createPendingUser({
         fullName: 'Jake Gyll',
         email: 'jake@example.com',
+        professionId: '11111111-1111-4111-8111-111111111111',
       });
 
       expect(result.status).toBe('pending');
