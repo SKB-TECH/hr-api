@@ -16,7 +16,7 @@ export class SearchService {
         [pattern, limit],
       ),
       this.dataSource.query(
-        `SELECT c.id, c.name, c.industry, c.location, c.logo FROM companies c WHERE c.deleted_at IS NULL AND c.status = 'active' AND c.visibility = 'public' AND (c.name ILIKE $1 OR c.industry ILIKE $1 OR c.location ILIKE $1 OR c.description ILIKE $1) ORDER BY c.name LIMIT $2`,
+        `SELECT c.id, c.name, c.industry, c.location, c.logo FROM companies c WHERE c.status = 'active' AND c.visibility = 'public' AND (c.name ILIKE $1 OR c.industry ILIKE $1 OR c.location ILIKE $1 OR c.description ILIKE $1) ORDER BY c.name LIMIT $2`,
         [pattern, limit],
       ),
       this.dataSource.query(
