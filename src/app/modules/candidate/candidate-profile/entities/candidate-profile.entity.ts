@@ -63,6 +63,27 @@ export class CandidateProfile {
   @Column({ name: 'language_codes', type: 'text', array: true, default: () => "'{}'" })
   languageCodes: string[];
 
+  @Column({ name: 'language_proficiencies', type: 'jsonb', default: () => "'[]'::jsonb" })
+  languageProficiencies: Array<{ code: string; level: string }>;
+
+  @Column({ name: 'preferred_profession_ids', type: 'uuid', array: true, default: () => "'{}'" })
+  preferredProfessionIds: string[];
+
+  @Column({ name: 'preferred_countries', type: 'text', array: true, default: () => "'{}'" })
+  preferredCountries: string[];
+
+  @Column({ name: 'preferred_employment_types', type: 'text', array: true, default: () => "'{}'" })
+  preferredEmploymentTypes: string[];
+
+  @Column({ name: 'accepts_remote', type: 'boolean', default: false })
+  acceptsRemote: boolean;
+
+  @Column({ name: 'expected_salary_min', type: 'decimal', precision: 12, scale: 2, nullable: true, transformer: DecimalTransformer })
+  expectedSalaryMin: number | null;
+
+  @Column({ name: 'expected_salary_max', type: 'decimal', precision: 12, scale: 2, nullable: true, transformer: DecimalTransformer })
+  expectedSalaryMax: number | null;
+
   @Column({
     name: 'current_salary',
     type: 'decimal',

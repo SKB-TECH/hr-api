@@ -28,6 +28,7 @@ import { MailService } from '../../../libs/mail/mail.service';
 import { Resume } from '../candidate/candidate-resume/entities/resume.entity';
 import { CandidateProfile } from '../candidate/candidate-profile/entities/candidate-profile.entity';
 import { StorageService } from '../../../libs/storage/storage.service';
+import { User } from '../users/entities/user.entity';
 
 @Injectable()
 export class ApplicationsService {
@@ -242,13 +243,25 @@ export class ApplicationsService {
         job: { company: true },
         interviews: true,
         resume: true,
-        candidate: { candidateProfile: true },
+        candidate: {
+          profession: true,
+          candidateProfile: {
+            candidateSkills: { skill: true },
+            candidateExperiences: true,
+            candidate_educations: true,
+            candidateCertifications: true,
+            candidatePortfolios: true,
+          },
+        },
       },
     });
 
     if (!application) throw new NotFoundException('Application not found');
     if (recruiterId)
       await this.assertCompanyAccess(application.job.companyId, recruiterId);
+    if (application.candidate) {
+      delete (application.candidate as Partial<User>).password;
+    }
     return application;
   }
 

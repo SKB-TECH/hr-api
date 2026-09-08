@@ -2,6 +2,7 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource, In } from 'typeorm';
 import { Language } from '../../platform-references/entities/language.entity';
+import { Profession } from '../../users/entities/profession.entity';
 
 import { UpdateUserCandidateProfileDto } from './dto/update-candidate-profile.dto';
 import { StorageService } from '@/libs/storage/storage.service';
@@ -75,6 +76,11 @@ export class CandidateProfilesService {
       workType: profile.workType,
       openToWork: profile.openToWork,
       languageCodes: profile.languageCodes,
+      languageProficiencies: profile.languageProficiencies,
+      preferredProfessionIds: profile.preferredProfessionIds,
+      preferredCountries: profile.preferredCountries,
+      preferredEmploymentTypes: profile.preferredEmploymentTypes,
+      acceptsRemote: profile.acceptsRemote,
       experiences: profile.candidateExperiences,
       education: profile.candidate_educations,
       certifications: profile.candidateCertifications,
@@ -126,11 +132,27 @@ export class CandidateProfilesService {
       }
 
       const profilePatch: any = { ...profileFields };
+      if (profileFields.expectedSalaryMin != null && profileFields.expectedSalaryMax != null && profileFields.expectedSalaryMin > profileFields.expectedSalaryMax) {
+        throw new BadRequestException('Expected minimum salary cannot exceed maximum salary');
+      }
       if (profileFields.languageCodes !== undefined) {
         const codes = [...new Set(profileFields.languageCodes.map((code) => code.trim().toLowerCase()).filter(Boolean))];
         const found = codes.length ? await manager.count(Language, { where: { code: In(codes) } }) : 0;
         if (found !== codes.length) throw new BadRequestException('One or more languages are invalid');
         profilePatch.languageCodes = codes;
+      }
+      if (profileFields.languageProficiencies !== undefined) {
+        const codes = [...new Set(profileFields.languageProficiencies.map((item) => item.code.trim().toLowerCase()))];
+        const found = codes.length ? await manager.count(Language, { where: { code: In(codes) } }) : 0;
+        if (found !== codes.length) throw new BadRequestException('One or more language proficiencies are invalid');
+        profilePatch.languageProficiencies = profileFields.languageProficiencies.map((item) => ({ code: item.code.trim().toLowerCase(), level: item.level }));
+        profilePatch.languageCodes = codes;
+      }
+      if (profileFields.preferredProfessionIds !== undefined) {
+        const ids = [...new Set(profileFields.preferredProfessionIds)];
+        const found = ids.length ? await manager.count(Profession, { where: { id: In(ids), isActive: true } }) : 0;
+        if (found !== ids.length) throw new BadRequestException('One or more preferred professions are invalid');
+        profilePatch.preferredProfessionIds = ids;
       }
       if (birthDate !== undefined) {
         profilePatch.birthDate = birthDate ? new Date(birthDate) : undefined;

@@ -63,6 +63,27 @@ class CandidateProfileDto {
   })
   address: string | null;
 
+  @ApiPropertyOptional({ example: [{ code: 'fr', level: 'native' }] })
+  languageProficiencies: Array<{ code: string; level: string }>;
+
+  @ApiPropertyOptional({ type: [String], description: 'Desired profession UUIDs' })
+  preferredProfessionIds: string[];
+
+  @ApiPropertyOptional({ type: [String], example: ['Rwanda', 'France'] })
+  preferredCountries: string[];
+
+  @ApiPropertyOptional({ type: [String], example: ['FULL_TIME', 'CONTRACT'] })
+  preferredEmploymentTypes: string[];
+
+  @ApiPropertyOptional({ example: true })
+  acceptsRemote: boolean;
+
+  @ApiPropertyOptional({ example: '1500.00' })
+  expectedSalaryMin: any | null;
+
+  @ApiPropertyOptional({ example: '3000.00' })
+  expectedSalaryMax: any | null;
+
   @ApiPropertyOptional({
     example: '2500.00',
     type: String,

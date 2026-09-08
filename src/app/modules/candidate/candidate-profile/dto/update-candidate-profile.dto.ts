@@ -8,6 +8,9 @@ import {
   Min,
   IsDateString,
   IsArray,
+  ValidateNested,
+  IsIn,
+  IsUUID,
 } from 'class-validator';
 import { Type, Transform } from 'class-transformer';
 import { ApiPropertyOptional } from '@nestjs/swagger';
@@ -16,6 +19,17 @@ import {
   WorkType,
   ProfileVisibility,
 } from '../../../../../utils/enums';
+
+const arrayValue = ({ value }: { value: unknown }) => {
+  if (Array.isArray(value)) return value;
+  if (!value) return [];
+  try { const parsed = JSON.parse(String(value)); return Array.isArray(parsed) ? parsed : [value]; } catch { return [value]; }
+};
+
+export class LanguageProficiencyDto {
+  @IsString() code: string;
+  @IsIn(['beginner', 'intermediate', 'advanced', 'fluent', 'native']) level: string;
+}
 
 export class UpdateUserCandidateProfileDto {
   @ApiPropertyOptional({ example: 'Prince ngenzi' })
@@ -73,6 +87,55 @@ export class UpdateUserCandidateProfileDto {
   @IsString({ each: true })
   @IsOptional()
   languageCodes?: string[];
+
+  @ApiPropertyOptional({ type: [LanguageProficiencyDto], example: [{ code: 'fr', level: 'native' }, { code: 'en', level: 'advanced' }] })
+  @Transform(({ value }) => { if (Array.isArray(value)) return value; try { return JSON.parse(String(value)); } catch { return []; } })
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => LanguageProficiencyDto)
+  @IsOptional()
+  languageProficiencies?: LanguageProficiencyDto[];
+
+  @ApiPropertyOptional({ type: [String], description: 'Profession UUIDs from /references/professions' })
+  @Transform(arrayValue)
+  @IsArray()
+  @IsUUID('4', { each: true })
+  @IsOptional()
+  preferredProfessionIds?: string[];
+
+  @ApiPropertyOptional({ type: [String], example: ['Rwanda', 'France'] })
+  @Transform(arrayValue)
+  @IsArray()
+  @IsString({ each: true })
+  @IsOptional()
+  preferredCountries?: string[];
+
+  @ApiPropertyOptional({ type: [String], enum: ['FULL_TIME', 'PART_TIME', 'CONTRACT', 'INTERNSHIP'] })
+  @Transform(arrayValue)
+  @IsArray()
+  @IsIn(['FULL_TIME', 'PART_TIME', 'CONTRACT', 'INTERNSHIP'], { each: true })
+  @IsOptional()
+  preferredEmploymentTypes?: string[];
+
+  @ApiPropertyOptional({ example: true })
+  @Transform(({ value }) => value === true || value === 'true')
+  @IsBoolean()
+  @IsOptional()
+  acceptsRemote?: boolean;
+
+  @ApiPropertyOptional({ example: 1500 })
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  @IsOptional()
+  expectedSalaryMin?: number;
+
+  @ApiPropertyOptional({ example: 3000 })
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  @IsOptional()
+  expectedSalaryMax?: number;
 
   @ApiPropertyOptional({ example: 2500.0 })
   @Type(() => Number)
