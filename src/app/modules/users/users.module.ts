@@ -6,10 +6,11 @@ import { User } from './entities/user.entity';
 import { CandidateProfile } from '../candidate/candidate-profile/entities/candidate-profile.entity';
 import { AuditLogModule } from '../audit-logs/audit-log.module';
 import { JwtTokenModule } from '@/libs/jwt/jwt-token.module';
+import { Profession } from './entities/profession.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([User, CandidateProfile]),
+    TypeOrmModule.forFeature([User, CandidateProfile, Profession]),
     AuditLogModule,
     JwtTokenModule,
   ],

@@ -18,6 +18,7 @@ import { JobCategory } from '@/utils/enums';
 import { StorageService } from '@/libs/storage/storage.service';
 import { Country } from './entities/country.entity';
 import { Language } from './entities/language.entity';
+import { Profession } from '../users/entities/profession.entity';
 
 type ExcelRow = Record<string, unknown>;
 export type ImportCatalog =
@@ -35,6 +36,7 @@ export class PlatformReferencesService {
     @InjectRepository(Language) private readonly languages: Repository<Language>,
     @InjectRepository(Skill) private readonly skills: Repository<Skill>,
     @InjectRepository(SkillCategory) private readonly skillCategories: Repository<SkillCategory>,
+    @InjectRepository(Profession) private readonly professions: Repository<Profession>,
     private readonly dataSource: DataSource,
     private readonly storage: StorageService,
   ) {}
@@ -53,6 +55,18 @@ export class PlatformReferencesService {
 
   listSkills(q?: string, categoryId?: string, limit = 100) {
     return this.skills.find({ where: { ...(q ? { name: ILike(`%${q}%`) } : {}), ...(categoryId ? { categoryId } : {}) }, relations: { category: true }, order: { name: 'ASC' }, take: Math.min(Math.max(limit, 1), 200) });
+  }
+
+  listProfessions(q?: string, category?: string, limit = 300) {
+    return this.professions.find({
+      where: {
+        isActive: true,
+        ...(q ? { name: ILike(`%${q}%`) } : {}),
+        ...(category ? { category } : {}),
+      },
+      order: { category: 'ASC', name: 'ASC' },
+      take: Math.min(Math.max(limit, 1), 500),
+    });
   }
 
   list(

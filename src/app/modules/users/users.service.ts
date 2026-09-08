@@ -14,6 +14,8 @@ import { AuditLogService } from '../audit-logs/audit-log.service';
 import { JwtTokenService } from '@/libs/jwt/jwt-token.service';
 import { UpdateEmailDto } from './dto/update-email.dto';
 import { UpdatePasswordDto } from './dto/update-password.dto';
+import { UpdateUserProfileDto } from './dto/update-user-profile.dto';
+import { Profession } from './entities/profession.entity';
 
 @Injectable()
 export class UsersService {
@@ -22,6 +24,8 @@ export class UsersService {
     private readonly userRepo: Repository<User>,
     @InjectRepository(CandidateProfile)
     private readonly candidateProfileRepo: Repository<CandidateProfile>,
+    @InjectRepository(Profession)
+    private readonly professionRepo: Repository<Profession>,
     private readonly dataSource: DataSource,
     private readonly auditLogService: AuditLogService,
     private readonly jwtTokenService: JwtTokenService,
@@ -32,7 +36,16 @@ export class UsersService {
   }
 
   findById(id: string): Promise<User | null> {
-    return this.userRepo.findOne({ where: { id } });
+    return this.userRepo.findOne({ where: { id }, relations: { profession: true } });
+  }
+
+  async assertActiveProfession(professionId: string) {
+    const profession = await this.professionRepo.findOne({
+      where: { id: professionId, isActive: true },
+    });
+    if (!profession)
+      throw new NotFoundException('Profession not found or inactive');
+    return profession;
   }
 
   async create(data: Partial<User> & { role: UserRole }): Promise<User> {
@@ -96,11 +109,13 @@ export class UsersService {
     fullName: string;
     email: string;
     role?: UserRole;
+    professionId: string;
   }): Promise<User> {
     return this.create({
       email: data.email,
       fullName: data.fullName,
-      role: data.role ?? UserRole.CANDIDATE,
+      professionId: data.professionId,
+      role: UserRole.CANDIDATE,
       status: UserStatus.pending,
       emailVerified: true,
     });
@@ -143,6 +158,13 @@ export class UsersService {
       newValues: { email: dto.email },
     });
 
+    const { password: _password, ...safe } = user;
+    return safe;
+  }
+
+  async updateProfile(userId: string, dto: UpdateUserProfileDto) {
+    if (dto.professionId) await this.assertActiveProfession(dto.professionId);
+    const user = await this.update(userId, dto);
     const { password: _password, ...safe } = user;
     return safe;
   }

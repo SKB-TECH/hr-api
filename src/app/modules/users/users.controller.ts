@@ -21,6 +21,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { UnauthorizedErrorDto } from '@/helpers/message/unauthorized.response';
 import { sendResult } from '@/helpers/message/sendResult';
+import { UpdateUserProfileDto } from './dto/update-user-profile.dto';
 
 @ApiTags('Users')
 @ApiBearerAuth()
@@ -28,6 +29,12 @@ import { sendResult } from '@/helpers/message/sendResult';
 @Controller('users/me')
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
+
+  @Patch('profile')
+  @ApiOperation({ summary: 'Update the current account name and profession' })
+  async updateProfile(@CurrentUser() user: { id: string }, @Body() dto: UpdateUserProfileDto) {
+    return sendResult(HttpStatus.OK, 'Account profile updated', await this.usersService.updateProfile(user.id, dto));
+  }
 
   @Patch('email')
   @ApiOperation({ summary: 'Update email address' })

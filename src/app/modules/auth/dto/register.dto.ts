@@ -5,6 +5,7 @@ import {
   IsNotEmpty,
   IsOptional,
   IsString,
+  IsUUID,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { UserRole } from '../../../../utils/enums';
@@ -18,6 +19,10 @@ export class RegisterDto {
   @ApiProperty({ example: 'john@example.com' })
   @IsEmail()
   email: string;
+
+  @ApiProperty({ description: 'Profession selected from GET /references/professions' })
+  @IsUUID('4')
+  professionId: string;
 
   @ApiProperty({
     example: true,

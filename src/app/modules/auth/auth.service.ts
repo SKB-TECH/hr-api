@@ -59,11 +59,14 @@ export class AuthService {
       );
     }
 
+    await this.usersService.assertActiveProfession(dto.professionId);
+
     const requestId = randomUUID();
     const pending: PendingRegistration = {
       fullName: dto.fullName,
       email: dto.email,
-      role: dto.role ?? UserRole.CANDIDATE,
+      professionId: dto.professionId,
+      role: UserRole.CANDIDATE,
       acceptTerms: dto.acceptTerms,
     };
     await this.redisService.set(
@@ -290,15 +293,13 @@ export class AuthService {
     let user = await this.usersService.findByEmail(googleUser.email);
 
     if (!user) {
+      requestedProfile = AccountProfile.CANDIDATE;
       user = await this.usersService.create({
         email: googleUser.email,
         fullName: googleUser.fullName,
         avatar: googleUser.avatar,
         provider: AuthProvider.google,
-        role:
-          requestedProfile === AccountProfile.COMPANY
-            ? UserRole.COMPANY_OWNER
-            : UserRole.CANDIDATE,
+        role: UserRole.CANDIDATE,
         status: UserStatus.active,
         emailVerified: true,
       });

@@ -65,6 +65,12 @@ export class PlatformReferencesController {
     return sendResult(HttpStatus.OK, 'Skills fetched', await this.service.listSkills(q, categoryId, Number(limit) || 100));
   }
 
+  @Get('professions')
+  @ApiOperation({ summary: 'List active professions for account creation and profile editing' })
+  async professions(@Query('q') q?: string, @Query('category') category?: string, @Query('limit') limit?: string) {
+    return sendResult(HttpStatus.OK, 'Professions fetched', await this.service.listProfessions(q, category, Number(limit) || 300));
+  }
+
   @Get(':type')
   @ApiOperation({ summary: 'Search an autocomplete reference list' })
   async list(

@@ -5,6 +5,8 @@ import {
   Entity,
   OneToMany,
   OneToOne,
+  ManyToOne,
+  JoinColumn,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
@@ -14,6 +16,7 @@ import { CompanyMember } from '../../companies/entities/company-member.entity';
 import { AuditLog } from '../../audit-logs/entities/audit-log.entity';
 import { Application } from '../../applications/entities/application.entity';
 import { ApplicationStageHistory } from '../../applications/entities/application-stage-history.entity';
+import { Profession } from './profession.entity';
 
 @Entity({ name: 'users' })
 export class User {
@@ -31,6 +34,13 @@ export class User {
 
   @Column({ name: 'full_name', type: 'varchar' })
   fullName: string;
+
+  @Column({ name: 'profession_id', type: 'uuid', nullable: true })
+  professionId: string | null;
+
+  @ManyToOne(() => Profession, (profession) => profession.users, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'profession_id' })
+  profession: Profession | null;
 
   @Column({ type: 'enum', enum: UserRole, default: UserRole.CANDIDATE })
   role: UserRole;

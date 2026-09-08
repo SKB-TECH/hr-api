@@ -7,9 +7,10 @@ import { Country } from './entities/country.entity';
 import { Language } from './entities/language.entity';
 import { Skill } from '../candidate/candidate-skill/entities/skill.entity';
 import { SkillCategory } from '../candidate/candidate-skill/entities/skill-category.entity';
+import { Profession } from '../users/entities/profession.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([PlatformReference, Country, Language, Skill, SkillCategory])],
+  imports: [TypeOrmModule.forFeature([PlatformReference, Country, Language, Skill, SkillCategory, Profession])],
   controllers: [PlatformReferencesController],
   providers: [PlatformReferencesService],
   exports: [PlatformReferencesService],
