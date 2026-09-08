@@ -31,6 +31,21 @@ export class LanguageProficiencyDto {
   @IsIn(['beginner', 'intermediate', 'advanced', 'fluent', 'native']) level: string;
 }
 
+const languageProficienciesValue = ({ value }: { value: unknown }) => {
+  let parsed: unknown = value;
+  if (!Array.isArray(parsed)) {
+    try {
+      parsed = JSON.parse(String(value));
+    } catch {
+      return [];
+    }
+  }
+  if (!Array.isArray(parsed)) return [];
+  return parsed.map((item) =>
+    Object.assign(new LanguageProficiencyDto(), item),
+  );
+};
+
 export class UpdateUserCandidateProfileDto {
   @ApiPropertyOptional({ example: 'Prince ngenzi' })
   @IsString()
@@ -89,7 +104,7 @@ export class UpdateUserCandidateProfileDto {
   languageCodes?: string[];
 
   @ApiPropertyOptional({ type: [LanguageProficiencyDto], example: [{ code: 'fr', level: 'native' }, { code: 'en', level: 'advanced' }] })
-  @Transform(({ value }) => { if (Array.isArray(value)) return value; try { return JSON.parse(String(value)); } catch { return []; } })
+  @Transform(languageProficienciesValue)
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => LanguageProficiencyDto)
