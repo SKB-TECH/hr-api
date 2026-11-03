@@ -123,7 +123,12 @@ export class OidcAuthService {
       ...(options.userId ? { userId: options.userId } : {}),
       portal,
       locale,
-      returnPath: this.safeReturnPath(options.returnTo, locale, portal),
+      returnPath: this.safeReturnPath(
+        options.returnTo,
+        locale,
+        portal,
+        provider,
+      ),
     };
 
     await this.redisService.set(
@@ -176,7 +181,11 @@ export class OidcAuthService {
       ) {
         return {
           kind: 'redirect',
-          redirectUrl: this.errorRedirect(attempt.locale, 'oauth_denied'),
+          redirectUrl: this.errorRedirect(
+            attempt.locale,
+            'oauth_denied',
+            provider,
+          ),
         };
       }
       throw new UnauthorizedException('OAuth authorization failed');
@@ -230,7 +239,7 @@ export class OidcAuthService {
       await this.linkAccount(attempt.userId!, provider, profile.id);
       return {
         kind: 'linked',
-        redirectUrl: this.frontendUrl(attempt.returnPath),
+        redirectUrl: this.frontendUrl(attempt.returnPath, provider),
       };
     }
 
@@ -248,7 +257,7 @@ export class OidcAuthService {
       return {
         kind: 'session',
         tokens,
-        redirectUrl: this.frontendUrl(attempt.returnPath),
+        redirectUrl: this.frontendUrl(attempt.returnPath, provider),
       };
     }
 
@@ -284,6 +293,7 @@ export class OidcAuthService {
         undefined,
         attempt.locale,
         AccountProfile.CANDIDATE,
+        provider,
       ),
     };
 
@@ -300,7 +310,7 @@ export class OidcAuthService {
     return {
       kind: 'session',
       tokens: tokensForNewUser,
-      redirectUrl: this.frontendUrl(newUserAttempt.returnPath),
+      redirectUrl: this.frontendUrl(newUserAttempt.returnPath, provider),
     };
   }
 
@@ -448,9 +458,10 @@ export class OidcAuthService {
     return this.connectedAccounts(userId);
   }
 
-  fallbackErrorRedirect(locale: string, code: string) {
+  fallbackErrorRedirect(locale: string, code: string, provider: OAuthProvider) {
     return this.frontendUrl(
       `/${locale === 'fr' ? 'fr/' : ''}sign-in?error=${encodeURIComponent(code)}`,
+      provider,
     );
   }
 
@@ -536,6 +547,7 @@ export class OidcAuthService {
       kind: 'email-required',
       redirectUrl: this.frontendUrl(
         `/${attempt.locale === 'fr' ? 'fr/' : ''}oauth/complete?ticket=${encodeURIComponent(ticket)}`,
+        provider,
       ),
     };
   }
@@ -587,29 +599,48 @@ export class OidcAuthService {
     return value;
   }
 
-  private frontendUrl(path: string): string {
-    const base =
+  private frontendUrl(path: string, provider: OAuthProvider): string {
+    return new URL(path, `${this.frontendOrigin(provider)}/`).toString();
+  }
+
+  private frontendOrigin(provider: OAuthProvider): string {
+    const callbackUrl = this.config.get(
+      provider === OAuthProvider.GOOGLE
+        ? 'GOOGLE_CALLBACK_URL'
+        : 'LINKEDIN_CALLBACK_URL',
+    );
+    if (callbackUrl) {
+      const callback = new URL(callbackUrl);
+      const expectedPath = `/api/proxy/auth/${provider}/callback`;
+      if (
+        ['http:', 'https:'].includes(callback.protocol) &&
+        callback.pathname === expectedPath &&
+        !callback.username &&
+        !callback.password
+      ) {
+        return callback.origin;
+      }
+    }
+
+    const configuredFrontend =
       this.config.get('FRONTEND_URL') ||
       this.config.get('WEB_APP_URL') ||
       'http://localhost:3000';
-    return new URL(path, `${base.replace(/\/+$/, '')}/`).toString();
+    return new URL(configuredFrontend).origin;
   }
 
   private safeReturnPath(
     value: string | undefined,
     locale: 'en' | 'fr',
     portal: AccountProfile,
+    provider: OAuthProvider,
   ): string {
     const defaultPath = `/${locale === 'fr' ? 'fr/' : ''}${portal === AccountProfile.COMPANY ? 'company' : 'candidate'}`;
     if (!value || value.startsWith('//') || value.includes('\\')) {
       return defaultPath;
     }
     try {
-      const frontend = new URL(
-        this.config.get('FRONTEND_URL') ||
-          this.config.get('WEB_APP_URL') ||
-          'http://localhost:3000',
-      );
+      const frontend = new URL(this.frontendOrigin(provider));
       const target = new URL(value, frontend);
       if (
         target.origin !== frontend.origin ||
@@ -623,9 +654,14 @@ export class OidcAuthService {
     }
   }
 
-  private errorRedirect(locale: 'en' | 'fr', code: string): string {
+  private errorRedirect(
+    locale: 'en' | 'fr',
+    code: string,
+    provider: OAuthProvider,
+  ): string {
     return this.frontendUrl(
       `/${locale === 'fr' ? 'fr/' : ''}sign-in?error=${encodeURIComponent(code)}`,
+      provider,
     );
   }
 

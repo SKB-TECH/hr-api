@@ -326,6 +326,25 @@ describe('OidcAuthService', () => {
     expect(oidcMock.authorizationCodeGrant).not.toHaveBeenCalled();
   });
 
+  it('uses the registered frontend callback origin when API frontend config is stale', () => {
+    mockConfig.get.mockImplementation((key: string) => {
+      if (key === 'FRONTEND_URL') return 'https://localhost:3000';
+      if (key === 'GOOGLE_CALLBACK_URL') {
+        return 'https://fast2hire.com/api/proxy/auth/google/callback';
+      }
+      return configValue(key);
+    });
+    const service = makeService();
+
+    expect(
+      service.fallbackErrorRedirect(
+        'en',
+        'oauth_callback_failed',
+        OAuthProvider.GOOGLE,
+      ),
+    ).toBe('https://fast2hire.com/sign-in?error=oauth_callback_failed');
+  });
+
   it('requires an email OTP when the provider has no verified email', async () => {
     mockRedis.get.mockResolvedValue(
       JSON.stringify(stateAttempt({ provider: OAuthProvider.LINKEDIN })),

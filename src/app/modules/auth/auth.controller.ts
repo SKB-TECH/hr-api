@@ -351,6 +351,7 @@ export class AuthController {
         this.oidcAuthService.fallbackErrorRedirect(
           query.locale ?? 'en',
           'oauth_unavailable',
+          provider,
         ),
       );
     }
@@ -400,6 +401,7 @@ export class AuthController {
         this.oidcAuthService.fallbackErrorRedirect(
           req.cookies?.NEXT_LOCALE ?? 'en',
           errorCode,
+          provider,
         ),
       );
     }
