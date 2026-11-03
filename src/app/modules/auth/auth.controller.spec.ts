@@ -1,15 +1,27 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
+import { OidcAuthService } from './oidc-auth.service';
+
+jest.mock('openid-client', () => ({}));
 
 const mockAuthService = {
   login: jest.fn(),
   logout: jest.fn(),
   refresh: jest.fn(),
-  googleLogin: jest.fn(),
   session: jest.fn(),
   enableProfile: jest.fn(),
   switchProfile: jest.fn(),
+};
+
+const mockOidcAuthService = {
+  begin: jest.fn(),
+  callback: jest.fn(),
+  connectedAccounts: jest.fn(),
+  unlinkAccount: jest.fn(),
+  requestEmailVerification: jest.fn(),
+  verifyEmailAndCreateAccount: jest.fn(),
+  fallbackErrorRedirect: jest.fn(),
 };
 
 const mockUser = {
@@ -33,7 +45,10 @@ describe('AuthController', () => {
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [AuthController],
-      providers: [{ provide: AuthService, useValue: mockAuthService }],
+      providers: [
+        { provide: AuthService, useValue: mockAuthService },
+        { provide: OidcAuthService, useValue: mockOidcAuthService },
+      ],
     }).compile();
 
     controller = module.get<AuthController>(AuthController);

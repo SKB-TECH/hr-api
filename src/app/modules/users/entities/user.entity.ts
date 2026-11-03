@@ -17,6 +17,7 @@ import { AuditLog } from '../../audit-logs/entities/audit-log.entity';
 import { Application } from '../../applications/entities/application.entity';
 import { ApplicationStageHistory } from '../../applications/entities/application-stage-history.entity';
 import { Profession } from './profession.entity';
+import { OAuthAccount } from './oauth-account.entity';
 
 @Entity({ name: 'users' })
 export class User {
@@ -38,7 +39,10 @@ export class User {
   @Column({ name: 'profession_id', type: 'uuid', nullable: true })
   professionId: string | null;
 
-  @ManyToOne(() => Profession, (profession) => profession.users, { nullable: true, onDelete: 'SET NULL' })
+  @ManyToOne(() => Profession, (profession) => profession.users, {
+    nullable: true,
+    onDelete: 'SET NULL',
+  })
   @JoinColumn({ name: 'profession_id' })
   profession: Profession | null;
 
@@ -99,4 +103,7 @@ export class User {
 
   @OneToMany(() => ApplicationStageHistory, (history) => history.changedBy)
   stageHistories: ApplicationStageHistory[];
+
+  @OneToMany(() => OAuthAccount, (account) => account.user)
+  oauthAccounts: OAuthAccount[];
 }

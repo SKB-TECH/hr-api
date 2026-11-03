@@ -1,6 +1,8 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { UnauthorizedException } from '@nestjs/common';
 import { AuthService } from './auth.service';
+import { AccountProfile } from './dto/switch-profile.dto';
+import { UserRole } from '@/utils/enums';
 import { UsersService } from '../users/users.service';
 import { AuditLogService } from '../audit-logs/audit-log.service';
 import { JwtTokenService } from '@/libs/jwt/jwt-token.service';
@@ -36,7 +38,9 @@ const mockUsersService = {
   update: jest.fn(),
   createPendingUser: jest.fn(),
   activateUser: jest.fn(),
-  assertActiveProfession: jest.fn().mockResolvedValue({ id: '11111111-1111-4111-8111-111111111111' }),
+  assertActiveProfession: jest
+    .fn()
+    .mockResolvedValue({ id: '11111111-1111-4111-8111-111111111111' }),
 };
 
 const mockJwtTokenService = {
@@ -342,41 +346,31 @@ describe('AuthService', () => {
     });
   });
 
-  describe('googleLogin', () => {
-    it('should create a new user and return tokens if user does not exist', async () => {
-      mockUsersService.findByEmail.mockResolvedValue(null);
-      mockUsersService.create.mockResolvedValue({
+  describe('createOAuthSession', () => {
+    it('should preserve the linked user role and profiles', async () => {
+      const companyUser = {
         ...mockUser,
-        provider: 'google',
-      });
-      mockUsersService.update.mockResolvedValue(mockUser);
+        role: UserRole.COMPANY_OWNER,
+        profiles: ['CANDIDATE', 'COMPANY'],
+      };
+      mockUsersService.findById.mockResolvedValue(companyUser);
+      mockUsersService.update.mockResolvedValue(companyUser);
 
-      const result = await service.googleLogin({
-        email: 'john@example.com',
-        fullName: 'John Doe',
-        avatar: 'https://avatar.url',
-      });
+      const result = await service.createOAuthSession(
+        'uuid-user-1',
+        'web',
+        AccountProfile.COMPANY,
+      );
 
-      expect(result.user.email).toBe('john@example.com');
-      expect(result.user).not.toHaveProperty('password');
-      expect(mockUsersService.create).toHaveBeenCalledTimes(1);
-    });
-
-    it('should return tokens for an existing Google user without creating a new one', async () => {
-      mockUsersService.findByEmail.mockResolvedValue({
-        ...mockUser,
-        provider: 'google',
-      });
-      mockUsersService.update.mockResolvedValue(mockUser);
-
-      const result = await service.googleLogin({
-        email: 'john@example.com',
-        fullName: 'John Doe',
-        avatar: 'https://avatar.url',
-      });
-
-      expect(result.user.email).toBe('john@example.com');
-      expect(mockUsersService.create).not.toHaveBeenCalled();
+      expect(result.accessToken).toBeDefined();
+      expect(mockJwtTokenService.generateTokenPair).toHaveBeenCalledWith(
+        expect.objectContaining({
+          role: UserRole.COMPANY_OWNER,
+          profiles: ['CANDIDATE', 'COMPANY'],
+          activeProfile: 'COMPANY',
+        }),
+        'web',
+      );
     });
   });
 

@@ -7,19 +7,27 @@ import { SetPasswordController } from './set-password.controller';
 import { ResetPasswordController } from './reset-password.controller';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { JwtRefreshStrategy } from './strategies/jwt-refresh.strategy';
-import { GoogleStrategy } from './strategies/google.strategy';
 import { UsersModule } from '../users/users.module';
 import { JwtTokenModule } from '@/libs/jwt/jwt-token.module';
 import { OtpModule } from '@/libs/otp/otp.module';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { OAuthAccount } from '../users/entities/oauth-account.entity';
+import { OidcAuthService } from './oidc-auth.service';
 
 @Module({
-  imports: [PassportModule, JwtTokenModule, UsersModule, OtpModule],
+  imports: [
+    PassportModule,
+    JwtTokenModule,
+    UsersModule,
+    OtpModule,
+    TypeOrmModule.forFeature([OAuthAccount]),
+  ],
   controllers: [
     AuthController,
     RegistrationController,
     SetPasswordController,
     ResetPasswordController,
   ],
-  providers: [AuthService, JwtStrategy, JwtRefreshStrategy, GoogleStrategy],
+  providers: [AuthService, OidcAuthService, JwtStrategy, JwtRefreshStrategy],
 })
 export class AuthModule {}

@@ -1,4 +1,5 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
+import { randomInt } from 'crypto';
 import { RedisService } from '../redis/redis.service';
 import { I18nService } from '../i18n/i18n.service';
 import { sendError } from '@/helpers/message/sendResult';
@@ -13,7 +14,7 @@ export class OtpService {
   ) {}
 
   async generate(requestId: string): Promise<string> {
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const otp = randomInt(100000, 1000000).toString();
     await this.redisService.set(this.otpKey(requestId), otp, this.OTP_TTL);
     return otp;
   }

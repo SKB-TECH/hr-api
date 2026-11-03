@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 import * as bcrypt from 'bcrypt';
-import { UserRole, UserStatus, AuthProvider } from '@/utils/enums';
+import { UserRole, UserStatus } from '@/utils/enums';
 import { User } from '../users/entities/user.entity';
 import { UsersService } from '../users/users.service';
 import { AuditLogService } from '../audit-logs/audit-log.service';
@@ -281,53 +281,34 @@ export class AuthService {
     return { success: true };
   }
 
-  async googleLogin(
-    googleUser: { email: string; fullName: string; avatar: string | null },
-    clientType: ClientType = 'mobile',
-    requestedProfile: AccountProfile = AccountProfile.CANDIDATE,
+  async createOAuthSession(
+    userId: string,
+    clientType: ClientType,
+    requestedProfile: AccountProfile,
   ) {
-    requestedProfile =
-      requestedProfile === AccountProfile.COMPANY
-        ? AccountProfile.COMPANY
-        : AccountProfile.CANDIDATE;
-    let user = await this.usersService.findByEmail(googleUser.email);
-
-    if (!user) {
-      requestedProfile = AccountProfile.CANDIDATE;
-      user = await this.usersService.create({
-        email: googleUser.email,
-        fullName: googleUser.fullName,
-        avatar: googleUser.avatar,
-        provider: AuthProvider.google,
-        role: UserRole.CANDIDATE,
-        status: UserStatus.active,
-        emailVerified: true,
-      });
-    }
-
-    if (!this.profilesFor(user).includes(requestedProfile))
+    const user = await this.usersService.findById(userId);
+    if (!user) throw new UnauthorizedException('Account is unavailable');
+    if (!this.profilesFor(user).includes(requestedProfile)) {
       throw new ForbiddenException(
         `This account is not authorized for the ${requestedProfile.toLowerCase()} portal.`,
       );
+    }
 
-    user = await this.usersService.update(user.id, {
+    const activeUser = await this.usersService.update(user.id, {
       lastLogin: new Date(),
       activeProfile: requestedProfile,
     });
-
     void this.auditLogService.log({
       userId: user.id,
-      action: 'GOOGLE_LOGIN',
+      action: 'OAUTH_LOGIN',
       module: 'auth',
-      newValues: { email: user.email },
     });
 
-    const tokens = await this.generateAndStoreTokens(
-      user,
+    return this.generateAndStoreTokens(
+      activeUser,
       clientType,
       requestedProfile,
     );
-    return { user: this.sessionUser(user, requestedProfile), ...tokens };
   }
 
   // -------------------- Set password (authenticated) ----------------------

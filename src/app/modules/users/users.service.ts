@@ -16,6 +16,7 @@ import { UpdateEmailDto } from './dto/update-email.dto';
 import { UpdatePasswordDto } from './dto/update-password.dto';
 import { UpdateUserProfileDto } from './dto/update-user-profile.dto';
 import { Profession } from './entities/profession.entity';
+import { OAuthAccount, OAuthProvider } from './entities/oauth-account.entity';
 
 @Injectable()
 export class UsersService {
@@ -36,7 +37,10 @@ export class UsersService {
   }
 
   findById(id: string): Promise<User | null> {
-    return this.userRepo.findOne({ where: { id }, relations: { profession: true } });
+    return this.userRepo.findOne({
+      where: { id },
+      relations: { profession: true },
+    });
   }
 
   async assertActiveProfession(professionId: string) {
@@ -72,6 +76,42 @@ export class UsersService {
       }
 
       return saved;
+    });
+  }
+
+  async createOAuthUser(
+    data: Partial<User> & { role: UserRole },
+    provider: OAuthProvider,
+    providerAccountId: string,
+  ): Promise<User> {
+    return this.dataSource.transaction(async (manager) => {
+      const userRepo = manager.getRepository(User);
+      const profileRepo = manager.getRepository(CandidateProfile);
+      const accountRepo = manager.getRepository(OAuthAccount);
+      const profile =
+        data.role === UserRole.CANDIDATE ? 'CANDIDATE' : 'COMPANY';
+      const user = await userRepo.save(
+        userRepo.create({
+          ...data,
+          profiles: data.profiles ?? [profile],
+          activeProfile: data.activeProfile ?? profile,
+        }),
+      );
+
+      if (data.role === UserRole.CANDIDATE) {
+        await profileRepo.save(
+          profileRepo.create({
+            userId: user.id,
+            openToWork: true,
+            profileVisibility: ProfileVisibility.public,
+          }),
+        );
+      }
+
+      await accountRepo.save(
+        accountRepo.create({ userId: user.id, provider, providerAccountId }),
+      );
+      return user;
     });
   }
 

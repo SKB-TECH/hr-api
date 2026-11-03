@@ -31,6 +31,14 @@ import { PlatformReferencesModule } from './modules/platform-references/platform
 import { MessagesModule } from './modules/messages/messages.module';
 import { SearchModule } from './modules/search/search.module';
 
+const sensitiveLogPaths = [
+  'req.url',
+  'req.originalUrl',
+  'req.query',
+  'req.headers.authorization',
+  'req.headers.cookie',
+];
+
 @Module({
   imports: [
     NestConfigModule.forRoot({
@@ -42,6 +50,7 @@ import { SearchModule } from './modules/search/search.module';
       pinoHttp:
         process.env.NODE_ENV === 'local'
           ? {
+              redact: { paths: sensitiveLogPaths, censor: '[Redacted]' },
               transport: { target: 'pino-pretty' },
               level: 'debug',
               autoLogging: true,
@@ -64,6 +73,7 @@ import { SearchModule } from './modules/search/search.module';
                     process.env.NODE_ENV === 'production' ? 'warn' : 'debug',
                 },
               ),
+              redact: { paths: sensitiveLogPaths, censor: '[Redacted]' },
               autoLogging: process.env.NODE_ENV !== 'production',
               genReqId: (req: any) =>
                 req.headers['x-request-id'] || randomUUID(),
