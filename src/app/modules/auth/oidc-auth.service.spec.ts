@@ -428,6 +428,30 @@ describe('OidcAuthService', () => {
     );
   });
 
+  it('trims deployment whitespace from OAuth credentials and callback URLs', async () => {
+    mockConfig.get.mockImplementation((key: string) => {
+      const value = configValue(key);
+      return value ? `  ${value}\n` : value;
+    });
+    const service = makeService();
+
+    await service.begin(OAuthProvider.LINKEDIN);
+
+    expect(oidcMock.discovery).toHaveBeenCalledWith(
+      new URL('https://www.linkedin.com/oauth'),
+      'linkedin-client',
+      { client_secret: 'linkedin-secret' },
+      'client-auth',
+    );
+    expect(oidcMock.buildAuthorizationUrl).toHaveBeenCalledWith(
+      { issuer: 'test' },
+      expect.objectContaining({
+        redirect_uri:
+          'http://localhost:3000/api/proxy/auth/linkedin/callback',
+      }),
+    );
+  });
+
   it('rejects invalid ID tokens and state values', async () => {
     oidcMock.authorizationCodeGrant.mockRejectedValue(
       new UnauthorizedException('invalid token'),

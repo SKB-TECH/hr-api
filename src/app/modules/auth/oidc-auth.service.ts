@@ -573,16 +573,20 @@ export class OidcAuthService {
     const current = this.clientPromises.get(provider);
     if (current) return current;
 
-    const clientId = this.config.get(
-      provider === OAuthProvider.GOOGLE
-        ? 'GOOGLE_CLIENT_ID'
-        : 'LINKEDIN_CLIENT_ID',
-    );
-    const clientSecret = this.config.get(
-      provider === OAuthProvider.GOOGLE
-        ? 'GOOGLE_CLIENT_SECRET'
-        : 'LINKEDIN_CLIENT_SECRET',
-    );
+    const clientId = this.config
+      .get(
+        provider === OAuthProvider.GOOGLE
+          ? 'GOOGLE_CLIENT_ID'
+          : 'LINKEDIN_CLIENT_ID',
+      )
+      ?.trim();
+    const clientSecret = this.config
+      .get(
+        provider === OAuthProvider.GOOGLE
+          ? 'GOOGLE_CLIENT_SECRET'
+          : 'LINKEDIN_CLIENT_SECRET',
+      )
+      ?.trim();
     if (!clientId || !clientSecret) {
       throw new UnauthorizedException(`${provider} OAuth is not configured`);
     }
@@ -603,11 +607,13 @@ export class OidcAuthService {
   }
 
   private callbackUrl(provider: OAuthProvider): string {
-    const value = this.config.get(
-      provider === OAuthProvider.GOOGLE
-        ? 'GOOGLE_CALLBACK_URL'
-        : 'LINKEDIN_CALLBACK_URL',
-    );
+    const value = this.config
+      .get(
+        provider === OAuthProvider.GOOGLE
+          ? 'GOOGLE_CALLBACK_URL'
+          : 'LINKEDIN_CALLBACK_URL',
+      )
+      ?.trim();
     if (!value) {
       throw new UnauthorizedException(
         `${provider} callback URL is not configured`,
