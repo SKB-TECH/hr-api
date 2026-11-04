@@ -62,6 +62,17 @@ export type OAuthCallbackResult =
   | { kind: 'redirect'; redirectUrl: string }
   | { kind: 'email-required'; redirectUrl: string };
 
+export class OAuthProviderResponseError extends Error {
+  constructor(
+    readonly phase: 'token_exchange' | 'userinfo',
+    readonly providerError: string,
+    readonly providerStatus: number,
+  ) {
+    super('OAuth provider rejected the request');
+    this.name = 'OAuthProviderResponseError';
+  }
+}
+
 const STATE_TTL_SECONDS = 600;
 const PENDING_EMAIL_TTL_SECONDS = 600;
 const ISSUERS: Record<OAuthProvider, string> = {
@@ -197,21 +208,27 @@ export class OidcAuthService {
       if (typeof value === 'string') callback.searchParams.set(key, value);
     }
 
-    const tokens = await oidc.authorizationCodeGrant(client, callback, {
-      pkceCodeVerifier: attempt.codeVerifier,
-      expectedState: state,
-      expectedNonce: attempt.nonce,
-    });
+    let tokens: Awaited<ReturnType<typeof oidc.authorizationCodeGrant>>;
+    try {
+      tokens = await oidc.authorizationCodeGrant(client, callback, {
+        pkceCodeVerifier: attempt.codeVerifier,
+        expectedState: state,
+        expectedNonce: attempt.nonce,
+      });
+    } catch (error) {
+      throw this.providerResponseError(error, 'token_exchange');
+    }
     const claims = tokens.claims();
     if (!claims?.sub || !tokens.access_token) {
       throw new UnauthorizedException('Invalid identity token');
     }
 
-    const info = await oidc.fetchUserInfo(
-      client,
-      tokens.access_token,
-      claims.sub,
-    );
+    let info: Awaited<ReturnType<typeof oidc.fetchUserInfo>>;
+    try {
+      info = await oidc.fetchUserInfo(client, tokens.access_token, claims.sub);
+    } catch (error) {
+      throw this.providerResponseError(error, 'userinfo');
+    }
     const userInfoEmail = this.stringClaim(info.email);
     const tokenEmail = this.stringClaim(claims.email);
     const email =
@@ -675,5 +692,28 @@ export class OidcAuthService {
 
   private stringClaim(value: unknown): string | null {
     return typeof value === 'string' && value.trim() ? value.trim() : null;
+  }
+
+  private providerResponseError(
+    error: unknown,
+    phase: OAuthProviderResponseError['phase'],
+  ): unknown {
+    if (!error || typeof error !== 'object') return error;
+
+    const details = error as { error?: unknown; status?: unknown };
+    if (
+      typeof details.error !== 'string' ||
+      !/^[A-Za-z0-9._-]{1,80}$/.test(details.error) ||
+      typeof details.status !== 'number' ||
+      !Number.isInteger(details.status)
+    ) {
+      return error;
+    }
+
+    return new OAuthProviderResponseError(
+      phase,
+      details.error,
+      details.status,
+    );
   }
 }

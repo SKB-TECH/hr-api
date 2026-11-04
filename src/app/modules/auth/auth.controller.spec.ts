@@ -1,7 +1,10 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
-import { OidcAuthService } from './oidc-auth.service';
+import {
+  OAuthProviderResponseError,
+  OidcAuthService,
+} from './oidc-auth.service';
 
 jest.mock('openid-client', () => ({}));
 
@@ -116,5 +119,41 @@ describe('AuthController', () => {
       const result: any = await controller.me(jwtUser);
       expect(result.data).toEqual(jwtUser);
     });
+  });
+
+  it('logs safe provider diagnostics when an OAuth callback fails', async () => {
+    mockOidcAuthService.callback.mockRejectedValue(
+      new OAuthProviderResponseError('token_exchange', 'invalid_client', 401),
+    );
+    mockOidcAuthService.fallbackErrorRedirect.mockReturnValue(
+      'https://fast2hire.com/fr/sign-in?error=oauth_callback_failed',
+    );
+    const warn = jest
+      .spyOn((controller as any).logger, 'warn')
+      .mockImplementation();
+    const req = {
+      cookies: { oauth_state_google: 'state', NEXT_LOCALE: 'fr' },
+      query: { state: 'state', code: 'must-not-be-logged' },
+      headers: { 'x-client-type': 'web' },
+    } as any;
+    const response = {
+      setHeader: jest.fn(),
+      clearCookie: jest.fn(),
+      redirect: jest.fn(),
+    } as any;
+
+    await controller.googleCallback(req, response);
+
+    expect(warn).toHaveBeenCalledWith(
+      {
+        provider: 'google',
+        errorName: 'OAuthProviderResponseError',
+        phase: 'token_exchange',
+        providerError: 'invalid_client',
+        providerStatus: 401,
+      },
+      'OAuth callback failed',
+    );
+    expect(JSON.stringify(warn.mock.calls)).not.toContain('must-not-be-logged');
   });
 });

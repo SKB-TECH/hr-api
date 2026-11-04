@@ -453,6 +453,31 @@ describe('OidcAuthService', () => {
     ).rejects.toThrow(UnauthorizedException);
   });
 
+  it('exposes only the provider error code and status for token exchange failures', async () => {
+    oidcMock.authorizationCodeGrant.mockRejectedValue(
+      Object.assign(new Error('provider response body must not leak'), {
+        error: 'invalid_client',
+        status: 401,
+        error_description: 'sensitive provider detail',
+      }),
+    );
+    const service = makeService();
+
+    await expect(
+      service.callback(
+        OAuthProvider.GOOGLE,
+        { state: 'test-state', code: 'authorization-code' },
+        'test-state',
+        'web',
+      ),
+    ).rejects.toMatchObject({
+      name: 'OAuthProviderResponseError',
+      phase: 'token_exchange',
+      providerError: 'invalid_client',
+      providerStatus: 401,
+    });
+  });
+
   it('does not merge an unlinked provider into an account with the same email', async () => {
     mockValidIdentity();
     mockRepo.findOne.mockResolvedValue(null);

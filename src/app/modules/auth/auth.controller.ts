@@ -29,7 +29,10 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
-import { OidcAuthService } from './oidc-auth.service';
+import {
+  OAuthProviderResponseError,
+  OidcAuthService,
+} from './oidc-auth.service';
 import { LoginDto } from './dto/login.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { CurrentUser } from './decorators/current-user.decorator';
@@ -394,6 +397,13 @@ export class AuthController {
         {
           provider,
           errorName: error instanceof Error ? error.name : 'UnknownError',
+          ...(error instanceof OAuthProviderResponseError
+            ? {
+                phase: error.phase,
+                providerError: error.providerError,
+                providerStatus: error.providerStatus,
+              }
+            : {}),
         },
         'OAuth callback failed',
       );

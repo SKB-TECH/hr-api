@@ -37,6 +37,9 @@ const sensitiveLogPaths = [
   'req.query',
   'req.headers.authorization',
   'req.headers.cookie',
+  'req.headers.x-api-key',
+  'req.headers.x-refresh-token',
+  'req.headers.x-reset-token',
 ];
 
 @Module({
